@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,8 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, BookOpen, Filter, Calendar, GanttChart, Building, ArrowUpDown, Loader2, AlertTriangle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import { SearchResult, searchJurisprudencia } from '@/services/perplexityService';
-import PerplexityKeyInput from './PerplexityKeyInput';
+import { SearchResult, searchJurisprudencia } from '@/services/openaiService';
+import OpenAIKeyInput from './OpenAIKeyInput';
 
 // Mock data para caso de fallback
 const mockSearchResults: SearchResult[] = [
@@ -166,7 +165,7 @@ const JurisprudenciaSearch = () => {
 
   return (
     <div className="flex flex-col h-full">
-      <PerplexityKeyInput onKeySubmit={handleApiKeySubmit} />
+      <OpenAIKeyInput onKeySubmit={handleApiKeySubmit} />
       
       <Tabs defaultValue="simples" className="w-full">
         <TabsList className="grid w-full grid-cols-2">

@@ -10,7 +10,7 @@ export interface SearchResult {
   tags: string[];
 }
 
-// Função para construir os prompts para a API Perplexity
+// Função para construir os prompts para a API OpenAI
 const buildPrompt = (query: string, isAdvanced: boolean = false) => {
   const basePrompt = `Atue como um advogado especialista em direito ambiental brasileiro, pesquisando jurisprudência relevante.
   
@@ -37,7 +37,7 @@ const buildPrompt = (query: string, isAdvanced: boolean = false) => {
     : basePrompt;
 };
 
-// Função para realizar a busca semântica na API Perplexity
+// Função para realizar a busca semântica na API OpenAI
 export const searchJurisprudencia = async (
   query: string, 
   apiKey: string,
@@ -48,14 +48,14 @@ export const searchJurisprudencia = async (
       throw new Error('API key não fornecida');
     }
 
-    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'llama-3.1-sonar-small-128k-online',
+        model: "gpt-4o", // Usando GPT-4o para melhores resultados
         messages: [
           {
             role: 'system',
@@ -67,10 +67,8 @@ export const searchJurisprudencia = async (
           }
         ],
         temperature: 0.2,
-        top_p: 0.9,
         max_tokens: 2000,
-        frequency_penalty: 1,
-        presence_penalty: 0
+        top_p: 0.9
       }),
     });
 

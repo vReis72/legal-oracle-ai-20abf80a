@@ -6,11 +6,11 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Key } from 'lucide-react';
 
-interface PerplexityKeyInputProps {
+interface OpenAIKeyInputProps {
   onKeySubmit: (key: string) => void;
 }
 
-const PerplexityKeyInput: React.FC<PerplexityKeyInputProps> = ({ onKeySubmit }) => {
+const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({ onKeySubmit }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [storedKey, setStoredKey] = useState<string | null>(null);
@@ -18,7 +18,7 @@ const PerplexityKeyInput: React.FC<PerplexityKeyInputProps> = ({ onKeySubmit }) 
 
   useEffect(() => {
     // Check if API key exists in localStorage
-    const savedKey = localStorage.getItem('perplexity_api_key');
+    const savedKey = localStorage.getItem('openai_api_key');
     if (savedKey) {
       setStoredKey(savedKey);
       onKeySubmit(savedKey);
@@ -30,13 +30,13 @@ const PerplexityKeyInput: React.FC<PerplexityKeyInputProps> = ({ onKeySubmit }) 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (apiKey.trim()) {
-      localStorage.setItem('perplexity_api_key', apiKey);
+      localStorage.setItem('openai_api_key', apiKey);
       setStoredKey(apiKey);
       onKeySubmit(apiKey);
       setIsOpen(false);
       toast({
         title: "API Key Salva",
-        description: "Sua chave da API Perplexity foi salva com sucesso.",
+        description: "Sua chave da API OpenAI foi salva com sucesso.",
       });
     }
   };
@@ -50,15 +50,15 @@ const PerplexityKeyInput: React.FC<PerplexityKeyInputProps> = ({ onKeySubmit }) 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Configurar API Perplexity</DialogTitle>
+            <DialogTitle>Configurar API OpenAI</DialogTitle>
             <DialogDescription>
-              Insira sua chave da API Perplexity para habilitar a busca semântica avançada.
-              Você pode obter uma chave em <a href="https://www.perplexity.ai/settings/api" target="_blank" rel="noopener noreferrer" className="text-eco-primary hover:underline">perplexity.ai/settings/api</a>.
+              Insira sua chave da API OpenAI para habilitar a busca semântica avançada.
+              Você pode obter uma chave em <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-eco-primary hover:underline">platform.openai.com/api-keys</a>.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4 pt-4">
             <Input
-              placeholder="pplx-xxxxxxxxxxxxxxxxxxxxxxxx"
+              placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               className="w-full"
@@ -89,4 +89,4 @@ const PerplexityKeyInput: React.FC<PerplexityKeyInputProps> = ({ onKeySubmit }) 
   );
 };
 
-export default PerplexityKeyInput;
+export default OpenAIKeyInput;

@@ -17,8 +17,8 @@ const Jurisprudencia = () => {
           <InfoIcon className="h-4 w-4 text-eco-primary" />
           <AlertTitle>Busca semântica com IA</AlertTitle>
           <AlertDescription className="text-sm">
-            Este sistema utiliza a API da Perplexity para realizar buscas semânticas de jurisprudência ambiental. 
-            Você precisará de uma chave API válida, que pode ser obtida em <a href="https://www.perplexity.ai/settings/api" target="_blank" rel="noopener noreferrer" className="text-eco-primary underline">perplexity.ai/settings/api</a>.
+            Este sistema utiliza a API da OpenAI para realizar buscas semânticas de jurisprudência ambiental. 
+            Você precisará de uma chave API válida, que pode ser obtida em <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-eco-primary underline">platform.openai.com/api-keys</a>.
           </AlertDescription>
         </Alert>
       </div>
