@@ -27,6 +27,22 @@ export const processDocument = async (
     // Limpar e verificar o conteúdo
     const { cleanContent, isBinary } = cleanDocumentContent(fileContent);
     
+    // Se parecer um arquivo binário/PDF com problema de extração, fornecer uma análise básica
+    if (isBinary) {
+      console.warn('Identificado documento binário ou PDF com problemas de extração');
+      return {
+        summary: 'Este documento parece ser um PDF ou arquivo binário cuja extração de texto não foi bem-sucedida. Por favor, considere converter para texto puro (.txt) antes de carregar.',
+        highlights: [],
+        keyPoints: [
+          {
+            title: "Problema na Extração de Texto",
+            description: "O documento parece estar em formato que dificulta a extração de texto. Para melhores resultados, considere usar arquivos de texto (.txt)."
+          }
+        ],
+        content: "Conteúdo não disponível para visualização. Considere converter este documento para um formato de texto puro antes de fazer upload."
+      };
+    }
+    
     // Criar prompt para a análise
     const prompt = createDocumentAnalysisPrompt(cleanContent, fileName, fileType);
 
@@ -88,30 +104,6 @@ export const processDocument = async (
       }
       
       const analysisResult = JSON.parse(jsonMatch[0]) as DocumentAnalysis;
-      
-      // Se for um PDF ou conteúdo binário, aceitamos uma resposta vazia em alguns campos
-      if (isBinary) {
-        return {
-          summary: analysisResult.summary || 'Este documento parece estar em formato binário ou PDF não extraído corretamente.',
-          highlights: analysisResult.highlights || [],
-          keyPoints: analysisResult.keyPoints || [
-            {
-              title: "Erro de Formato",
-              description: "O documento está em formato binário ou PDF que não pôde ser processado adequadamente."
-            }
-          ],
-          content: analysisResult.content || cleanContent
-        };
-      }
-      
-      // Para documentos de texto, validamos mais estritamente
-      // Para evitar retornos vazios quando há conteúdo real
-      if (cleanContent.length > 200 && 
-          (analysisResult.highlights?.length === 0 || !analysisResult.highlights) && 
-          !isBinary &&
-          !cleanContent.includes("não foi bem-sucedida")) {
-        console.warn('A análise retornou highlights vazios para um documento com conteúdo');
-      }
       
       // Garantir que todos os campos existam e tenham valores padrão
       return {
