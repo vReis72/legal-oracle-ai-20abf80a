@@ -26,7 +26,7 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle>Análise de Documentos Ambientais</CardTitle>
+        <CardTitle>Análise de Documentos Jurídicos</CardTitle>
         <CardDescription>
           Faça upload de pareceres, autos de infração e licenças para análise automática.
           Para melhores resultados, use arquivos de texto simples (menor que 2MB).

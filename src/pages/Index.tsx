@@ -11,10 +11,10 @@ const Index = () => {
       <div className="max-w-3xl mx-auto text-center mb-10">
         <h1 className="text-4xl font-serif font-bold mb-4 text-eco-dark">
           <Scale className="inline-block mr-2 mb-1 h-10 w-10 text-eco-primary" />
-          EcoLegal Oracle
+          Legal Oracle
         </h1>
         <p className="text-xl text-muted-foreground">
-          Seu assistente de IA especializado em direito ambiental
+          Seu assistente de IA especializado em direito
         </p>
       </div>
       
@@ -27,7 +27,7 @@ const Index = () => {
           Recursos Disponíveis
         </h2>
         <p className="text-muted-foreground">
-          Explore todas as ferramentas do EcoLegal Oracle para otimizar sua atuação no direito ambiental
+          Explore todas as ferramentas do Legal Oracle para otimizar sua atuação jurídica
         </p>
       </div>
       
@@ -40,7 +40,7 @@ const Index = () => {
             </CardHeader>
             <CardContent>
               <CardDescription>
-                Tire dúvidas e receba orientações especializadas em direito ambiental
+                Tire dúvidas e receba orientações especializadas em direito
               </CardDescription>
             </CardContent>
           </Card>
@@ -54,7 +54,7 @@ const Index = () => {
             </CardHeader>
             <CardContent>
               <CardDescription>
-                Pesquise e analise precedentes relevantes em matéria ambiental
+                Pesquise e analise precedentes judiciais relevantes
               </CardDescription>
             </CardContent>
           </Card>
@@ -68,7 +68,7 @@ const Index = () => {
             </CardHeader>
             <CardContent>
               <CardDescription>
-                Analise pareceres, autos de infração e licenças ambientais
+                Analise pareceres, autos de infração e diversos documentos jurídicos
               </CardDescription>
             </CardContent>
           </Card>
@@ -82,7 +82,7 @@ const Index = () => {
             </CardHeader>
             <CardContent>
               <CardDescription>
-                Receba notificações sobre novas normas e resoluções ambientais
+                Receba notificações sobre novas normas e resoluções legais
               </CardDescription>
             </CardContent>
           </Card>

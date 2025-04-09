@@ -1,3 +1,4 @@
+
 import { getApiKey } from './apiKeyService';
 
 export interface SearchResult {
@@ -13,7 +14,7 @@ export interface SearchResult {
 
 // Função para construir os prompts para a API OpenAI
 const buildPrompt = (query: string, isAdvanced: boolean = false) => {
-  const basePrompt = `Atue como um advogado especialista em direito ambiental brasileiro, pesquisando jurisprudência relevante.
+  const basePrompt = `Atue como um advogado especialista em direito brasileiro, pesquisando jurisprudência relevante.
   
   Baseado na consulta do usuário: "${query}"
   
@@ -31,7 +32,7 @@ const buildPrompt = (query: string, isAdvanced: boolean = false) => {
     }
   ]
   
-  Lembre-se de focar em direito ambiental e retornar apenas casos reais da jurisprudência brasileira. Não invente dados.`;
+  Lembre-se de focar na área do direito relevante para a consulta e retornar apenas casos reais da jurisprudência brasileira. Não invente dados.`;
 
   return isAdvanced 
     ? `${basePrompt}\n\nEsta é uma busca avançada, então por favor seja mais específico quanto aos resultados e considere especialmente os seguintes aspectos: ${query}` 

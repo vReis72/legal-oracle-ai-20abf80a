@@ -46,7 +46,7 @@ export const processDocument = async (
 
     // Criar um prompt mais simples para reduzir o tempo de processamento
     const prompt = `
-      Analise este documento ambiental do tipo ${fileType} chamado "${fileName}" e forneça:
+      Analise este documento jurídico do tipo ${fileType} chamado "${fileName}" e forneça:
       
       1. Um resumo em até 300 caracteres
       2. 3 trechos relevantes do documento, indicando sua importância (alta, média ou baixa)
@@ -146,7 +146,7 @@ export const processDocument = async (
   } catch (error) {
     console.error('Erro ao processar documento:', error);
     
-    if (error.name === 'AbortError') {
+    if ((error as Error).name === 'AbortError') {
       console.log('Requisição abortada por timeout');
     }
     
@@ -180,7 +180,7 @@ export const determineDocumentType = (fileName: string): 'parecer' | 'auto-de-in
   } else if (
     lowerName.includes('licença') || 
     lowerName.includes('licenca') || 
-    lowerName.includes('ambiental')
+    lowerName.includes('legal')
   ) {
     return 'licenca';
   }

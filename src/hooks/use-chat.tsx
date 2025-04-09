@@ -9,7 +9,7 @@ export const useChat = () => {
     {
       id: '1',
       role: 'assistant',
-      content: 'Olá! Sou o assistente especializado em direito ambiental. Como posso ajudar você hoje?',
+      content: 'Olá! Sou o assistente especializado em direito. Como posso ajudar você hoje?',
       timestamp: new Date()
     }
   ]);
@@ -55,7 +55,7 @@ export const useChat = () => {
         {
           id: 'system',
           role: 'system',
-          content: 'Você é um assistente especializado em direito ambiental brasileiro. Forneça respostas precisas e concisas sobre legislação ambiental, jurisprudência e consultas relacionadas ao direito ambiental. Cite leis, decisões judiciais e documentos pertinentes quando possível.',
+          content: 'Você é um assistente especializado em direito brasileiro. Forneça respostas precisas e concisas sobre legislação, jurisprudência e consultas relacionadas ao direito. Cite leis, decisões judiciais e documentos pertinentes quando possível.',
           timestamp: new Date()
         },
         ...messages.slice(-6), // Include last 6 messages for context

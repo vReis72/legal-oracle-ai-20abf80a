@@ -13,9 +13,9 @@ const mockSearchResults: SearchResult[] = [
     processo: 'REsp 1.454.281/MG',
     relator: 'Min. Herman Benjamin',
     data: '2023-09-15',
-    ementa: 'DIREITO AMBIENTAL. RESPONSABILIDADE CIVIL OBJETIVA POR DANO AMBIENTAL. NEXO DE CAUSALIDADE. A responsabilidade civil por dano ambiental é objetiva, informada pela teoria do risco integral, sendo o nexo de causalidade o fator aglutinante que permite que o risco se integre na unidade do ato, sendo descabida a invocação, pela empresa responsável pelo dano ambiental, de excludentes de responsabilidade civil para afastar sua obrigação de indenizar.',
+    ementa: 'DIREITO CIVIL. RESPONSABILIDADE CIVIL OBJETIVA POR DANO. NEXO DE CAUSALIDADE. A responsabilidade civil por dano é objetiva, informada pela teoria do risco integral, sendo o nexo de causalidade o fator aglutinante que permite que o risco se integre na unidade do ato, sendo descabida a invocação, pela empresa responsável pelo dano, de excludentes de responsabilidade civil para afastar sua obrigação de indenizar.',
     relevancia: 95,
-    tags: ['responsabilidade objetiva', 'dano ambiental', 'nexo causal']
+    tags: ['responsabilidade objetiva', 'dano', 'nexo causal']
   },
   {
     id: '2',
@@ -23,7 +23,7 @@ const mockSearchResults: SearchResult[] = [
     processo: 'RE 654.833/AC',
     relator: 'Min. Alexandre de Moraes',
     data: '2022-04-20',
-    ementa: 'CONSTITUCIONAL. DIREITO AMBIENTAL. DANOS AMBIENTAIS. IMPRESCRITIBILIDADE. É imprescritível a pretensão de reparação civil de dano ambiental. A Constituição, ao incluir entre os princípios da ordem econômica a defesa do meio ambiente (art. 170, VI), atribuiu ao bem jurídico relevante valor e impôs a atuação dos órgãos do Estado, bem como da coletividade.',
+    ementa: 'CONSTITUCIONAL. DIREITO CIVIL. DANOS. IMPRESCRITIBILIDADE. É imprescritível a pretensão de reparação civil de dano. A Constituição atribuiu ao bem jurídico relevante valor e impôs a atuação dos órgãos do Estado, bem como da coletividade.',
     relevancia: 87,
     tags: ['imprescritibilidade', 'reparação civil', 'constitucional']
   },
@@ -33,9 +33,9 @@ const mockSearchResults: SearchResult[] = [
     processo: 'ApCiv 5002685-22.2016.4.04.7005/PR',
     relator: 'Des. Fed. Cândido Alfredo',
     data: '2021-11-10',
-    ementa: 'DIREITO AMBIENTAL E PROCESSUAL CIVIL. AÇÃO CIVIL PÚBLICA. ÁREA DE PRESERVAÇÃO PERMANENTE. RESPONSABILIDADE DO ADQUIRENTE. OBRIGAÇÃO PROPTER REM. A obrigação de reparar e indenizar danos ambientais adere à propriedade, como obrigação propter rem, sendo possível cobrar do proprietário atual a reparação dos danos, mesmo que não tenha sido ele o causador.',
+    ementa: 'DIREITO PROCESSUAL CIVIL. AÇÃO CIVIL PÚBLICA. RESPONSABILIDADE DO ADQUIRENTE. OBRIGAÇÃO PROPTER REM. A obrigação de reparar e indenizar danos adere à propriedade, como obrigação propter rem, sendo possível cobrar do proprietário atual a reparação dos danos, mesmo que não tenha sido ele o causador.',
     relevancia: 82,
-    tags: ['APP', 'obrigação propter rem', 'ação civil pública']
+    tags: ['obrigação propter rem', 'ação civil pública']
   },
   {
     id: '4',
@@ -43,9 +43,9 @@ const mockSearchResults: SearchResult[] = [
     processo: 'REsp 1.198.727/MG',
     relator: 'Min. Herman Benjamin',
     data: '2022-02-05',
-    ementa: 'ADMINISTRATIVO. AMBIENTAL. AÇÃO CIVIL PÚBLICA. DESMATAMENTO. DANOS CAUSADOS AO MEIO AMBIENTE. PRINCÍPIO DO POLUIDOR-PAGADOR. RESPONSABILIDADE OBJETIVA. OBRIGAÇÃO PROPTER REM. IMPRESCRITIBILIDADE. No direito brasileiro é atribuído ao poluidor obrigação de recuperar e/ou indenizar os danos causados, independentemente da análise de culpa e do fato de ter havido licenciamento pelo órgão ambiental.',
+    ementa: 'ADMINISTRATIVO. AÇÃO CIVIL PÚBLICA. DANOS CAUSADOS. PRINCÍPIO DO POLUIDOR-PAGADOR. RESPONSABILIDADE OBJETIVA. OBRIGAÇÃO PROPTER REM. IMPRESCRITIBILIDADE. No direito brasileiro é atribuído ao causador obrigação de recuperar e/ou indenizar os danos causados, independentemente da análise de culpa e do fato de ter havido licenciamento pelo órgão competente.',
     relevancia: 78,
-    tags: ['desmatamento', 'poluidor-pagador', 'licenciamento ambiental']
+    tags: ['princípio do poluidor-pagador', 'licenciamento']
   }
 ];
 
