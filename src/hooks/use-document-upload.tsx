@@ -75,7 +75,7 @@ export const useDocumentUpload = (
         const fileContent = await readFileContent(file);
         
         // Processar o documento com timeout limitado
-        const timeoutPromise = createTimeoutPromise(25000);
+        const timeoutPromise = createTimeoutPromise(45000); // Aumentado para 45 segundos
         
         const analysisPromise = processDocument(fileContent, file.name, documentType);
         
@@ -93,7 +93,7 @@ export const useDocumentUpload = (
             
             // Retorna uma análise parcial
             return {
-              summary: "O processamento excedeu o tempo limite. Tente um documento menor.",
+              summary: "O processamento excedeu o tempo limite. Tente um documento menor ou em formato texto puro (.txt).",
               highlights: [],
               keyPoints: [{ 
                 title: "Processamento interrompido", 

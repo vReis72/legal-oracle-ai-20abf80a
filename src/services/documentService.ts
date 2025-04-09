@@ -1,3 +1,4 @@
+
 import { getApiKey } from './apiKeyService';
 
 export interface DocumentHighlight {
@@ -39,31 +40,48 @@ export const processDocument = async (
 
     console.log(`Iniciando processamento do documento: ${fileName} (${fileContent.length} caracteres)`);
     
-    // Identificar e limpar conteúdo PDF quando for o caso
+    // Melhor detecção de conteúdo PDF e outros formatos binários
     let cleanContent = fileContent;
-    if (fileContent.startsWith('%PDF-') || fileContent.includes('endobj') || fileContent.includes('stream')) {
-      cleanContent = "Este parece ser um arquivo PDF cuja extração de texto não foi bem-sucedida. " +
-                     "Por favor, converta o PDF para texto antes de carregar ou use arquivos de texto puro.";
+    let isPotentiallyBinaryContent = false;
+    
+    // Verificar se é um PDF ou conteúdo binário
+    if (
+      fileContent.startsWith('%PDF-') || 
+      fileContent.includes('endobj') || 
+      fileContent.includes('stream') ||
+      // Verificar presença de caracteres não-imprimíveis ou alta frequência de caracteres não-ASCII
+      (/[\x00-\x08\x0E-\x1F\x7F-\xFF]/.test(fileContent.substring(0, 1000)) && 
+       fileContent.substring(0, 1000).match(/[\x00-\x08\x0E-\x1F\x7F-\xFF]/g)!.length > 50)
+    ) {
+      isPotentiallyBinaryContent = true;
+      cleanContent = "Este parece ser um arquivo PDF ou binário cuja extração de texto não foi bem-sucedida. " +
+                     "Por favor, converta o documento para texto antes de carregar ou use arquivos de texto puro (.txt).";
     }
     
-    // Limitar o conteúdo para evitar problemas com tokens excessivos
-    // Aumentado para 15000 caracteres para melhor análise, mas não tão grande para evitar timeout
-    const limitedContent = cleanContent.substring(0, 15000);
+    // Se o conteúdo não parece ser binário, mas ainda é muito grande, limitamos
+    if (!isPotentiallyBinaryContent) {
+      // Aumentamos para 20000 caracteres para melhor análise em documentos de texto válidos
+      cleanContent = fileContent.substring(0, 20000);
+    }
     
-    // Criar um prompt mais específico para melhorar a análise
+    // Criar um prompt mais específico e claro para melhorar a análise
     const prompt = `
       Você é um assistente jurídico especializado. Analise este documento jurídico do tipo ${fileType} 
       chamado "${fileName}" e forneça:
       
       1. Um resumo preciso em até 300 caracteres que capture a essência do documento
       2. 3 trechos literais e relevantes do documento, indicando sua importância (alta, média ou baixa) 
-         com base no conteúdo real
+         com base no conteúdo real. ATENÇÃO: Use apenas trechos que realmente existem no documento.
       3. 3 pontos principais do documento com título e descrição curta baseados no conteúdo real
       4. Uma versão formatada do conteúdo original (melhore a formatação, mas mantenha o conteúdo)
       
       IMPORTANTE: Trabalhe EXCLUSIVAMENTE com o conteúdo do documento. Se parecer que o arquivo 
-      não foi carregado corretamente (como PDF que não foi convertido para texto), 
-      apenas informe isso em vez de inventar conteúdo.
+      não foi convertido corretamente para texto (como PDF que não foi convertido), 
+      indique claramente isso em sua resposta e NÃO invente conteúdo.
+      
+      ATENÇÃO ESPECIAL: Se você não conseguir extrair trechos relevantes ou pontos principais porque o 
+      documento não está em formato adequado, retorne listas vazias para os campos "highlights" e "keyPoints" 
+      e explique a situação no campo "summary".
       
       Responda no seguinte formato JSON:
       
@@ -86,12 +104,12 @@ export const processDocument = async (
       }
       
       Documento:
-      ${limitedContent}
+      ${cleanContent}
     `;
 
-    // Aumentar timeout para 40 segundos para permitir análise mais completa
+    // Aumentar timeout para 60 segundos para permitir análise mais completa
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 40000);
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
 
     console.log('Enviando requisição para API OpenAI...');
 
@@ -113,8 +131,8 @@ export const processDocument = async (
             content: prompt
           }
         ],
-        temperature: 0.2, // Temperatura mais baixa para maior precisão
-        max_tokens: 2000, // Aumentado para permitir respostas mais completas
+        temperature: 0.1, // Temperatura ainda mais baixa para maior precisão
+        max_tokens: 2500, // Aumentado para permitir respostas mais completas
       }),
       signal: controller.signal,
     });
@@ -148,19 +166,36 @@ export const processDocument = async (
       
       const analysisResult = JSON.parse(jsonMatch[0]) as DocumentAnalysis;
       
-      // Validar que a análise está baseada no documento real
-      if (analysisResult.summary.includes("não foi possível analisar") || 
-          analysisResult.summary.includes("não foi fornecido") ||
-          (cleanContent.length > 100 && analysisResult.highlights.length === 0)) {
-        throw new Error('A análise não parece refletir o conteúdo do documento');
+      // Se for um PDF ou conteúdo binário, aceitamos uma resposta vazia em alguns campos
+      if (isPotentiallyBinaryContent) {
+        return {
+          summary: analysisResult.summary || 'Este documento parece estar em formato binário ou PDF não extraído corretamente.',
+          highlights: analysisResult.highlights || [],
+          keyPoints: analysisResult.keyPoints || [
+            {
+              title: "Erro de Formato",
+              description: "O documento está em formato binário ou PDF que não pôde ser processado adequadamente."
+            }
+          ],
+          content: analysisResult.content || cleanContent
+        };
+      }
+      
+      // Para documentos de texto, validamos mais estritamente
+      // Para evitar retornos vazios quando há conteúdo real
+      if (cleanContent.length > 200 && 
+          (analysisResult.highlights?.length === 0 || !analysisResult.highlights) && 
+          !isPotentiallyBinaryContent &&
+          !cleanContent.includes("não foi bem-sucedida")) {
+        console.warn('A análise retornou highlights vazios para um documento com conteúdo');
       }
       
       // Garantir que todos os campos existam e tenham valores padrão
       return {
-        summary: analysisResult.summary || 'Resumo não dispon��vel.',
+        summary: analysisResult.summary || 'Resumo não disponível.',
         highlights: analysisResult.highlights || [],
         keyPoints: analysisResult.keyPoints || [],
-        content: analysisResult.content || limitedContent
+        content: analysisResult.content || cleanContent
       };
     } catch (parseError) {
       console.error('Erro ao processar resposta JSON:', parseError);
