@@ -1,18 +1,14 @@
 import React, { useState } from 'react';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, BookOpen, Filter, Calendar, GanttChart, Building, ArrowUpDown, Loader2, AlertTriangle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { SearchResult, searchJurisprudencia } from '@/services/openaiService';
 import OpenAIKeyInput from './OpenAIKeyInput';
+import SimpleSearchForm from './SimpleSearchForm';
+import AdvancedSearchForm from './AdvancedSearchForm';
+import SearchResults from './SearchResults';
+import ErrorMessage from './ErrorMessage';
 
-// Mock data para caso de fallback
+// Mock data for fallback
 const mockSearchResults: SearchResult[] = [
   {
     id: '1',
@@ -56,7 +52,7 @@ const mockSearchResults: SearchResult[] = [
   }
 ];
 
-const JurisprudenciaSearch = () => {
+const JurisprudenciaSearch: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [advancedQuery, setAdvancedQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -93,7 +89,7 @@ const JurisprudenciaSearch = () => {
       console.error('Erro na busca:', error);
       setError((error as Error).message || 'Erro ao realizar a busca');
       
-      // Usar mock data como fallback
+      // Use mock data as fallback
       setResults(mockSearchResults);
       setHasSearched(true);
       
@@ -129,7 +125,7 @@ const JurisprudenciaSearch = () => {
       console.error('Erro na busca avançada:', error);
       setError((error as Error).message || 'Erro ao realizar a busca avançada');
       
-      // Usar mock data filtrada como fallback
+      // Use filtered mock data as fallback
       const queryWords = advancedQuery.toLowerCase().split(' ');
       const filtered = mockSearchResults.filter(result => 
         queryWords.some(word => 
@@ -174,207 +170,35 @@ const JurisprudenciaSearch = () => {
         </TabsList>
         
         <TabsContent value="simples">
-          <div className="space-y-4">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle>Busca Semântica de Jurisprudência</CardTitle>
-                <CardDescription>
-                  Pesquise utilizando linguagem natural para encontrar precedentes relevantes
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSimpleSearch} className="space-y-2">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Ex: responsabilidade por dano em APP causado por proprietário anterior"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                    <Button 
-                      type="submit" 
-                      className="bg-eco-primary hover:bg-eco-dark"
-                      disabled={!searchQuery.trim() || isLoading || !apiKey}
-                    >
-                      {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
-                      Buscar
-                    </Button>
-                  </div>
-                  
-                  {!apiKey && (
-                    <div className="text-sm text-amber-600 flex items-center mt-2">
-                      <AlertTriangle className="h-4 w-4 mr-1" />
-                      Configure sua chave API para realizar buscas semânticas
-                    </div>
-                  )}
-                </form>
-              </CardContent>
-            </Card>
-          </div>
+          <SimpleSearchForm 
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            handleSimpleSearch={handleSimpleSearch}
+            isLoading={isLoading}
+            apiKey={apiKey}
+          />
         </TabsContent>
         
         <TabsContent value="avancada">
-          <Card>
-            <CardHeader>
-              <CardTitle>Busca Avançada</CardTitle>
-              <CardDescription>
-                Utilize parâmetros específicos para refinar sua pesquisa
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleAdvancedSearch} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Palavras-chave</label>
-                    <Textarea 
-                      placeholder="Termos de busca separados por espaço"
-                      value={advancedQuery}
-                      onChange={(e) => setAdvancedQuery(e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium">Tribunal</label>
-                      <Select defaultValue="todos">
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o tribunal" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="todos">Todos os tribunais</SelectItem>
-                          <SelectItem value="stf">STF</SelectItem>
-                          <SelectItem value="stj">STJ</SelectItem>
-                          <SelectItem value="trf1">TRF-1</SelectItem>
-                          <SelectItem value="trf4">TRF-4</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="text-sm font-medium">Data Inicial</label>
-                        <Input type="date" className="w-full" />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium">Data Final</label>
-                        <Input type="date" className="w-full" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <Button 
-                  type="submit" 
-                  className="w-full bg-eco-secondary hover:bg-eco-dark"
-                  disabled={!advancedQuery.trim() || isLoading || !apiKey}
-                >
-                  {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Filter className="h-4 w-4 mr-2" />}
-                  Pesquisar
-                </Button>
-                
-                {!apiKey && (
-                  <div className="text-sm text-amber-600 flex items-center">
-                    <AlertTriangle className="h-4 w-4 mr-1" />
-                    Configure sua chave API para realizar buscas semânticas
-                  </div>
-                )}
-              </form>
-            </CardContent>
-          </Card>
+          <AdvancedSearchForm 
+            advancedQuery={advancedQuery}
+            setAdvancedQuery={setAdvancedQuery}
+            handleAdvancedSearch={handleAdvancedSearch}
+            isLoading={isLoading}
+            apiKey={apiKey}
+          />
         </TabsContent>
       </Tabs>
 
-      {error && (
-        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
-          <div className="flex items-center text-red-800">
-            <AlertTriangle className="h-4 w-4 mr-2" />
-            <p className="font-medium">Erro na consulta</p>
-          </div>
-          <p className="text-sm text-red-700 mt-1">{error}</p>
-        </div>
-      )}
+      <ErrorMessage error={error} />
 
       {hasSearched && (
-        <div className="mt-6 flex-grow">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-serif text-lg">
-              Resultados da busca
-              <span className="ml-2 text-sm font-sans text-muted-foreground">
-                ({results.length} encontrados)
-              </span>
-            </h3>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={sortByRelevance}
-                className="flex items-center"
-              >
-                <GanttChart className="h-4 w-4 mr-1" />
-                <span className="text-xs">Relevância</span>
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={sortByDate}
-                className="flex items-center"
-              >
-                <Calendar className="h-4 w-4 mr-1" />
-                <span className="text-xs">Data</span>
-              </Button>
-            </div>
-          </div>
-
-          <ScrollArea className="h-[calc(100vh-26rem)] pr-4">
-            {results.length > 0 ? (
-              <div className="space-y-4">
-                {results.map(result => (
-                  <Card key={result.id} className="border-l-4 hover:shadow-md transition-all" style={{borderLeftColor: `rgb(45 106 79 / ${result.relevancia/100})`}}>
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between">
-                        <div className="flex items-center">
-                          <Building className="h-4 w-4 mr-2 text-eco-primary" />
-                          <span className="font-medium">{result.tribunal}</span>
-                          <span className="mx-2 text-muted-foreground">|</span>
-                          <span>{result.processo}</span>
-                        </div>
-                        <Badge variant="outline" className="bg-eco-light">
-                          {result.relevancia}% relevante
-                        </Badge>
-                      </div>
-                      <div className="text-sm text-muted-foreground flex items-center">
-                        <Calendar className="h-3 w-3 mr-1" /> 
-                        {new Date(result.data).toLocaleDateString('pt-BR')}
-                        <span className="mx-2">•</span>
-                        Rel. {result.relator}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <p className="text-sm leading-relaxed">{result.ementa}</p>
-                      <div className="mt-3 flex flex-wrap gap-1">
-                        {result.tags.map(tag => (
-                          <Badge key={tag} variant="secondary" className="bg-eco-muted text-eco-dark">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    </CardContent>
-                    <CardFooter className="pt-2 flex justify-end">
-                      <Button variant="ghost" size="sm" className="text-eco-secondary hover:text-eco-dark hover:bg-eco-muted">
-                        <BookOpen className="h-4 w-4 mr-1" />
-                        Ver íntegra
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-40">
-                <p className="text-muted-foreground">Nenhum resultado encontrado.</p>
-                <p className="text-sm">Tente refinar sua busca com outros termos.</p>
-              </div>
-            )}
-          </ScrollArea>
-        </div>
+        <SearchResults 
+          results={results}
+          hasSearched={hasSearched}
+          sortByRelevance={sortByRelevance}
+          sortByDate={sortByDate}
+        />
       )}
     </div>
   );
