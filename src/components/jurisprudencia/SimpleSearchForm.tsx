@@ -10,7 +10,7 @@ interface SimpleSearchFormProps {
   setSearchQuery: (query: string) => void;
   handleSimpleSearch: (e: React.FormEvent) => Promise<void>;
   isLoading: boolean;
-  apiKey: string | null;
+  isKeyConfigured: boolean;
 }
 
 const SimpleSearchForm: React.FC<SimpleSearchFormProps> = ({
@@ -18,7 +18,7 @@ const SimpleSearchForm: React.FC<SimpleSearchFormProps> = ({
   setSearchQuery,
   handleSimpleSearch,
   isLoading,
-  apiKey,
+  isKeyConfigured,
 }) => {
   return (
     <div className="space-y-4">
@@ -40,14 +40,14 @@ const SimpleSearchForm: React.FC<SimpleSearchFormProps> = ({
               <Button 
                 type="submit" 
                 className="bg-eco-primary hover:bg-eco-dark"
-                disabled={!searchQuery.trim() || isLoading || !apiKey}
+                disabled={!searchQuery.trim() || isLoading || !isKeyConfigured}
               >
                 {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
                 Buscar
               </Button>
             </div>
             
-            {!apiKey && (
+            {!isKeyConfigured && (
               <div className="text-sm text-amber-600 flex items-center mt-2">
                 <AlertTriangle className="h-4 w-4 mr-1" />
                 Configure sua chave API para realizar buscas semânticas

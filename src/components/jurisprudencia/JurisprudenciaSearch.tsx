@@ -6,11 +6,9 @@ import AdvancedSearchForm from './AdvancedSearchForm';
 import SearchResults from './SearchResults';
 import ErrorMessage from './ErrorMessage';
 import OpenAIKeyInput from '@/components/shared/OpenAIKeyInput';
-import { useApiKey } from '@/context/ApiKeyContext';
 import { useJurisprudencia } from '@/hooks/use-jurisprudencia';
 
 const JurisprudenciaSearch: React.FC = () => {
-  const { setApiKey, isKeyConfigured } = useApiKey();
   const {
     searchQuery,
     setSearchQuery,
@@ -21,6 +19,7 @@ const JurisprudenciaSearch: React.FC = () => {
     hasSearched,
     error,
     apiKey,
+    isKeyConfigured,
     handleSimpleSearch,
     handleAdvancedSearch,
     handleSortByRelevance,
@@ -29,7 +28,7 @@ const JurisprudenciaSearch: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full">
-      <OpenAIKeyInput onKeySubmit={setApiKey} forceOpen={!isKeyConfigured} />
+      <OpenAIKeyInput forceOpen={!isKeyConfigured} />
       
       <Tabs defaultValue="simples" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
@@ -43,7 +42,7 @@ const JurisprudenciaSearch: React.FC = () => {
             setSearchQuery={setSearchQuery}
             handleSimpleSearch={handleSimpleSearch}
             isLoading={isLoading}
-            apiKey={apiKey}
+            isKeyConfigured={isKeyConfigured}
           />
         </TabsContent>
         
@@ -53,7 +52,7 @@ const JurisprudenciaSearch: React.FC = () => {
             setAdvancedQuery={setAdvancedQuery}
             handleAdvancedSearch={handleAdvancedSearch}
             isLoading={isLoading}
-            apiKey={apiKey}
+            isKeyConfigured={isKeyConfigured}
           />
         </TabsContent>
       </Tabs>

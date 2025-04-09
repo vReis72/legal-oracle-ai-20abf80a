@@ -12,7 +12,7 @@ interface AdvancedSearchFormProps {
   setAdvancedQuery: (query: string) => void;
   handleAdvancedSearch: (e: React.FormEvent) => Promise<void>;
   isLoading: boolean;
-  apiKey: string | null;
+  isKeyConfigured: boolean;
 }
 
 const AdvancedSearchForm: React.FC<AdvancedSearchFormProps> = ({
@@ -20,7 +20,7 @@ const AdvancedSearchForm: React.FC<AdvancedSearchFormProps> = ({
   setAdvancedQuery,
   handleAdvancedSearch,
   isLoading,
-  apiKey,
+  isKeyConfigured,
 }) => {
   return (
     <Card>
@@ -75,13 +75,13 @@ const AdvancedSearchForm: React.FC<AdvancedSearchFormProps> = ({
           <Button 
             type="submit" 
             className="w-full bg-eco-secondary hover:bg-eco-dark"
-            disabled={!advancedQuery.trim() || isLoading || !apiKey}
+            disabled={!advancedQuery.trim() || isLoading || !isKeyConfigured}
           >
             {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Filter className="h-4 w-4 mr-2" />}
             Pesquisar
           </Button>
           
-          {!apiKey && (
+          {!isKeyConfigured && (
             <div className="text-sm text-amber-600 flex items-center">
               <AlertTriangle className="h-4 w-4 mr-1" />
               Configure sua chave API para realizar buscas semânticas

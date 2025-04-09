@@ -57,7 +57,7 @@ export const useJurisprudencia = () => {
   const [hasSearched, setHasSearched] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-  const { apiKey } = useApiKey();
+  const { apiKey, isKeyConfigured } = useApiKey();
 
   const handleSimpleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,7 +65,7 @@ export const useJurisprudencia = () => {
     setError(null);
     
     try {
-      if (!apiKey) {
+      if (!apiKey || !isKeyConfigured) {
         throw new Error('API Key não configurada');
       }
 
@@ -81,7 +81,7 @@ export const useJurisprudencia = () => {
       console.error('Erro na busca:', error);
       setError((error as Error).message || 'Erro ao realizar a busca');
       
-      // Use mock data as fallback
+      // Usar dados mock como fallback
       setResults(mockSearchResults);
       setHasSearched(true);
       
@@ -101,7 +101,7 @@ export const useJurisprudencia = () => {
     setError(null);
     
     try {
-      if (!apiKey) {
+      if (!apiKey || !isKeyConfigured) {
         throw new Error('API Key não configurada');
       }
 
@@ -117,7 +117,7 @@ export const useJurisprudencia = () => {
       console.error('Erro na busca avançada:', error);
       setError((error as Error).message || 'Erro ao realizar a busca avançada');
       
-      // Use filtered mock data as fallback
+      // Usar dados filtrados mock como fallback
       const queryWords = advancedQuery.toLowerCase().split(' ');
       const filtered = mockSearchResults.filter(result => 
         queryWords.some(word => 
@@ -157,6 +157,7 @@ export const useJurisprudencia = () => {
     hasSearched,
     error,
     apiKey,
+    isKeyConfigured,
     handleSimpleSearch,
     handleAdvancedSearch,
     handleSortByRelevance,
