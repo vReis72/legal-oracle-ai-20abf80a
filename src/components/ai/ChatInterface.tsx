@@ -3,18 +3,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, User, Bot, Loader2 } from 'lucide-react';
+import { Send, User, Bot, Loader2, RefreshCw, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-}
+import { ChatMessage, sendChatMessage } from '@/services/chatService';
+import { useToast } from '@/hooks/use-toast';
 
 const ChatInterface = () => {
-  const [messages, setMessages] = useState<Message[]>([
+  const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
       role: 'assistant',
@@ -24,17 +19,18 @@ const ChatInterface = () => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Mock responses for demo
-  const mockResponses = [
-    "De acordo com a jurisprudência do STJ em casos semelhantes, há uma tendência clara em reconhecer a responsabilidade objetiva em danos ambientais difusos. Veja o precedente do REsp 1.454.281/MG.",
-    "Analisei as resoluções recentes do CONAMA e identifiquei que a Resolução 500/2020 pode impactar diretamente seu caso, especialmente quanto aos parâmetros de licenciamento para a atividade mencionada.",
-    "Conforme a Lei da Política Nacional do Meio Ambiente e seus desdobramentos jurisprudenciais, posso sugerir que a estratégia mais adequada seria contestar o auto de infração com base na ausência de nexo causal direto.",
-    "Para elaborar uma impugnação eficaz neste caso, recomendo estruturar a peça em três eixos argumentativos: (1) vícios formais do auto de infração; (2) ausência de proporcionalidade na penalidade; e (3) apresentação de evidências técnicas sobre o real impacto ambiental.",
-  ];
+  const { toast } = useToast();
 
   useEffect(() => {
+    // Check if API key exists in localStorage
+    const savedKey = localStorage.getItem('openai_api_key');
+    if (savedKey) {
+      setApiKey(savedKey);
+    }
+    
     scrollToBottom();
   }, [messages]);
 
@@ -47,7 +43,7 @@ const ChatInterface = () => {
     if (!input.trim()) return;
     
     // Add user message
-    const userMessage: Message = {
+    const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
       content: input,
@@ -57,22 +53,51 @@ const ChatInterface = () => {
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
+    setError(null);
     
-    // Simulate API delay
-    setTimeout(() => {
-      // Select a random mock response
-      const responseIndex = Math.floor(Math.random() * mockResponses.length);
+    try {
+      if (!apiKey) {
+        throw new Error('API Key não configurada. Por favor, configure sua chave OpenAI na seção de Jurisprudência.');
+      }
       
-      const assistantMessage: Message = {
+      // Create array with system message and conversation history
+      const conversationHistory: ChatMessage[] = [
+        {
+          id: 'system',
+          role: 'system',
+          content: 'Você é um assistente especializado em direito ambiental brasileiro. Forneça respostas precisas e concisas sobre legislação ambiental, jurisprudência e consultas relacionadas ao direito ambiental. Cite leis, decisões judiciais e documentos pertinentes quando possível.',
+          timestamp: new Date()
+        },
+        ...messages.slice(-6), // Include last 6 messages for context
+        userMessage
+      ];
+      
+      const assistantResponse = await sendChatMessage(conversationHistory, apiKey);
+      
+      const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: mockResponses[responseIndex],
+        content: assistantResponse,
         timestamp: new Date()
       };
       
       setMessages(prev => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error('Erro ao enviar mensagem:', error);
+      setError((error as Error).message || 'Erro ao processar sua pergunta');
+      
+      toast({
+        variant: "destructive",
+        title: "Erro no Chat",
+        description: (error as Error).message,
+      });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
+  };
+
+  const handleRetry = () => {
+    setError(null);
   };
 
   return (
@@ -129,6 +154,28 @@ const ChatInterface = () => {
             </div>
           </div>
         )}
+        {error && (
+          <div className="flex justify-center mb-4">
+            <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 max-w-[90%]">
+              <div className="flex items-center mb-2">
+                <AlertTriangle className="h-4 w-4 mr-2 text-red-500" />
+                <span className="font-medium">Erro ao processar resposta</span>
+              </div>
+              <p className="text-sm mb-3">{error}</p>
+              <div className="flex justify-end">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleRetry}
+                  className="text-xs flex items-center"
+                >
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  Tentar novamente
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </ScrollArea>
       
@@ -143,13 +190,19 @@ const ChatInterface = () => {
           />
           <Button 
             type="submit" 
-            disabled={isLoading || !input.trim()} 
+            disabled={isLoading || !input.trim() || !apiKey} 
             size="icon"
             className="bg-eco-primary hover:bg-eco-dark"
           >
             <Send className="h-4 w-4" />
           </Button>
         </div>
+        {!apiKey && (
+          <p className="text-amber-600 text-xs mt-2 flex items-center">
+            <AlertTriangle className="h-3 w-3 mr-1" />
+            Configure sua chave API OpenAI na seção "Jurisprudência" para usar o chat
+          </p>
+        )}
       </form>
     </div>
   );
