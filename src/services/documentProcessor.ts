@@ -1,6 +1,6 @@
 
 import { DocumentAnalysis, DocumentType } from './documentTypes';
-import { cleanDocumentContent } from './documentUtils';
+import { cleanDocumentContent } from './documentContentCleaner';
 import { createPdfAnalysisPrompt, createDocumentAnalysisPrompt } from './documentPrompts';
 import { analyzeDocumentWithAI } from './documentAnalysisApi';
 import { createPdfErrorAnalysis, createGenericErrorAnalysis } from './documentErrorHandler';
