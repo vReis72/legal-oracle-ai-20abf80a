@@ -56,20 +56,21 @@ export const useDocumentUpload = (
       
       const uploadInterval = simulateUpload();
       
+      // Criar novo documento fora do try-catch para que esteja disponível no escopo do catch
+      const documentType = determineDocumentType(file.name);
+      const newDocument: Document = {
+        id: Date.now().toString(),
+        name: file.name,
+        type: documentType,
+        uploadDate: new Date(),
+        processed: false
+      };
+      
+      // Adicionar documento à lista imediatamente
+      setDocuments(prev => [newDocument, ...prev]);
+      setSelectedDocument(newDocument);
+      
       try {
-        // Criar novo documento
-        const documentType = determineDocumentType(file.name);
-        const newDocument: Document = {
-          id: Date.now().toString(),
-          name: file.name,
-          type: documentType,
-          uploadDate: new Date(),
-          processed: false
-        };
-        
-        setDocuments(prev => [newDocument, ...prev]);
-        setSelectedDocument(newDocument);
-        
         // Ler o conteúdo do arquivo
         const fileContent = await readFileContent(file);
         
@@ -142,10 +143,8 @@ export const useDocumentUpload = (
             : "Ocorreu um erro inesperado durante o processamento.",
         });
         
-        // Atualizar documento com status de erro
-        setDocuments(prev => prev.filter(doc => 
-          doc.id !== newDocument.id // Remove o documento que falhou
-        ));
+        // Remover o documento que falhou
+        setDocuments(prev => prev.filter(doc => doc.id !== newDocument.id));
         
         setUploading(false);
         setUploadProgress(0);
