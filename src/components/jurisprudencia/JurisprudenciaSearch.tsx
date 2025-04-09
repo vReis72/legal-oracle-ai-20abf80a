@@ -8,20 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, BookOpen, Filter, Calendar, GanttChart, Building, ArrowUpDown, Loader2 } from 'lucide-react';
+import { Search, BookOpen, Filter, Calendar, GanttChart, Building, ArrowUpDown, Loader2, AlertTriangle } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast";
+import { SearchResult, searchJurisprudencia } from '@/services/perplexityService';
+import PerplexityKeyInput from './PerplexityKeyInput';
 
-interface SearchResult {
-  id: string;
-  tribunal: string;
-  processo: string;
-  relator: string;
-  data: string;
-  ementa: string;
-  relevancia: number;
-  tags: string[];
-}
-
-// Mock data for demonstration
+// Mock data para caso de fallback
 const mockSearchResults: SearchResult[] = [
   {
     id: '1',
@@ -71,26 +63,74 @@ const JurisprudenciaSearch = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
-  const handleSimpleSearch = (e: React.FormEvent) => {
+  const handleApiKeySubmit = (key: string) => {
+    setApiKey(key);
+    setError(null);
+  };
+
+  const handleSimpleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
     
-    // Simulate API call
-    setTimeout(() => {
-      setResults(mockSearchResults);
-      setIsLoading(false);
+    try {
+      if (!apiKey) {
+        throw new Error('API Key não configurada');
+      }
+
+      const searchResults = await searchJurisprudencia(searchQuery, apiKey);
+      setResults(searchResults);
       setHasSearched(true);
-    }, 1500);
+      
+      toast({
+        title: "Busca concluída",
+        description: `${searchResults.length} resultados encontrados.`,
+      });
+    } catch (error) {
+      console.error('Erro na busca:', error);
+      setError((error as Error).message || 'Erro ao realizar a busca');
+      
+      // Usar mock data como fallback
+      setResults(mockSearchResults);
+      setHasSearched(true);
+      
+      toast({
+        variant: "destructive",
+        title: "Erro na busca",
+        description: `Usando resultados de demonstração. ${(error as Error).message}`,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
   
-  const handleAdvancedSearch = (e: React.FormEvent) => {
+  const handleAdvancedSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
     
-    // Simulate API call with filtering
-    setTimeout(() => {
-      // For demo, just filter results that contain any word from the advanced query
+    try {
+      if (!apiKey) {
+        throw new Error('API Key não configurada');
+      }
+
+      const searchResults = await searchJurisprudencia(advancedQuery, apiKey, true);
+      setResults(searchResults);
+      setHasSearched(true);
+      
+      toast({
+        title: "Busca avançada concluída",
+        description: `${searchResults.length} resultados encontrados.`,
+      });
+    } catch (error) {
+      console.error('Erro na busca avançada:', error);
+      setError((error as Error).message || 'Erro ao realizar a busca avançada');
+      
+      // Usar mock data filtrada como fallback
       const queryWords = advancedQuery.toLowerCase().split(' ');
       const filtered = mockSearchResults.filter(result => 
         queryWords.some(word => 
@@ -100,9 +140,16 @@ const JurisprudenciaSearch = () => {
       );
       
       setResults(filtered.length > 0 ? filtered : mockSearchResults);
-      setIsLoading(false);
       setHasSearched(true);
-    }, 1500);
+      
+      toast({
+        variant: "destructive",
+        title: "Erro na busca avançada",
+        description: `Usando resultados de demonstração. ${(error as Error).message}`,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const sortByRelevance = () => {
@@ -119,6 +166,8 @@ const JurisprudenciaSearch = () => {
 
   return (
     <div className="flex flex-col h-full">
+      <PerplexityKeyInput onKeySubmit={handleApiKeySubmit} />
+      
       <Tabs defaultValue="simples" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="simples">Busca Simples</TabsTrigger>
@@ -145,12 +194,19 @@ const JurisprudenciaSearch = () => {
                     <Button 
                       type="submit" 
                       className="bg-eco-primary hover:bg-eco-dark"
-                      disabled={!searchQuery.trim() || isLoading}
+                      disabled={!searchQuery.trim() || isLoading || !apiKey}
                     >
                       {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
                       Buscar
                     </Button>
                   </div>
+                  
+                  {!apiKey && (
+                    <div className="text-sm text-amber-600 flex items-center mt-2">
+                      <AlertTriangle className="h-4 w-4 mr-1" />
+                      Configure sua chave API para realizar buscas semânticas
+                    </div>
+                  )}
                 </form>
               </CardContent>
             </Card>
@@ -210,16 +266,33 @@ const JurisprudenciaSearch = () => {
                 <Button 
                   type="submit" 
                   className="w-full bg-eco-secondary hover:bg-eco-dark"
-                  disabled={!advancedQuery.trim() || isLoading}
+                  disabled={!advancedQuery.trim() || isLoading || !apiKey}
                 >
                   {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Filter className="h-4 w-4 mr-2" />}
                   Pesquisar
                 </Button>
+                
+                {!apiKey && (
+                  <div className="text-sm text-amber-600 flex items-center">
+                    <AlertTriangle className="h-4 w-4 mr-1" />
+                    Configure sua chave API para realizar buscas semânticas
+                  </div>
+                )}
               </form>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      {error && (
+        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
+          <div className="flex items-center text-red-800">
+            <AlertTriangle className="h-4 w-4 mr-2" />
+            <p className="font-medium">Erro na consulta</p>
+          </div>
+          <p className="text-sm text-red-700 mt-1">{error}</p>
+        </div>
+      )}
 
       {hasSearched && (
         <div className="mt-6 flex-grow">
