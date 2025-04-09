@@ -38,47 +38,50 @@ export const processDocument = async (
       throw new Error('API key não fornecida');
     }
 
+    console.log(`Iniciando processamento do documento: ${fileName} (${fileContent.length} caracteres)`);
+    
     // Limitar o conteúdo para evitar problemas com tokens excessivos
-    const limitedContent = fileContent.substring(0, 3000);
+    // Aumentado para 5000 caracteres para melhor análise
+    const limitedContent = fileContent.substring(0, 5000);
 
-    // Criar um prompt específico para análise de documentos ambientais
+    // Criar um prompt mais simples para reduzir o tempo de processamento
     const prompt = `
-      Você é um especialista em direito ambiental analisando um documento do tipo ${fileType} chamado "${fileName}". 
+      Analise este documento ambiental do tipo ${fileType} chamado "${fileName}" e forneça:
       
-      Analise o seguinte conteúdo e forneça:
+      1. Um resumo em até 300 caracteres
+      2. 3 trechos relevantes do documento, indicando sua importância (alta, média ou baixa)
+      3. 3 pontos principais do documento com título e descrição curta
+      4. Uma versão formatada do conteúdo original
       
-      1. Um resumo executivo em até 300 caracteres
-      2. Até 5 trechos relevantes do documento, indicando a importância de cada um (alta, média ou baixa)
-      3. Até 5 pontos principais do documento com título e descrição
-      4. Uma versão melhorada e bem formatada do conteúdo original
-      
-      Responda no seguinte formato JSON (e somente JSON):
+      Responda no seguinte formato JSON:
       
       {
-        "summary": "resumo executivo aqui",
+        "summary": "resumo aqui",
         "highlights": [
           {
-            "text": "trecho relevante aqui",
+            "text": "trecho relevante",
             "page": 1,
             "importance": "high|medium|low"
           }
         ],
         "keyPoints": [
           {
-            "title": "título do ponto principal",
-            "description": "descrição do ponto principal"
+            "title": "título",
+            "description": "descrição"
           }
         ],
-        "content": "conteúdo completo formatado"
+        "content": "conteúdo formatado"
       }
       
-      Documento para análise:
+      Documento:
       ${limitedContent}
     `;
 
-    // Adicionar timeout para evitar que a requisição fique presa
+    // Adicionar timeout reduzido para 20 segundos
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos de timeout
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
+
+    console.log('Enviando requisição para API OpenAI...');
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -87,66 +90,77 @@ export const processDocument = async (
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: "gpt-4o", // Usando GPT-4o para melhor análise de documentos
+        model: "gpt-4o-mini", // Usando modelo mais rápido
         messages: [
-          {
-            role: 'system',
-            content: 'Você é um assistente especializado em análise de documentos jurídicos ambientais.'
-          },
           {
             role: 'user',
             content: prompt
           }
         ],
         temperature: 0.3,
-        max_tokens: 1500, // Reduzido para garantir resposta mais rápida
+        max_tokens: 1000, // Reduzido para garantir resposta mais rápida
       }),
       signal: controller.signal,
     });
 
     clearTimeout(timeoutId);
-
+    
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`Erro na API: ${response.status} - ${errorData.error?.message || 'Erro desconhecido'}`);
+      const errorText = await response.text();
+      console.error('Erro na resposta da API:', response.status, errorText);
+      throw new Error(`Erro na API: ${response.status}`);
     }
 
     const data = await response.json();
+    console.log('Resposta recebida da API OpenAI');
+    
     const content = data.choices[0]?.message?.content;
     
     if (!content) {
+      console.error('Resposta vazia da API');
       throw new Error('Resposta vazia da API');
     }
 
-    // Extrair JSON da resposta
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('Formato de resposta inválido');
+    // Extrair JSON da resposta com tratamento de erros mais robusto
+    try {
+      // Tenta encontrar um objeto JSON na resposta
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        console.error('Formato de resposta inválido:', content);
+        throw new Error('Formato de resposta inválido');
+      }
+      
+      const analysisResult = JSON.parse(jsonMatch[0]) as DocumentAnalysis;
+      
+      // Garantir que todos os campos existam e tenham valores padrão
+      return {
+        summary: analysisResult.summary || 'Resumo não disponível.',
+        highlights: analysisResult.highlights || [],
+        keyPoints: analysisResult.keyPoints || [],
+        content: analysisResult.content || fileContent.substring(0, 1000)
+      };
+    } catch (parseError) {
+      console.error('Erro ao processar resposta JSON:', parseError);
+      throw new Error('Erro ao processar resposta da API');
     }
-    
-    const analysisResult = JSON.parse(jsonMatch[0]) as DocumentAnalysis;
-    
-    // Garantir que todos os campos existam
-    return {
-      summary: analysisResult.summary || 'Resumo não disponível.',
-      highlights: analysisResult.highlights || [],
-      keyPoints: analysisResult.keyPoints || [],
-      content: analysisResult.content || fileContent.substring(0, 1000) + '\n\n[Conteúdo truncado devido ao tamanho]'
-    };
   } catch (error) {
     console.error('Erro ao processar documento:', error);
     
+    if (error.name === 'AbortError') {
+      console.log('Requisição abortada por timeout');
+    }
+    
     // Retornar um resultado parcial em caso de erro
     return {
-      summary: 'Não foi possível analisar o documento completamente. Tente novamente com um arquivo menor.',
+      summary: 'Não foi possível analisar o documento. Tente novamente ou use um arquivo menor.',
       highlights: [],
       keyPoints: [
         {
           title: 'Erro na Análise',
-          description: 'Ocorreu um problema durante a análise do documento. Possíveis causas: arquivo muito grande, formato incompatível ou erro na API.'
+          description: 'Ocorreu um problema durante a análise. Verifique sua chave API e o formato do arquivo.'
         }
       ],
-      content: fileContent.substring(0, 1000) + '\n\n[Conteúdo truncado devido ao tamanho]'
+      content: fileContent.substring(0, 500) + '\n\n[Documento truncado devido a erro no processamento]'
     };
   }
 };

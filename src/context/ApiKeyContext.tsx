@@ -23,11 +23,19 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
 
   // Load API key from localStorage on initialization
   useEffect(() => {
-    const storedKey = getApiKey();
-    if (storedKey) {
-      setApiKeyState(storedKey);
+    try {
+      const storedKey = getApiKey();
+      if (storedKey) {
+        setApiKeyState(storedKey);
+        console.log("API key carregada do localStorage");
+      } else {
+        console.log("Nenhuma API key encontrada no localStorage");
+      }
+    } catch (error) {
+      console.error("Erro ao carregar API key:", error);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
 
   const setApiKey = (key: string) => {
@@ -39,6 +47,7 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
           title: "API Key Configurada",
           description: "Sua chave da API OpenAI foi salva e configurada com sucesso.",
         });
+        console.log("API key configurada com sucesso");
       } catch (error) {
         console.error("Erro ao salvar API key:", error);
         toast({
@@ -51,11 +60,13 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   };
 
   const checkApiKey = (): boolean => {
-    return hasApiKey();
+    const hasKey = hasApiKey();
+    console.log("Verificação de API key:", hasKey ? "Configurada" : "Não configurada");
+    return hasKey;
   };
 
   if (isLoading) {
-    return null; // ou um spinner se preferir
+    return null;
   }
 
   return (

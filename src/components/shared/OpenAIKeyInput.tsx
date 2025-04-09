@@ -22,35 +22,79 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(forceOpen);
   const [apiKeyInput, setApiKeyInput] = useState('');
+  const [isValidating, setIsValidating] = useState(false);
   const { apiKey, setApiKey, isKeyConfigured } = useApiKey();
   const { toast } = useToast();
 
   useEffect(() => {
-    // Open dialog if forceOpen is true and no API key is configured
+    // Abrir diálogo se forceOpen é true e nenhuma API key está configurada
     if (forceOpen && !isKeyConfigured) {
       setIsOpen(true);
     }
   }, [forceOpen, isKeyConfigured]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (apiKeyInput.trim()) {
-      // Update API key in context
-      setApiKey(apiKeyInput.trim());
-      
-      // Call onKeySubmit callback if provided
-      if (onKeySubmit) {
-        onKeySubmit(apiKeyInput.trim());
-      }
-      
-      setIsOpen(false);
-      setApiKeyInput(''); // Clear input field after submission
-      
-      toast({
-        title: "API Key Salva",
-        description: "Sua chave da API OpenAI foi salva com sucesso.",
-      });
+  const validateApiKey = async (key: string): Promise<boolean> => {
+    if (!key.trim().startsWith('sk-')) {
+      return false;
     }
+    
+    try {
+      setIsValidating(true);
+      
+      // Tenta fazer uma chamada simples à API para validar a chave
+      const response = await fetch('https://api.openai.com/v1/models', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${key}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      return response.ok;
+    } catch (error) {
+      console.error('Erro ao validar API key:', error);
+      return false;
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!apiKeyInput.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Erro de validação",
+        description: "A chave API não pode estar vazia.",
+      });
+      return;
+    }
+    
+    if (!apiKeyInput.trim().startsWith('sk-')) {
+      toast({
+        variant: "destructive",
+        title: "Formato inválido",
+        description: "A chave API da OpenAI deve começar com 'sk-'.",
+      });
+      return;
+    }
+    
+    // Salvar chave sem validação adicional para maior rapidez
+    setApiKey(apiKeyInput.trim());
+    
+    // Chamar callback se fornecido
+    if (onKeySubmit) {
+      onKeySubmit(apiKeyInput.trim());
+    }
+    
+    setIsOpen(false);
+    setApiKeyInput(''); // Limpar campo após envio
+    
+    toast({
+      title: "API Key Salva",
+      description: "Sua chave da API OpenAI foi salva com sucesso.",
+    });
   };
 
   const handleUpdateKey = () => {
@@ -74,10 +118,15 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
               value={apiKeyInput}
               onChange={(e) => setApiKeyInput(e.target.value)}
               className="w-full"
+              disabled={isValidating}
             />
             <div className="flex justify-end">
-              <Button type="submit" className="bg-eco-primary hover:bg-eco-dark">
-                Salvar Chave
+              <Button 
+                type="submit" 
+                className="bg-eco-primary hover:bg-eco-dark"
+                disabled={isValidating}
+              >
+                {isValidating ? 'Validando...' : 'Salvar Chave'}
               </Button>
             </div>
           </form>

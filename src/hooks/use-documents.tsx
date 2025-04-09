@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { processDocument, determineDocumentType } from '@/services/documentService';
 import { Document } from '@/types/document';
+import { useApiKey } from '@/context/ApiKeyContext';
 
 // Sample initial documents for demonstration
 const initialDocuments: Document[] = [
@@ -96,122 +97,163 @@ export const useDocuments = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const { toast } = useToast();
+  const { isKeyConfigured } = useApiKey();
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isKeyConfigured) {
+      toast({
+        variant: "destructive",
+        title: "API Key não configurada",
+        description: "Configure sua chave da API OpenAI antes de fazer upload de documentos.",
+      });
+      return;
+    }
+
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
       
-      // Verificar o tamanho do arquivo - limitar a 5MB para evitar problemas
-      if (file.size > 5 * 1024 * 1024) {
+      // Verificar o tamanho do arquivo - limitar a 2MB para evitar problemas
+      if (file.size > 2 * 1024 * 1024) {
         toast({
           variant: "destructive",
           title: "Arquivo muito grande",
-          description: "Por favor, selecione um arquivo menor que 5MB para análise.",
+          description: "Por favor, selecione um arquivo menor que 2MB para análise rápida.",
         });
         return;
       }
       
       setUploading(true);
       
-      // Simulação de progresso de upload mais rápida
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += 10; // Aumento mais rápido
-        setUploadProgress(progress);
+      // Simulação de progresso de upload mais realista
+      const simulateUpload = () => {
+        let progress = 0;
+        const interval = setInterval(() => {
+          progress += 5;
+          setUploadProgress(Math.min(progress, 99)); // Não chega a 100% até o processamento terminar
+          
+          if (progress >= 99) {
+            clearInterval(interval);
+          }
+        }, 100);
+        return interval;
+      };
+      
+      const uploadInterval = simulateUpload();
+      
+      try {
+        // Criar novo documento
+        const documentType = determineDocumentType(file.name);
+        const newDocument: Document = {
+          id: Date.now().toString(),
+          name: file.name,
+          type: documentType,
+          uploadDate: new Date(),
+          processed: false
+        };
         
-        if (progress >= 100) {
-          clearInterval(interval);
-          
-          // Criar novo documento
-          const documentType = determineDocumentType(file.name);
-          const newDocument: Document = {
-            id: Date.now().toString(),
-            name: file.name,
-            type: documentType,
-            uploadDate: new Date(),
-            processed: false
-          };
-          
-          setDocuments(prev => [newDocument, ...prev]);
-          setSelectedDocument(newDocument);
-          
-          // Processar o documento com OpenAI
+        setDocuments(prev => [newDocument, ...prev]);
+        setSelectedDocument(newDocument);
+        
+        // Ler o conteúdo do arquivo
+        const fileContent = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
-          reader.onload = async (event) => {
+          reader.onload = (event) => {
             if (event.target?.result) {
-              try {
-                const fileContent = event.target.result as string;
-                
-                // Processar documento usando OpenAI com um timeout
-                const timeoutPromise = new Promise<never>((_, reject) => {
-                  setTimeout(() => reject(new Error("Tempo limite excedido")), 45000);
-                });
-                
-                const analysisPromise = processDocument(fileContent, file.name, documentType);
-                
-                // Use Promise.race para implementar um timeout
-                const analysis = await Promise.race([analysisPromise, timeoutPromise])
-                  .catch(error => {
-                    console.error("Erro ou timeout:", error);
-                    // Retorna uma análise parcial em caso de timeout
-                    return {
-                      summary: "A análise não pôde ser concluída no tempo esperado.",
-                      highlights: [],
-                      keyPoints: [{ 
-                        title: "Erro de tempo limite", 
-                        description: "O documento pode ser muito grande ou complexo para análise completa." 
-                      }],
-                      content: fileContent.substring(0, 1000) + "\n\n[Conteúdo truncado]"
-                    };
-                  });
-                
-                // Atualizar documento com resultados da análise
-                setDocuments(prev => prev.map(doc => 
-                  doc.id === newDocument.id 
-                    ? {
-                        ...doc,
-                        processed: true,
-                        content: analysis.content,
-                        summary: analysis.summary,
-                        highlights: analysis.highlights,
-                        keyPoints: analysis.keyPoints
-                      } 
-                    : doc
-                ));
-                
-                toast({
-                  title: "Documento analisado",
-                  description: "O documento foi processado pela IA.",
-                });
-              } catch (error) {
-                console.error('Erro ao processar o documento:', error);
-                toast({
-                  variant: "destructive",
-                  title: "Erro ao processar documento",
-                  description: error instanceof Error ? error.message : "Ocorreu um erro durante a análise do documento.",
-                });
-                
-                // Marcar como processado mas com erro
-                setDocuments(prev => prev.map(doc => 
-                  doc.id === newDocument.id 
-                    ? {
-                        ...doc,
-                        processed: true,
-                        content: "Ocorreu um erro ao processar este documento.",
-                        summary: "Não foi possível gerar o resumo devido a um erro.",
-                      } 
-                    : doc
-                ));
-              } finally {
-                setUploading(false);
-                setUploadProgress(0);
-              }
+              resolve(event.target.result as string);
+            } else {
+              reject(new Error("Falha ao ler o arquivo"));
             }
           };
-          
+          reader.onerror = () => reject(new Error("Erro ao ler o arquivo"));
           reader.readAsText(file);
-        }
-      }, 50); // Intervalo mais rápido
+        });
+        
+        // Processar o documento com timeout limitado
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error("Tempo limite excedido")), 25000);
+        });
+        
+        const analysisPromise = processDocument(fileContent, file.name, documentType);
+        
+        // Race para garantir que não ficará processando indefinidamente
+        const analysis = await Promise.race([analysisPromise, timeoutPromise])
+          .catch(error => {
+            console.error("Erro ou timeout no processamento:", error);
+            
+            // Notificar usuário do erro
+            toast({
+              variant: "destructive",
+              title: "Erro no processamento",
+              description: "O processamento do documento demorou muito. Tente um arquivo menor ou em formato texto.",
+            });
+            
+            // Retorna uma análise parcial
+            return {
+              summary: "O processamento excedeu o tempo limite. Tente um documento menor.",
+              highlights: [],
+              keyPoints: [{ 
+                title: "Processamento interrompido", 
+                description: "O documento pode ser muito grande ou complexo para análise." 
+              }],
+              content: fileContent.substring(0, 500) + "\n\n[Conteúdo truncado]"
+            };
+          });
+        
+        // Atualizar documento com resultados
+        clearInterval(uploadInterval);
+        setUploadProgress(100);
+        
+        // Pequeno delay antes de mostrar como concluído
+        setTimeout(() => {
+          setDocuments(prev => prev.map(doc => 
+            doc.id === newDocument.id 
+              ? {
+                  ...doc,
+                  processed: true,
+                  content: analysis.content,
+                  summary: analysis.summary,
+                  highlights: analysis.highlights,
+                  keyPoints: analysis.keyPoints
+                } 
+              : doc
+          ));
+          
+          toast({
+            title: "Documento processado",
+            description: "O documento foi analisado com sucesso.",
+          });
+          
+          setUploading(false);
+        }, 500);
+        
+      } catch (error) {
+        clearInterval(uploadInterval);
+        console.error('Erro no processamento:', error);
+        
+        // Notificar usuário do erro
+        toast({
+          variant: "destructive",
+          title: "Falha no processamento",
+          description: error instanceof Error 
+            ? `Erro: ${error.message}` 
+            : "Ocorreu um erro inesperado durante o processamento.",
+        });
+        
+        // Atualizar documento com status de erro
+        setDocuments(prev => prev.map(doc => 
+          doc.id === selectedDocument?.id 
+            ? {
+                ...doc,
+                processed: true,
+                content: "Erro no processamento deste documento.",
+                summary: "Não foi possível analisar este documento devido a um erro.",
+              } 
+            : doc
+        ));
+        
+        setUploading(false);
+        setUploadProgress(0);
+      }
     }
   };
 
