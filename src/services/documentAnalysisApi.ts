@@ -67,10 +67,19 @@ export const analyzeDocumentWithAI = async (
       throw new Error('Resposta vazia da API');
     }
 
-    // Extrair JSON da resposta com tratamento de erros mais robusto
+    // Melhorar extração do JSON da resposta para garantir funcionamento robusto
     try {
-      // Tenta encontrar um objeto JSON na resposta
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      // Primeiro tenta encontrar um objeto JSON completo na resposta
+      let jsonMatch = content.match(/\{[\s\S]*\}/);
+      
+      // Se não encontrar um objeto completo, tenta extrair de bloco de código
+      if (!jsonMatch) {
+        jsonMatch = content.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
+        if (jsonMatch) {
+          jsonMatch[0] = jsonMatch[1]; // Use o conteúdo dentro do bloco de código
+        }
+      }
+
       if (!jsonMatch) {
         console.error('Formato de resposta inválido:', content);
         throw new Error('Formato de resposta inválido');
@@ -81,13 +90,26 @@ export const analyzeDocumentWithAI = async (
       // Garantir que todos os campos existam e tenham valores padrão
       return {
         summary: analysisResult.summary || 'Resumo não disponível.',
-        highlights: analysisResult.highlights || [],
-        keyPoints: analysisResult.keyPoints || [],
+        highlights: Array.isArray(analysisResult.highlights) ? analysisResult.highlights : [],
+        keyPoints: Array.isArray(analysisResult.keyPoints) ? analysisResult.keyPoints : [],
         content: analysisResult.content || ''
       };
     } catch (parseError) {
-      console.error('Erro ao processar resposta JSON:', parseError);
-      throw new Error('Erro ao processar resposta da API');
+      console.error('Erro ao processar resposta JSON:', parseError, 'Conteúdo:', content);
+      
+      // Tenta recuperar pelo menos o resumo se o JSON estiver malformado
+      const summaryMatch = content.match(/"summary"\s*:\s*"([^"]+)"/);
+      const summary = summaryMatch ? summaryMatch[1] : 'Não foi possível extrair o resumo.';
+      
+      return {
+        summary,
+        highlights: [],
+        keyPoints: [{
+          title: "Problema no processamento",
+          description: "Não foi possível extrair pontos principais e trechos relevantes deste documento."
+        }],
+        content: content.replace(/```json|```/g, '').substring(0, 10000)
+      };
     }
   } catch (error) {
     if ((error as Error).name === 'AbortError') {

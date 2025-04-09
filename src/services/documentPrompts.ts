@@ -71,24 +71,21 @@ export const createDocumentAnalysisPrompt = (
   fileType: string
 ): string => {
   return `
-    Você é um assistente jurídico especializado. Analise este documento jurídico do tipo ${fileType} 
-    chamado "${fileName}" e forneça:
+    Você é um assistente jurídico especializado. Analise este documento chamado "${fileName}" e forneça:
     
     1. Um resumo preciso em até 300 caracteres que capture a essência do documento
     2. 3 trechos literais e relevantes do documento, indicando sua importância (alta, média ou baixa) 
-       com base no conteúdo real. ATENÇÃO: Use apenas trechos que realmente existem no documento.
+       com base no conteúdo real. Cada trecho deve ter:
+       - O texto exato do documento (entre aspas)
+       - Um número de página estimado (use 1 se não for possível determinar)
+       - Um nível de importância (high, medium, low)
     3. 3 pontos principais do documento com título e descrição curta baseados no conteúdo real
     4. Uma versão formatada do conteúdo original (melhore a formatação, mas mantenha o conteúdo)
     
-    IMPORTANTE: Trabalhe EXCLUSIVAMENTE com o conteúdo do documento. Se parecer que o arquivo 
-    não foi convertido corretamente para texto (como PDF que não foi convertido), 
-    indique claramente isso em sua resposta e NÃO invente conteúdo.
-    
-    ATENÇÃO ESPECIAL: Se você não conseguir extrair trechos relevantes ou pontos principais porque o 
-    documento não está em formato adequado, retorne listas vazias para os campos "highlights" e "keyPoints" 
-    e explique a situação no campo "summary".
-    
-    Responda no seguinte formato JSON:
+    IMPORTANTE: Qualquer documento deve ser analisado completamente. Cada documento DEVE ter pelo 
+    menos 2 trechos relevantes e 2 pontos principais.
+
+    SEMPRE responda APENAS no seguinte formato JSON sem nenhum outro texto:
     
     {
       "summary": "resumo aqui",
@@ -97,12 +94,21 @@ export const createDocumentAnalysisPrompt = (
           "text": "trecho relevante exatamente como aparece no documento",
           "page": 1,
           "importance": "high|medium|low"
+        },
+        {
+          "text": "segundo trecho relevante",
+          "page": 1,
+          "importance": "high|medium|low"
         }
       ],
       "keyPoints": [
         {
-          "title": "título",
-          "description": "descrição"
+          "title": "título do primeiro ponto",
+          "description": "descrição do primeiro ponto"
+        },
+        {
+          "title": "título do segundo ponto",
+          "description": "descrição do segundo ponto"
         }
       ],
       "content": "conteúdo formatado"
