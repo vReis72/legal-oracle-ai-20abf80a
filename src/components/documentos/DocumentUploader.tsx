@@ -2,7 +2,7 @@
 import React from 'react';
 import { FileUp } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { cn } from '@/lib/utils';
 
 interface DocumentUploaderProps {
@@ -29,7 +29,7 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
         <CardTitle>Análise de Documentos Jurídicos</CardTitle>
         <CardDescription>
           Faça upload de pareceres, autos de infração e licenças para análise automática.
-          Aceitamos arquivos PDF com texto selecionável, DOCX e TXT (máx. 2MB).
+          Aceitamos arquivos PDF, DOCX e TXT.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -46,10 +46,10 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
                 <FileUp className="h-10 w-10 mb-2 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">Arraste documentos ou clique para fazer upload</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Formatos aceitos: PDF, DOCX, TXT (max. 2MB)
+                  Formatos aceitos: PDF, DOCX, TXT (max. 3MB)
                 </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Para PDFs, o texto deve ser selecionável (não escaneado como imagem)
+                <p className="text-xs text-amber-600 font-medium mt-0.5">
+                  Para PDFs, certifique-se que o texto seja selecionável
                 </p>
               </>
             ) : (
@@ -78,6 +78,12 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
           </label>
         </div>
       </CardContent>
+      <CardFooter className="px-6 py-3 bg-muted/20 border-t text-xs text-center text-muted-foreground">
+        <div className="w-full">
+          <p>Melhor performance: <span className="font-medium">TXT</span> &gt; <span className="font-medium">DOCX</span> &gt; <span className="font-medium">PDF</span></p>
+          <p className="mt-1">PDFs podem ter problemas de extração se o texto não for selecionável</p>
+        </div>
+      </CardFooter>
     </Card>
   );
 };

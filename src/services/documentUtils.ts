@@ -29,6 +29,38 @@ export const isPotentiallyBinaryContent = (fileContent: string): boolean => {
 };
 
 /**
+ * Verifica se o conteúdo parece ser texto completamente ilegível/corrompido
+ * @param content Conteúdo do arquivo
+ * @returns true se parecer ser ilegível
+ */
+export const isContentMostlyUnreadable = (content: string): boolean => {
+  // Se for muito curto após limpeza, provavelmente é ilegível
+  const cleanedContent = content.replace(/\s+/g, ' ').trim();
+  if (cleanedContent.length < 50) return true;
+  
+  // Calcula a porcentagem de caracteres não imprimíveis ou estranhos
+  const sample = content.substring(0, 5000);
+  const nonReadableChars = (sample.match(/[\x00-\x08\x0E-\x1F\x7F-\xFF\ufffd]/g) || []).length;
+  const nonReadableRatio = nonReadableChars / sample.length;
+  
+  // Se mais de 40% dos caracteres forem não imprimíveis, consideramos ilegível
+  if (nonReadableRatio > 0.4) return true;
+  
+  // Verifica por palavras conhecidas em português
+  const commonPortugueseWords = ["de", "a", "o", "que", "e", "do", "da", "em", "um", "para", "com", "não", "uma", "os", "no", "se", "na", "por", "mais", "as", "dos", "como", "mas", "ao", "ele", "das", "à", "seu", "sua", "ou", "quando", "muito", "nos", "já", "eu", "também", "só", "pelo", "pela", "até", "isso"];
+  
+  let wordsFound = 0;
+  commonPortugueseWords.forEach(word => {
+    // Procura por cada palavra com limites de palavra (\b)
+    const regex = new RegExp(`\\b${word}\\b`, 'i');
+    if (regex.test(sample)) wordsFound++;
+  });
+  
+  // Se menos de 5 palavras comuns foram encontradas, provavelmente é ilegível
+  return wordsFound < 5;
+};
+
+/**
  * Limpa e prepara o conteúdo do arquivo para análise
  * @param fileContent Conteúdo original do arquivo
  * @returns Conteúdo limpo, status binário e aviso
@@ -36,6 +68,7 @@ export const isPotentiallyBinaryContent = (fileContent: string): boolean => {
 export const cleanDocumentContent = (fileContent: string): { 
   cleanContent: string, 
   isBinary: boolean,
+  isUnreadable: boolean,
   warning?: string
 } => {
   const isBinary = isPotentiallyBinaryContent(fileContent);
@@ -57,10 +90,16 @@ export const cleanDocumentContent = (fileContent: string): {
     // Obtém uma amostra maior para análise
     const sampleContent = cleanedContent.substring(0, 30000);
     
+    // Verifica se o conteúdo está ilegível
+    const isUnreadable = isContentMostlyUnreadable(sampleContent);
+    
     return {
       cleanContent: sampleContent,
       isBinary: true,
-      warning: "Este documento parece ser um PDF com extração limitada de texto. A análise pode estar incompleta."
+      isUnreadable,
+      warning: isUnreadable 
+        ? "O conteúdo extraído do PDF está completamente ilegível e corrompido, consistindo principalmente de caracteres aleatórios e sem sentido. Não há informações úteis ou compreensíveis disponíveis para análise."
+        : "Este documento parece ser um PDF com extração limitada de texto. A análise pode estar incompleta."
     };
   }
   
@@ -68,7 +107,8 @@ export const cleanDocumentContent = (fileContent: string): {
   // Aumentamos para 30000 caracteres para melhor análise em documentos de texto válidos
   return {
     cleanContent: fileContent.substring(0, 30000),
-    isBinary: false
+    isBinary: false,
+    isUnreadable: false
   };
 };
 

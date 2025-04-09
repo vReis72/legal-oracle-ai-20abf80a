@@ -32,6 +32,23 @@ const DocumentDetail: React.FC<DocumentDetailProps> = ({ document }) => {
   if (!document.processed) {
     return <LoadingDocumentState document={document} />;
   }
+  
+  // Verificar se o documento tem um erro de processamento
+  const hasError = document.summary?.includes("ilegível") || 
+                  document.summary?.includes("corrompido") ||
+                  document.summary?.includes("sem sentido") ||
+                  document.summary?.includes("extraído") ||
+                  document.summary?.includes("Não foi possível");
+                  
+  const isPdf = document.name.toLowerCase().endsWith('.pdf');
+  
+  if (hasError) {
+    return <EmptyDocumentState 
+      errorState={true} 
+      errorMessage={document.summary}
+      isPdf={isPdf}
+    />;
+  }
 
   return (
     <div>

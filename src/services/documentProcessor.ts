@@ -25,7 +25,28 @@ export const processDocument = async (
     console.log(`Iniciando processamento do documento: ${fileName} (${fileContent.length} caracteres)`);
     
     // Limpar e verificar o conteúdo
-    const { cleanContent, isBinary, warning } = cleanDocumentContent(fileContent);
+    const { cleanContent, isBinary, isUnreadable, warning } = cleanDocumentContent(fileContent);
+    
+    // Se o documento estiver completamente ilegível, retornamos uma análise que explica o problema
+    if (isUnreadable) {
+      console.error('Conteúdo do documento ilegível:', warning);
+      
+      return {
+        summary: warning || "O conteúdo extraído do PDF está completamente ilegível e corrompido.",
+        highlights: [],
+        keyPoints: [
+          {
+            title: "PDF com problemas de extração",
+            description: "O arquivo PDF pode ter sido digitalizado como imagem ou estar em um formato que não permite extração de texto."
+          },
+          {
+            title: "Recomendações",
+            description: "Tente converter o PDF para texto usando uma ferramenta de OCR ou use um arquivo que contenha texto selecionável."
+          }
+        ],
+        content: "Conteúdo ilegível - não foi possível extrair texto processável deste documento."
+      };
+    }
     
     // Se parecer um arquivo binário/PDF com problema de extração, 
     // tentamos processar de qualquer forma, mas com aviso
@@ -172,7 +193,8 @@ const createPdfAnalysisPrompt = (
     4. Uma versão mais organizada do conteúdo disponível
     
     IMPORTANTE: NÃO INVENTE INFORMAÇÕES. Seja explícito sobre o que não está claro devido à qualidade 
-    da extração de texto. Se não houver conteúdo útil suficiente, diga isso claramente.
+    da extração de texto. Se não houver conteúdo útil suficiente, diga isso claramente com a mensagem:
+    "O conteúdo extraído do PDF está completamente ilegível e corrompido, consistindo principalmente de caracteres aleatórios e sem sentido. Não há informações úteis ou compreensíveis disponíveis para análise"
     
     Responda no formato JSON igual ao padrão:
     
