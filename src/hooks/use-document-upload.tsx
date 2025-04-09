@@ -143,15 +143,8 @@ export const useDocumentUpload = (
         });
         
         // Atualizar documento com status de erro
-        setDocuments(prev => prev.map(doc => 
-          doc.id === newDocument?.id 
-            ? {
-                ...doc,
-                processed: true,
-                content: "Erro no processamento deste documento.",
-                summary: "Não foi possível analisar este documento devido a um erro.",
-              } 
-            : doc
+        setDocuments(prev => prev.filter(doc => 
+          doc.id !== newDocument.id // Remove o documento que falhou
         ));
         
         setUploading(false);
