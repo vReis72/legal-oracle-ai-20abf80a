@@ -9,20 +9,19 @@ interface DocumentUploaderProps {
   onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   uploading: boolean;
   uploadProgress: number;
+  getStatusMessage?: () => string;
 }
 
 const DocumentUploader: React.FC<DocumentUploaderProps> = ({ 
   onFileUpload, 
   uploading, 
-  uploadProgress 
-}) => {
-  // Determinar mensagem de status com base no progresso
-  const getStatusMessage = () => {
+  uploadProgress,
+  getStatusMessage = () => {
     if (uploadProgress < 50) return "Enviando documento...";
     if (uploadProgress < 100) return "Processando documento...";
     return "Finalizando análise...";
-  };
-
+  }
+}) => {
   return (
     <Card>
       <CardHeader className="pb-3">

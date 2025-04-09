@@ -9,7 +9,6 @@ export * from './documentTypes';
 // Funcionalidades centrais
 export * from './documentTypeDetector';
 export * from './documentProcessor';
-export * from './documentPrompts';
 export * from './documentUtils';
 export * from './documentAnalysisApi';
 export * from './documentErrorHandler';

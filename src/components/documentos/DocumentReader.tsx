@@ -13,7 +13,8 @@ const DocumentReader = () => {
     uploadProgress, 
     selectedDocument, 
     setSelectedDocument, 
-    handleFileUpload 
+    handleFileUpload,
+    getStatusMessage
   } = useDocuments();
 
   return (
@@ -21,7 +22,8 @@ const DocumentReader = () => {
       <DocumentUploader 
         onFileUpload={handleFileUpload} 
         uploading={uploading} 
-        uploadProgress={uploadProgress} 
+        uploadProgress={uploadProgress}
+        getStatusMessage={getStatusMessage}
       />
 
       <div className="flex flex-col flex-grow">

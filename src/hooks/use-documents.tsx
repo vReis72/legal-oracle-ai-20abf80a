@@ -11,7 +11,8 @@ export const useDocuments = () => {
   const { 
     uploading, 
     uploadProgress, 
-    handleFileUpload 
+    handleFileUpload,
+    getStatusMessage
   } = useDocumentUpload(documents, setDocuments, setSelectedDocument);
 
   return {
@@ -20,6 +21,7 @@ export const useDocuments = () => {
     uploadProgress,
     selectedDocument,
     setSelectedDocument,
-    handleFileUpload
+    handleFileUpload,
+    getStatusMessage
   };
 };
