@@ -33,12 +33,17 @@ const DocumentDetail: React.FC<DocumentDetailProps> = ({ document }) => {
     return <LoadingDocumentState document={document} />;
   }
   
-  // Verificar se o documento tem um erro de processamento
-  const hasError = document.summary?.includes("ilegível") || 
-                  document.summary?.includes("corrompido") ||
-                  document.summary?.includes("sem sentido") ||
-                  document.summary?.includes("extraído") ||
-                  document.summary?.includes("Não foi possível");
+  // Verificar se o documento tem um erro de processamento relacionado a PDFs
+  const hasError = 
+    document.summary?.includes("ilegível") || 
+    document.summary?.includes("corrompido") || 
+    document.summary?.includes("sem sentido") || 
+    document.summary?.includes("Não foi possível") ||
+    (document.keyPoints || []).some(kp => 
+      kp.title?.includes("Erro") || 
+      kp.title?.includes("PDF com problemas") || 
+      kp.description?.includes("digitalização")
+    );
                   
   const isPdf = document.name.toLowerCase().endsWith('.pdf');
   

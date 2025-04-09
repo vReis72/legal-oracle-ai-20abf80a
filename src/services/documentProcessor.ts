@@ -48,17 +48,11 @@ export const processDocument = async (
       };
     }
     
-    // Se parecer um arquivo binário/PDF com problema de extração, 
-    // tentamos processar de qualquer forma, mas com aviso
-    const isProblemPdf = isBinary && fileName.toLowerCase().endsWith('.pdf');
+    // Verificar se é um PDF com problemas de extração
+    const isPdf = fileName.toLowerCase().endsWith('.pdf');
     
-    // Para PDFs identificados como binários, ainda tentamos processar com um prompt específico
-    if (isProblemPdf) {
-      console.warn('PDF com possíveis problemas de extração. Tentando processar mesmo assim.');
-    }
-    
-    // Criar prompt para a análise - adaptado para PDFs com problemas
-    const prompt = isProblemPdf 
+    // Criar prompt para a análise
+    const prompt = isPdf 
       ? createPdfAnalysisPrompt(cleanContent, fileName, fileType)
       : createDocumentAnalysisPrompt(cleanContent, fileName, fileType);
 
@@ -79,15 +73,17 @@ export const processDocument = async (
         messages: [
           {
             role: 'system',
-            content: 'Você é um assistente jurídico especializado que analisa documentos com precisão, sem inventar informações.'
+            content: isPdf 
+              ? 'Você é um assistente especializado em extrair e analisar conteúdo de PDFs, mesmo quando o texto está mal formatado ou parcialmente corrompido.'
+              : 'Você é um assistente jurídico especializado que analisa documentos com precisão, sem inventar informações.'
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        temperature: 0.1, // Temperatura ainda mais baixa para maior precisão
-        max_tokens: 2500, // Aumentado para permitir respostas mais completas
+        temperature: 0.1,
+        max_tokens: 2500,
       }),
       signal: controller.signal,
     });
@@ -121,20 +117,6 @@ export const processDocument = async (
       
       const analysisResult = JSON.parse(jsonMatch[0]) as DocumentAnalysis;
       
-      // Se for PDF com problemas, adiciona aviso
-      if (isProblemPdf && warning) {
-        if (analysisResult.summary) {
-          analysisResult.summary = `${analysisResult.summary}`;
-        }
-        if (!analysisResult.keyPoints) analysisResult.keyPoints = [];
-        
-        // Adiciona um keyPoint sobre qualidade da extração
-        analysisResult.keyPoints.push({
-          title: "Aviso sobre qualidade da análise",
-          description: warning
-        });
-      }
-      
       // Garantir que todos os campos existam e tenham valores padrão
       return {
         summary: analysisResult.summary || 'Resumo não disponível.',
@@ -155,7 +137,7 @@ export const processDocument = async (
     
     const isPdf = fileName.toLowerCase().endsWith('.pdf');
     
-    // Retornar um resultado parcial em caso de erro, com sugestões para PDFs
+    // Retornar um resultado parcial em caso de erro
     return {
       summary: isPdf 
         ? 'Não foi possível analisar completamente o PDF. Talvez seja devido à forma como o texto está armazenado no arquivo.'
@@ -175,7 +157,7 @@ export const processDocument = async (
 };
 
 /**
- * Cria prompt específico para tentar processar PDFs com problemas
+ * Cria prompt específico para processar PDFs
  */
 const createPdfAnalysisPrompt = (
   fileContent: string,
@@ -183,40 +165,45 @@ const createPdfAnalysisPrompt = (
   fileType: DocumentType
 ): string => {
   return `
-    Você é um assistente jurídico especializado. Este documento é um PDF com possíveis problemas 
-    de extração de texto, chamado "${fileName}". Faça o melhor possível para analisar baseado no 
-    texto disponível - mesmo que pareça fragmentado ou incompleto:
+    Você é um especialista em extrair informações úteis de PDFs, mesmo quando o texto está mal formatado. Este documento é um PDF chamado "${fileName}". Analise o conteúdo extraído do PDF, ignorando caracteres estranhos ou formatação incorreta, e extraia as informações relevantes.
     
-    1. Um resumo do que você conseguiu entender, sendo sincero sobre as limitações
-    2. Quaisquer trechos que pareçam relevantes, mesmo que incompletos
-    3. Pontos principais que podem ser inferidos do conteúdo disponível
-    4. Uma versão mais organizada do conteúdo disponível
+    Instruções importantes:
+    1. Ignore completamente caracteres estranhos, símbolos sem sentido ou formatação corrompida.
+    2. Foque apenas nas partes legíveis e que fazem sentido no contexto jurídico/ambiental.
+    3. Se conseguir identificar parágrafos ou seções coerentes, use-os para sua análise.
+    4. Se o texto estiver muito corrompido, forneça apenas as informações que você conseguir extrair com certeza.
+    5. NÃO INVENTE INFORMAÇÕES que não estão presentes no texto.
     
-    IMPORTANTE: NÃO INVENTE INFORMAÇÕES. Seja explícito sobre o que não está claro devido à qualidade 
-    da extração de texto. Se não houver conteúdo útil suficiente, diga isso claramente com a mensagem:
-    "O conteúdo extraído do PDF está completamente ilegível e corrompido, consistindo principalmente de caracteres aleatórios e sem sentido. Não há informações úteis ou compreensíveis disponíveis para análise"
-    
-    Responda no formato JSON igual ao padrão:
+    Responda no seguinte formato JSON:
     
     {
-      "summary": "resumo do que foi possível entender",
+      "summary": "Um resumo conciso do documento baseado apenas no que foi possível extrair com clareza",
       "highlights": [
         {
-          "text": "trechos relevantes que foram possíveis extrair",
-          "page": 1,
+          "text": "trechos legíveis identificados que são relevantes",
           "importance": "high|medium|low"
         }
       ],
       "keyPoints": [
         {
-          "title": "ponto identificado",
-          "description": "descrição baseada apenas no que está visível"
+          "title": "ponto chave identificado",
+          "description": "descrição baseada apenas no que está legível"
         }
       ],
-      "content": "conteúdo formatado da melhor forma possível"
+      "content": "o conteúdo formatado da melhor forma possível, apenas com as partes que fazem sentido"
     }
     
-    Texto disponível do PDF:
+    Se o texto estiver completamente ilegível e não for possível extrair NENHUMA informação útil, responda apenas:
+    
+    {
+      "summary": "O conteúdo extraído do PDF está completamente ilegível e corrompido, consistindo principalmente de caracteres aleatórios e sem sentido. Não há informações úteis ou compreensíveis disponíveis para análise",
+      "highlights": [],
+      "keyPoints": [],
+      "content": "Conteúdo ilegível"
+    }
+    
+    Texto extraído do PDF:
     ${fileContent}
   `;
 };
+
