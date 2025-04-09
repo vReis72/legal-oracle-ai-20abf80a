@@ -100,18 +100,29 @@ export const useDocuments = () => {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
+      
+      // Verificar o tamanho do arquivo - limitar a 5MB para evitar problemas
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          variant: "destructive",
+          title: "Arquivo muito grande",
+          description: "Por favor, selecione um arquivo menor que 5MB para análise.",
+        });
+        return;
+      }
+      
       setUploading(true);
       
-      // Simulate file upload with progress
+      // Simulação de progresso de upload mais rápida
       let progress = 0;
       const interval = setInterval(() => {
-        progress += 5;
+        progress += 10; // Aumento mais rápido
         setUploadProgress(progress);
         
         if (progress >= 100) {
           clearInterval(interval);
           
-          // Create new document
+          // Criar novo documento
           const documentType = determineDocumentType(file.name);
           const newDocument: Document = {
             id: Date.now().toString(),
@@ -123,20 +134,38 @@ export const useDocuments = () => {
           
           setDocuments(prev => [newDocument, ...prev]);
           setSelectedDocument(newDocument);
-          setUploading(false);
-          setUploadProgress(0);
           
-          // Process the document with OpenAI
+          // Processar o documento com OpenAI
           const reader = new FileReader();
           reader.onload = async (event) => {
             if (event.target?.result) {
               try {
                 const fileContent = event.target.result as string;
                 
-                // Process document using OpenAI
-                const analysis = await processDocument(fileContent, file.name, documentType);
+                // Processar documento usando OpenAI com um timeout
+                const timeoutPromise = new Promise<never>((_, reject) => {
+                  setTimeout(() => reject(new Error("Tempo limite excedido")), 45000);
+                });
                 
-                // Update document with analysis results
+                const analysisPromise = processDocument(fileContent, file.name, documentType);
+                
+                // Use Promise.race para implementar um timeout
+                const analysis = await Promise.race([analysisPromise, timeoutPromise])
+                  .catch(error => {
+                    console.error("Erro ou timeout:", error);
+                    // Retorna uma análise parcial em caso de timeout
+                    return {
+                      summary: "A análise não pôde ser concluída no tempo esperado.",
+                      highlights: [],
+                      keyPoints: [{ 
+                        title: "Erro de tempo limite", 
+                        description: "O documento pode ser muito grande ou complexo para análise completa." 
+                      }],
+                      content: fileContent.substring(0, 1000) + "\n\n[Conteúdo truncado]"
+                    };
+                  });
+                
+                // Atualizar documento com resultados da análise
                 setDocuments(prev => prev.map(doc => 
                   doc.id === newDocument.id 
                     ? {
@@ -151,8 +180,8 @@ export const useDocuments = () => {
                 ));
                 
                 toast({
-                  title: "Documento analisado com sucesso",
-                  description: "O documento foi processado e analisado pela IA.",
+                  title: "Documento analisado",
+                  description: "O documento foi processado pela IA.",
                 });
               } catch (error) {
                 console.error('Erro ao processar o documento:', error);
@@ -162,7 +191,7 @@ export const useDocuments = () => {
                   description: error instanceof Error ? error.message : "Ocorreu um erro durante a análise do documento.",
                 });
                 
-                // Mark as processed but with error
+                // Marcar como processado mas com erro
                 setDocuments(prev => prev.map(doc => 
                   doc.id === newDocument.id 
                     ? {
@@ -173,13 +202,16 @@ export const useDocuments = () => {
                       } 
                     : doc
                 ));
+              } finally {
+                setUploading(false);
+                setUploadProgress(0);
               }
             }
           };
           
           reader.readAsText(file);
         }
-      }, 100);
+      }, 50); // Intervalo mais rápido
     }
   };
 

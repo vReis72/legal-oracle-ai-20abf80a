@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { FileUp } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,7 +21,8 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
       <CardHeader className="pb-3">
         <CardTitle>Análise de Documentos Ambientais</CardTitle>
         <CardDescription>
-          Faça upload de pareceres, autos de infração e licenças para análise automática
+          Faça upload de pareceres, autos de infração e licenças para análise automática.
+          Para melhores resultados, use arquivos de texto de até 5MB.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -37,15 +38,20 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
               <>
                 <FileUp className="h-10 w-10 mb-2 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">Arraste documentos ou clique para fazer upload</p>
-                <p className="text-xs text-muted-foreground mt-1">PDF, DOCX, TXT (max. 20MB)</p>
+                <p className="text-xs text-muted-foreground mt-1">PDF, DOCX, TXT (max. 5MB)</p>
               </>
             ) : (
               <div className="w-full px-6 space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>Enviando documento...</span>
+                  <span>{uploadProgress < 100 ? "Enviando documento..." : "Analisando documento..."}</span>
                   <span>{uploadProgress}%</span>
                 </div>
                 <Progress value={uploadProgress} className="h-2" />
+                {uploadProgress === 100 && (
+                  <p className="text-xs text-center text-muted-foreground">
+                    Estamos analisando seu documento. Isso pode levar até 45 segundos.
+                  </p>
+                )}
               </div>
             )}
             <input 

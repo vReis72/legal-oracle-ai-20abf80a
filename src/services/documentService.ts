@@ -38,6 +38,9 @@ export const processDocument = async (
       throw new Error('API key não fornecida');
     }
 
+    // Limitar o conteúdo para evitar problemas com tokens excessivos
+    const limitedContent = fileContent.substring(0, 3000);
+
     // Criar um prompt específico para análise de documentos ambientais
     const prompt = `
       Você é um especialista em direito ambiental analisando um documento do tipo ${fileType} chamado "${fileName}". 
@@ -70,8 +73,12 @@ export const processDocument = async (
       }
       
       Documento para análise:
-      ${fileContent.substring(0, 5000)} // Limitando para evitar tokens excessivos
+      ${limitedContent}
     `;
+
+    // Adicionar timeout para evitar que a requisição fique presa
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos de timeout
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -92,9 +99,12 @@ export const processDocument = async (
           }
         ],
         temperature: 0.3,
-        max_tokens: 2500,
+        max_tokens: 1500, // Reduzido para garantir resposta mais rápida
       }),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorData = await response.json();
@@ -121,11 +131,23 @@ export const processDocument = async (
       summary: analysisResult.summary || 'Resumo não disponível.',
       highlights: analysisResult.highlights || [],
       keyPoints: analysisResult.keyPoints || [],
-      content: analysisResult.content || fileContent
+      content: analysisResult.content || fileContent.substring(0, 1000) + '\n\n[Conteúdo truncado devido ao tamanho]'
     };
   } catch (error) {
     console.error('Erro ao processar documento:', error);
-    throw error;
+    
+    // Retornar um resultado parcial em caso de erro
+    return {
+      summary: 'Não foi possível analisar o documento completamente. Tente novamente com um arquivo menor.',
+      highlights: [],
+      keyPoints: [
+        {
+          title: 'Erro na Análise',
+          description: 'Ocorreu um problema durante a análise do documento. Possíveis causas: arquivo muito grande, formato incompatível ou erro na API.'
+        }
+      ],
+      content: fileContent.substring(0, 1000) + '\n\n[Conteúdo truncado devido ao tamanho]'
+    };
   }
 };
 
