@@ -1,4 +1,3 @@
-
 import { getApiKey } from './apiKeyService';
 
 export interface DocumentHighlight {
@@ -40,18 +39,31 @@ export const processDocument = async (
 
     console.log(`Iniciando processamento do documento: ${fileName} (${fileContent.length} caracteres)`);
     
+    // Identificar e limpar conteúdo PDF quando for o caso
+    let cleanContent = fileContent;
+    if (fileContent.startsWith('%PDF-') || fileContent.includes('endobj') || fileContent.includes('stream')) {
+      cleanContent = "Este parece ser um arquivo PDF cuja extração de texto não foi bem-sucedida. " +
+                     "Por favor, converta o PDF para texto antes de carregar ou use arquivos de texto puro.";
+    }
+    
     // Limitar o conteúdo para evitar problemas com tokens excessivos
-    // Aumentado para 5000 caracteres para melhor análise
-    const limitedContent = fileContent.substring(0, 5000);
-
-    // Criar um prompt mais simples para reduzir o tempo de processamento
+    // Aumentado para 15000 caracteres para melhor análise, mas não tão grande para evitar timeout
+    const limitedContent = cleanContent.substring(0, 15000);
+    
+    // Criar um prompt mais específico para melhorar a análise
     const prompt = `
-      Analise este documento jurídico do tipo ${fileType} chamado "${fileName}" e forneça:
+      Você é um assistente jurídico especializado. Analise este documento jurídico do tipo ${fileType} 
+      chamado "${fileName}" e forneça:
       
-      1. Um resumo em até 300 caracteres
-      2. 3 trechos relevantes do documento, indicando sua importância (alta, média ou baixa)
-      3. 3 pontos principais do documento com título e descrição curta
-      4. Uma versão formatada do conteúdo original
+      1. Um resumo preciso em até 300 caracteres que capture a essência do documento
+      2. 3 trechos literais e relevantes do documento, indicando sua importância (alta, média ou baixa) 
+         com base no conteúdo real
+      3. 3 pontos principais do documento com título e descrição curta baseados no conteúdo real
+      4. Uma versão formatada do conteúdo original (melhore a formatação, mas mantenha o conteúdo)
+      
+      IMPORTANTE: Trabalhe EXCLUSIVAMENTE com o conteúdo do documento. Se parecer que o arquivo 
+      não foi carregado corretamente (como PDF que não foi convertido para texto), 
+      apenas informe isso em vez de inventar conteúdo.
       
       Responda no seguinte formato JSON:
       
@@ -59,7 +71,7 @@ export const processDocument = async (
         "summary": "resumo aqui",
         "highlights": [
           {
-            "text": "trecho relevante",
+            "text": "trecho relevante exatamente como aparece no documento",
             "page": 1,
             "importance": "high|medium|low"
           }
@@ -77,9 +89,9 @@ export const processDocument = async (
       ${limitedContent}
     `;
 
-    // Adicionar timeout reduzido para 20 segundos
+    // Aumentar timeout para 40 segundos para permitir análise mais completa
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20000);
+    const timeoutId = setTimeout(() => controller.abort(), 40000);
 
     console.log('Enviando requisição para API OpenAI...');
 
@@ -90,15 +102,19 @@ export const processDocument = async (
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini", // Usando modelo mais rápido
+        model: "gpt-4o", // Usando modelo mais capaz para melhor análise
         messages: [
+          {
+            role: 'system',
+            content: 'Você é um assistente jurídico especializado que analisa documentos com precisão, sem inventar informações.'
+          },
           {
             role: 'user',
             content: prompt
           }
         ],
-        temperature: 0.3,
-        max_tokens: 1000, // Reduzido para garantir resposta mais rápida
+        temperature: 0.2, // Temperatura mais baixa para maior precisão
+        max_tokens: 2000, // Aumentado para permitir respostas mais completas
       }),
       signal: controller.signal,
     });
@@ -132,12 +148,19 @@ export const processDocument = async (
       
       const analysisResult = JSON.parse(jsonMatch[0]) as DocumentAnalysis;
       
+      // Validar que a análise está baseada no documento real
+      if (analysisResult.summary.includes("não foi possível analisar") || 
+          analysisResult.summary.includes("não foi fornecido") ||
+          (cleanContent.length > 100 && analysisResult.highlights.length === 0)) {
+        throw new Error('A análise não parece refletir o conteúdo do documento');
+      }
+      
       // Garantir que todos os campos existam e tenham valores padrão
       return {
-        summary: analysisResult.summary || 'Resumo não disponível.',
+        summary: analysisResult.summary || 'Resumo não dispon��vel.',
         highlights: analysisResult.highlights || [],
         keyPoints: analysisResult.keyPoints || [],
-        content: analysisResult.content || fileContent.substring(0, 1000)
+        content: analysisResult.content || limitedContent
       };
     } catch (parseError) {
       console.error('Erro ao processar resposta JSON:', parseError);
