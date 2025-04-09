@@ -18,17 +18,20 @@ const JurisprudenciaSearch: React.FC = () => {
     results,
     hasSearched,
     error,
-    apiKey,
     isKeyConfigured,
     handleSimpleSearch,
     handleAdvancedSearch,
     handleSortByRelevance,
-    handleSortByDate
+    handleSortByDate,
+    setApiKey
   } = useJurisprudencia();
 
   return (
     <div className="flex flex-col h-full">
-      <OpenAIKeyInput forceOpen={!isKeyConfigured} />
+      <OpenAIKeyInput 
+        onKeySubmit={setApiKey}
+        forceOpen={!isKeyConfigured}
+      />
       
       <Tabs defaultValue="simples" className="w-full">
         <TabsList className="grid w-full grid-cols-2">

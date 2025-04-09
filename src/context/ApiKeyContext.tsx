@@ -20,7 +20,7 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   const [apiKey, setApiKeyState] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Carregar a chave da API do localStorage na inicialização
+  // Load API key from localStorage on initialization
   useEffect(() => {
     const storedKey = getApiKey();
     if (storedKey) {
@@ -55,7 +55,7 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   );
 };
 
-// Hook customizado para usar o contexto da chave API
+// Custom hook to use the API key context
 export const useApiKey = () => {
   const context = useContext(ApiKeyContext);
   if (context === undefined) {

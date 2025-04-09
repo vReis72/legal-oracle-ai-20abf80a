@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Key, Check } from 'lucide-react';
-import { getApiKey, saveApiKey, hasApiKey } from '@/services/apiKeyService';
+import { useApiKey } from '@/context/ApiKeyContext';
 
 interface OpenAIKeyInputProps {
   onKeySubmit?: (key: string) => void;
@@ -21,28 +21,31 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
   buttonSize = "sm" 
 }) => {
   const [isOpen, setIsOpen] = useState(forceOpen);
-  const [apiKey, setApiKey] = useState('');
-  const [storedKey, setStoredKey] = useState<string | null>(null);
+  const [apiKeyInput, setApiKeyInput] = useState('');
+  const { apiKey, setApiKey, isKeyConfigured } = useApiKey();
   const { toast } = useToast();
 
   useEffect(() => {
-    // Verifica se a chave API existe no localStorage
-    const savedKey = getApiKey();
-    if (savedKey) {
-      setStoredKey(savedKey);
-      if (onKeySubmit) onKeySubmit(savedKey);
-    } else if (forceOpen) {
+    // Open dialog if forceOpen is true and no API key is configured
+    if (forceOpen && !isKeyConfigured) {
       setIsOpen(true);
     }
-  }, [onKeySubmit, forceOpen]);
+  }, [forceOpen, isKeyConfigured]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (apiKey.trim()) {
-      saveApiKey(apiKey);
-      setStoredKey(apiKey);
-      if (onKeySubmit) onKeySubmit(apiKey);
+    if (apiKeyInput.trim()) {
+      // Update API key in context
+      setApiKey(apiKeyInput.trim());
+      
+      // Call onKeySubmit callback if provided
+      if (onKeySubmit) {
+        onKeySubmit(apiKeyInput.trim());
+      }
+      
       setIsOpen(false);
+      setApiKeyInput(''); // Clear input field after submission
+      
       toast({
         title: "API Key Salva",
         description: "Sua chave da API OpenAI foi salva com sucesso.",
@@ -68,8 +71,8 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
           <form onSubmit={handleSubmit} className="space-y-4 pt-4">
             <Input
               placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
+              value={apiKeyInput}
+              onChange={(e) => setApiKeyInput(e.target.value)}
               className="w-full"
             />
             <div className="flex justify-end">
@@ -81,7 +84,7 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
         </DialogContent>
       </Dialog>
       
-      {storedKey && (
+      {!forceOpen && (
         <div className="flex justify-end mb-4">
           <Button 
             variant={buttonVariant} 
@@ -89,8 +92,8 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
             onClick={handleUpdateKey}
             className="flex items-center gap-1 text-xs"
           >
-            {storedKey ? <Check className="h-3 w-3" /> : <Key className="h-3 w-3" />}
-            {storedKey ? "API Configurada" : "Configurar API"}
+            {isKeyConfigured ? <Check className="h-3 w-3" /> : <Key className="h-3 w-3" />}
+            {isKeyConfigured ? "API Configurada" : "Configurar API"}
           </Button>
         </div>
       )}

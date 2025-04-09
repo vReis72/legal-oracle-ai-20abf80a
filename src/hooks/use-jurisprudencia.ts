@@ -57,7 +57,7 @@ export const useJurisprudencia = () => {
   const [hasSearched, setHasSearched] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-  const { apiKey, isKeyConfigured } = useApiKey();
+  const { apiKey, setApiKey, isKeyConfigured } = useApiKey();
 
   const handleSimpleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,11 +65,11 @@ export const useJurisprudencia = () => {
     setError(null);
     
     try {
-      if (!apiKey || !isKeyConfigured) {
+      if (!isKeyConfigured) {
         throw new Error('API Key não configurada');
       }
 
-      const searchResults = await searchJurisprudencia(searchQuery, apiKey);
+      const searchResults = await searchJurisprudencia(searchQuery, apiKey!);
       setResults(searchResults);
       setHasSearched(true);
       
@@ -101,11 +101,11 @@ export const useJurisprudencia = () => {
     setError(null);
     
     try {
-      if (!apiKey || !isKeyConfigured) {
+      if (!isKeyConfigured) {
         throw new Error('API Key não configurada');
       }
 
-      const searchResults = await searchJurisprudencia(advancedQuery, apiKey, true);
+      const searchResults = await searchJurisprudencia(advancedQuery, apiKey!, true);
       setResults(searchResults);
       setHasSearched(true);
       
@@ -156,11 +156,11 @@ export const useJurisprudencia = () => {
     results,
     hasSearched,
     error,
-    apiKey,
     isKeyConfigured,
     handleSimpleSearch,
     handleAdvancedSearch,
     handleSortByRelevance,
-    handleSortByDate
+    handleSortByDate,
+    setApiKey
   };
 };
