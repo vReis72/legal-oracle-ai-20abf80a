@@ -28,7 +28,9 @@ const EmptyDocumentState: React.FC<EmptyDocumentStateProps> = ({ errorState = fa
         <AlertCircle className="h-16 w-16 text-red-400 mb-4" />
         <h3 className="text-lg font-medium mb-1">Problema no processamento</h3>
         <p className="text-sm text-muted-foreground max-w-sm mb-4">
-          Houve um problema ao processar o documento. PDFs complexos ou protegidos podem não ser processados corretamente.
+          Houve um problema ao processar o documento. Verifique se o PDF contém texto selecionável 
+          (não apenas digitalizado como imagem). PDFs muito grandes ou protegidos também 
+          podem causar problemas.
         </p>
         <Button onClick={handleClick} className="bg-red-600 hover:bg-red-700">
           <FileUp className="h-4 w-4 mr-2" />

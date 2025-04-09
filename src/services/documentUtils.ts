@@ -9,39 +9,65 @@
  * @returns true se parecer ser um conteúdo binário
  */
 export const isPotentiallyBinaryContent = (fileContent: string): boolean => {
-  return (
-    fileContent.startsWith('%PDF-') || 
-    fileContent.includes('endobj') || 
-    fileContent.includes('stream') ||
-    // Verificar presença de caracteres não-imprimíveis ou alta frequência de caracteres não-ASCII
-    (/[\x00-\x08\x0E-\x1F\x7F-\xFF]/.test(fileContent.substring(0, 1000)) && 
-     fileContent.substring(0, 1000).match(/[\x00-\x08\x0E-\x1F\x7F-\xFF]/g)!.length > 50)
-  );
+  // Assinaturas de PDF
+  if (fileContent.startsWith('%PDF-')) return true;
+  
+  // Termos comuns em PDFs
+  const pdfTerms = ['endobj', 'startxref', 'trailer', 'xref', 'obj'];
+  for (const term of pdfTerms) {
+    if (fileContent.includes(term)) return true;
+  }
+  
+  // Verifica caracteres não imprimíveis típicos de PDFs
+  const nonPrintableCount = (fileContent.substring(0, 2000).match(/[\x00-\x08\x0E-\x1F\x7F-\xFF]/g) || []).length;
+  if (nonPrintableCount > 30) return true;
+  
+  // Padrões comuns em PDFs mal extraídos
+  if (fileContent.includes('\0') || fileContent.includes('\ufffd')) return true;
+  
+  return false;
 };
 
 /**
  * Limpa e prepara o conteúdo do arquivo para análise
  * @param fileContent Conteúdo original do arquivo
- * @returns Conteúdo limpo e mensagem sobre problemas identificados
+ * @returns Conteúdo limpo, status binário e aviso
  */
 export const cleanDocumentContent = (fileContent: string): { 
   cleanContent: string, 
-  isBinary: boolean 
+  isBinary: boolean,
+  warning?: string
 } => {
   const isBinary = isPotentiallyBinaryContent(fileContent);
   
+  // Conteúdo parece ser de um PDF não extraído corretamente
   if (isBinary) {
+    // Tenta extrair algum texto útil mesmo de PDFs com problemas
+    let cleanedContent = fileContent;
+    
+    // Remove sequências de caracteres não imprimíveis
+    cleanedContent = cleanedContent.replace(/[\x00-\x08\x0E-\x1F\x7F-\xFF]+/g, ' ');
+    
+    // Remove padrões comuns de PDF que não são texto
+    cleanedContent = cleanedContent.replace(/endobj|startxref|trailer|xref|obj|\d+ \d+ obj/g, ' ');
+    
+    // Normaliza espaços
+    cleanedContent = cleanedContent.replace(/\s+/g, ' ');
+    
+    // Obtém uma amostra maior para análise
+    const sampleContent = cleanedContent.substring(0, 30000);
+    
     return {
-      cleanContent: "Este parece ser um arquivo PDF ou binário cuja extração de texto não foi bem-sucedida. " +
-                    "Por favor, converta o documento para texto antes de carregar ou use arquivos de texto puro (.txt).",
-      isBinary: true
+      cleanContent: sampleContent,
+      isBinary: true,
+      warning: "Este documento parece ser um PDF com extração limitada de texto. A análise pode estar incompleta."
     };
   }
   
   // Se o conteúdo não parece ser binário, mas ainda é muito grande, limitamos
-  // Aumentamos para 20000 caracteres para melhor análise em documentos de texto válidos
+  // Aumentamos para 30000 caracteres para melhor análise em documentos de texto válidos
   return {
-    cleanContent: fileContent.substring(0, 20000),
+    cleanContent: fileContent.substring(0, 30000),
     isBinary: false
   };
 };

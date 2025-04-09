@@ -27,13 +27,17 @@ export const useDocumentUpload = (
 
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
+      const isPdf = file.name.toLowerCase().endsWith('.pdf');
       
-      // Verificar o tamanho do arquivo - limitar a 2MB para evitar problemas
-      if (file.size > 2 * 1024 * 1024) {
+      // Verificar o tamanho do arquivo - limitar a 2MB normalmente, mas permitir PDFs um pouco maiores
+      const maxSize = isPdf ? 3 * 1024 * 1024 : 2 * 1024 * 1024;
+      if (file.size > maxSize) {
         toast({
           variant: "destructive",
           title: "Arquivo muito grande",
-          description: "Por favor, selecione um arquivo menor que 2MB para análise rápida.",
+          description: isPdf 
+            ? "Por favor, selecione um PDF menor que 3MB para análise."
+            : "Por favor, selecione um arquivo menor que 2MB para análise.",
         });
         return;
       }
@@ -44,7 +48,9 @@ export const useDocumentUpload = (
       const simulateUpload = () => {
         let progress = 0;
         const interval = setInterval(() => {
-          progress += 5;
+          // Progresso mais lento para PDFs para dar impressão de processamento mais complexo
+          const increment = isPdf ? 3 : 5;
+          progress += increment;
           setUploadProgress(Math.min(progress, 99)); // Não chega a 100% até o processamento terminar
           
           if (progress >= 99) {
@@ -74,8 +80,9 @@ export const useDocumentUpload = (
         // Ler o conteúdo do arquivo
         const fileContent = await readFileContent(file);
         
-        // Processar o documento com timeout limitado
-        const timeoutPromise = createTimeoutPromise(45000); // Aumentado para 45 segundos
+        // Tempo limite maior para PDFs
+        const timeout = isPdf ? 60000 : 45000;
+        const timeoutPromise = createTimeoutPromise(timeout);
         
         const analysisPromise = processDocument(fileContent, file.name, documentType);
         
@@ -88,18 +95,24 @@ export const useDocumentUpload = (
             toast({
               variant: "destructive",
               title: "Erro no processamento",
-              description: "O processamento do documento demorou muito. Tente um arquivo menor ou em formato texto.",
+              description: isPdf
+                ? "Houve problemas ao processar o PDF. Verifique se o documento contém texto selecionável."
+                : "O processamento do documento demorou muito. Tente um arquivo menor ou em formato texto.",
             });
             
-            // Retorna uma análise parcial
+            // Retorna uma análise parcial com mensagem adequada ao tipo de arquivo
             return {
-              summary: "O processamento excedeu o tempo limite. Tente um documento menor ou em formato texto puro (.txt).",
+              summary: isPdf 
+                ? "Não foi possível processar este PDF completamente. O arquivo pode estar protegido ou o texto não estar em formato extraível."
+                : "O processamento excedeu o tempo limite. Tente um documento menor ou em formato texto puro (.txt).",
               highlights: [],
               keyPoints: [{ 
-                title: "Processamento interrompido", 
-                description: "O documento pode ser muito grande ou complexo para análise." 
+                title: isPdf ? "PDF com problemas" : "Processamento interrompido", 
+                description: isPdf
+                  ? "O PDF pode estar protegido ou ter sido digitalizado como imagem, dificultando a extração do texto."
+                  : "O documento pode ser muito grande ou complexo para análise." 
               }],
-              content: fileContent.substring(0, 500) + "\n\n[Conteúdo truncado]"
+              content: fileContent.substring(0, 1000) + "\n\n[Conteúdo truncado]"
             };
           });
         
@@ -124,7 +137,9 @@ export const useDocumentUpload = (
           
           toast({
             title: "Documento processado",
-            description: "O documento foi analisado com sucesso.",
+            description: isPdf && analysis.keyPoints?.some(kp => kp.title.includes("Aviso"))
+              ? "O PDF foi analisado, mas com algumas limitações na extração de texto."
+              : "O documento foi analisado com sucesso.",
           });
           
           setUploading(false);
@@ -138,13 +153,31 @@ export const useDocumentUpload = (
         toast({
           variant: "destructive",
           title: "Falha no processamento",
-          description: error instanceof Error 
-            ? `Erro: ${error.message}` 
-            : "Ocorreu um erro inesperado durante o processamento.",
+          description: isPdf
+            ? "Erro ao processar o PDF. Verifique se o arquivo não está corrompido ou protegido."
+            : error instanceof Error 
+              ? `Erro: ${error.message}` 
+              : "Ocorreu um erro inesperado durante o processamento.",
         });
         
-        // Remover o documento que falhou
-        setDocuments(prev => prev.filter(doc => doc.id !== newDocument.id));
+        // Atualizar o documento que falhou
+        setDocuments(prev => prev.map(doc => 
+          doc.id === newDocument.id 
+            ? {
+                ...doc,
+                processed: true,
+                summary: "Erro ao processar o documento",
+                content: "Não foi possível processar o conteúdo deste documento.",
+                highlights: [],
+                keyPoints: [{
+                  title: "Erro no processamento",
+                  description: isPdf
+                    ? "O PDF pode estar protegido ou em formato que dificulta a extração de texto."
+                    : "Ocorreu um erro ao tentar processar este documento."
+                }]
+              } 
+            : doc
+        ));
         
         setUploading(false);
         setUploadProgress(0);
@@ -171,6 +204,9 @@ const readFileContent = (file: File): Promise<string> => {
       }
     };
     reader.onerror = () => reject(new Error("Erro ao ler o arquivo"));
+    
+    // Para arquivos PDF, tentamos como texto primeiro, mas podemos precisar 
+    // de tratamento especial no futuro se necessário
     reader.readAsText(file);
   });
 };

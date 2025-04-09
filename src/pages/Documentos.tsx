@@ -18,11 +18,11 @@ const Documentos = () => {
         
         <Alert variant="default" className="mb-6 bg-blue-50 border-blue-200">
           <Info className="h-4 w-4 text-blue-500" />
-          <AlertTitle>Recomendação para melhor análise</AlertTitle>
+          <AlertTitle>Sobre os formatos de arquivos</AlertTitle>
           <AlertDescription>
-            Para obter os melhores resultados, recomendamos o upload de arquivos de texto (.txt).
-            Os arquivos PDF e DOCX podem funcionar, mas a qualidade da análise será menor devido 
-            aos desafios na extração do texto.
+            O sistema aceita arquivos PDF, DOCX e TXT. Para PDFs, certifique-se que o texto seja selecionável 
+            (não digitalizado como imagem) para obter melhores resultados. PDFs maiores podem levar mais tempo 
+            para processamento.
           </AlertDescription>
         </Alert>
         

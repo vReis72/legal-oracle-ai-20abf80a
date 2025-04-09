@@ -25,26 +25,21 @@ export const processDocument = async (
     console.log(`Iniciando processamento do documento: ${fileName} (${fileContent.length} caracteres)`);
     
     // Limpar e verificar o conteúdo
-    const { cleanContent, isBinary } = cleanDocumentContent(fileContent);
+    const { cleanContent, isBinary, warning } = cleanDocumentContent(fileContent);
     
-    // Se parecer um arquivo binário/PDF com problema de extração, fornecer uma análise básica
-    if (isBinary) {
-      console.warn('Identificado documento binário ou PDF com problemas de extração');
-      return {
-        summary: 'Este documento parece ser um PDF ou arquivo binário cuja extração de texto não foi bem-sucedida. Por favor, considere converter para texto puro (.txt) antes de carregar.',
-        highlights: [],
-        keyPoints: [
-          {
-            title: "Problema na Extração de Texto",
-            description: "O documento parece estar em formato que dificulta a extração de texto. Para melhores resultados, considere usar arquivos de texto (.txt)."
-          }
-        ],
-        content: "Conteúdo não disponível para visualização. Considere converter este documento para um formato de texto puro antes de fazer upload."
-      };
+    // Se parecer um arquivo binário/PDF com problema de extração, 
+    // tentamos processar de qualquer forma, mas com aviso
+    const isProblemPdf = isBinary && fileName.toLowerCase().endsWith('.pdf');
+    
+    // Para PDFs identificados como binários, ainda tentamos processar com um prompt específico
+    if (isProblemPdf) {
+      console.warn('PDF com possíveis problemas de extração. Tentando processar mesmo assim.');
     }
     
-    // Criar prompt para a análise
-    const prompt = createDocumentAnalysisPrompt(cleanContent, fileName, fileType);
+    // Criar prompt para a análise - adaptado para PDFs com problemas
+    const prompt = isProblemPdf 
+      ? createPdfAnalysisPrompt(cleanContent, fileName, fileType)
+      : createDocumentAnalysisPrompt(cleanContent, fileName, fileType);
 
     // Aumentar timeout para 60 segundos para permitir análise mais completa
     const controller = new AbortController();
@@ -105,6 +100,20 @@ export const processDocument = async (
       
       const analysisResult = JSON.parse(jsonMatch[0]) as DocumentAnalysis;
       
+      // Se for PDF com problemas, adiciona aviso
+      if (isProblemPdf && warning) {
+        if (analysisResult.summary) {
+          analysisResult.summary = `${analysisResult.summary}`;
+        }
+        if (!analysisResult.keyPoints) analysisResult.keyPoints = [];
+        
+        // Adiciona um keyPoint sobre qualidade da extração
+        analysisResult.keyPoints.push({
+          title: "Aviso sobre qualidade da análise",
+          description: warning
+        });
+      }
+      
       // Garantir que todos os campos existam e tenham valores padrão
       return {
         summary: analysisResult.summary || 'Resumo não disponível.',
@@ -123,17 +132,69 @@ export const processDocument = async (
       console.log('Requisição abortada por timeout');
     }
     
-    // Retornar um resultado parcial em caso de erro
+    const isPdf = fileName.toLowerCase().endsWith('.pdf');
+    
+    // Retornar um resultado parcial em caso de erro, com sugestões para PDFs
     return {
-      summary: 'Não foi possível analisar o documento. Tente novamente ou use um arquivo menor.',
+      summary: isPdf 
+        ? 'Não foi possível analisar completamente o PDF. Talvez seja devido à forma como o texto está armazenado no arquivo.'
+        : 'Não foi possível analisar o documento. Tente novamente ou use um arquivo menor.',
       highlights: [],
       keyPoints: [
         {
           title: 'Erro na Análise',
-          description: 'Ocorreu um problema durante a análise. Verifique sua chave API e o formato do arquivo.'
+          description: isPdf 
+            ? 'O PDF pode estar protegido, ser uma digitalização ou ter outro formato que dificulta a extração de texto. Tente um PDF com texto selecionável.'
+            : 'Ocorreu um problema durante a análise. Verifique sua chave API e o formato do arquivo.'
         }
       ],
-      content: fileContent.substring(0, 500) + '\n\n[Documento truncado devido a erro no processamento]'
+      content: fileContent.substring(0, 1000) + '\n\n[Documento truncado devido a erro no processamento]'
     };
   }
+};
+
+/**
+ * Cria prompt específico para tentar processar PDFs com problemas
+ */
+const createPdfAnalysisPrompt = (
+  fileContent: string,
+  fileName: string,
+  fileType: DocumentType
+): string => {
+  return `
+    Você é um assistente jurídico especializado. Este documento é um PDF com possíveis problemas 
+    de extração de texto, chamado "${fileName}". Faça o melhor possível para analisar baseado no 
+    texto disponível - mesmo que pareça fragmentado ou incompleto:
+    
+    1. Um resumo do que você conseguiu entender, sendo sincero sobre as limitações
+    2. Quaisquer trechos que pareçam relevantes, mesmo que incompletos
+    3. Pontos principais que podem ser inferidos do conteúdo disponível
+    4. Uma versão mais organizada do conteúdo disponível
+    
+    IMPORTANTE: NÃO INVENTE INFORMAÇÕES. Seja explícito sobre o que não está claro devido à qualidade 
+    da extração de texto. Se não houver conteúdo útil suficiente, diga isso claramente.
+    
+    Responda no formato JSON igual ao padrão:
+    
+    {
+      "summary": "resumo do que foi possível entender",
+      "highlights": [
+        {
+          "text": "trechos relevantes que foram possíveis extrair",
+          "page": 1,
+          "importance": "high|medium|low"
+        }
+      ],
+      "keyPoints": [
+        {
+          "title": "ponto identificado",
+          "description": "descrição baseada apenas no que está visível"
+        }
+      ],
+      "content": "conteúdo formatado da melhor forma possível"
+    }
+    
+    Texto disponível do PDF:
+    ${fileContent}
+  `;
 };

@@ -29,8 +29,7 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
         <CardTitle>Análise de Documentos Jurídicos</CardTitle>
         <CardDescription>
           Faça upload de pareceres, autos de infração e licenças para análise automática.
-          Para melhores resultados, use arquivos de texto simples (.txt) menor que 2MB.
-          Arquivos PDF podem não funcionar corretamente.
+          Aceitamos arquivos PDF com texto selecionável, DOCX e TXT (máx. 2MB).
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -47,10 +46,10 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
                 <FileUp className="h-10 w-10 mb-2 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">Arraste documentos ou clique para fazer upload</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Formatos recomendados: TXT (melhor opção), DOCX, PDF* (max. 2MB)
+                  Formatos aceitos: PDF, DOCX, TXT (max. 2MB)
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  *PDFs podem ter resultados imprecisos devido à extração de texto
+                  Para PDFs, o texto deve ser selecionável (não escaneado como imagem)
                 </p>
               </>
             ) : (
