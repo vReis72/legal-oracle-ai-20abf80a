@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +20,8 @@ import {
 } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { cn } from '@/lib/utils';
+import { processDocument, determineDocumentType, DocumentHighlight, DocumentKeyPoint } from '@/services/documentService';
+import { useToast } from '@/hooks/use-toast';
 
 interface Document {
   id: string;
@@ -30,15 +31,8 @@ interface Document {
   processed: boolean;
   content?: string;
   summary?: string;
-  highlights?: {
-    text: string;
-    page: number;
-    importance: 'high' | 'medium' | 'low';
-  }[];
-  keyPoints?: {
-    title: string;
-    description: string;
-  }[];
+  highlights?: DocumentHighlight[];
+  keyPoints?: DocumentKeyPoint[];
 }
 
 const DocumentReader = () => {
@@ -130,8 +124,9 @@ const DocumentReader = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
-  
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const { toast } = useToast();
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
       setUploading(true);
@@ -145,47 +140,73 @@ const DocumentReader = () => {
         if (progress >= 100) {
           clearInterval(interval);
           
-          // Simulate processing delay
-          setTimeout(() => {
-            const newDocument: Document = {
-              id: Date.now().toString(),
-              name: file.name,
-              type: file.name.toLowerCase().includes('parecer') 
-                ? 'parecer' 
-                : file.name.toLowerCase().includes('infracao') 
-                  ? 'auto-de-infracao' 
-                  : 'licenca',
-              uploadDate: new Date(),
-              processed: false
-            };
-            
-            setDocuments(prev => [newDocument, ...prev]);
-            setUploading(false);
-            setUploadProgress(0);
-            
-            // Simulate document processing
-            setTimeout(() => {
-              setDocuments(prev => prev.map(doc => 
-                doc.id === newDocument.id 
-                  ? {
-                      ...doc,
-                      processed: true,
-                      content: 'Conteúdo do documento carregado recentemente...',
-                      summary: 'Este é um resumo automático do documento carregado.',
-                      highlights: [
-                        { text: 'Trecho importante do documento.', page: 1, importance: 'medium' }
-                      ],
-                      keyPoints: [
-                        {
-                          title: 'Ponto Principal',
-                          description: 'Descrição do ponto principal do documento.'
-                        }
-                      ]
-                    } 
-                  : doc
-              ));
-            }, 3000);
-          }, 500);
+          // Create new document
+          const documentType = determineDocumentType(file.name);
+          const newDocument: Document = {
+            id: Date.now().toString(),
+            name: file.name,
+            type: documentType,
+            uploadDate: new Date(),
+            processed: false
+          };
+          
+          setDocuments(prev => [newDocument, ...prev]);
+          setSelectedDocument(newDocument);
+          setUploading(false);
+          setUploadProgress(0);
+          
+          // Process the document with OpenAI
+          const reader = new FileReader();
+          reader.onload = async (event) => {
+            if (event.target?.result) {
+              try {
+                const fileContent = event.target.result as string;
+                
+                // Process document using OpenAI
+                const analysis = await processDocument(fileContent, file.name, documentType);
+                
+                // Update document with analysis results
+                setDocuments(prev => prev.map(doc => 
+                  doc.id === newDocument.id 
+                    ? {
+                        ...doc,
+                        processed: true,
+                        content: analysis.content,
+                        summary: analysis.summary,
+                        highlights: analysis.highlights,
+                        keyPoints: analysis.keyPoints
+                      } 
+                    : doc
+                ));
+                
+                toast({
+                  title: "Documento analisado com sucesso",
+                  description: "O documento foi processado e analisado pela IA.",
+                });
+              } catch (error) {
+                console.error('Erro ao processar o documento:', error);
+                toast({
+                  variant: "destructive",
+                  title: "Erro ao processar documento",
+                  description: error instanceof Error ? error.message : "Ocorreu um erro durante a análise do documento.",
+                });
+                
+                // Mark as processed but with error
+                setDocuments(prev => prev.map(doc => 
+                  doc.id === newDocument.id 
+                    ? {
+                        ...doc,
+                        processed: true,
+                        content: "Ocorreu um erro ao processar este documento.",
+                        summary: "Não foi possível gerar o resumo devido a um erro.",
+                      } 
+                    : doc
+                ));
+              }
+            }
+          };
+          
+          reader.readAsText(file);
         }
       }, 100);
     }
