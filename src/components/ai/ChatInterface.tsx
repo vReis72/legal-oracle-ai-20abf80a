@@ -7,6 +7,8 @@ import { Send, User, Bot, Loader2, RefreshCw, AlertTriangle } from 'lucide-react
 import { cn } from '@/lib/utils';
 import { ChatMessage, sendChatMessage } from '@/services/chatService';
 import { useToast } from '@/hooks/use-toast';
+import { useApiKey } from '@/context/ApiKeyContext';
+import OpenAIKeyInput from '@/components/shared/OpenAIKeyInput';
 
 const ChatInterface = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -19,18 +21,12 @@ const ChatInterface = () => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [apiKey, setApiKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const { apiKey, setApiKey, isKeyConfigured } = useApiKey();
 
   useEffect(() => {
-    // Check if API key exists in localStorage
-    const savedKey = localStorage.getItem('openai_api_key');
-    if (savedKey) {
-      setApiKey(savedKey);
-    }
-    
     scrollToBottom();
   }, [messages]);
 
@@ -57,7 +53,7 @@ const ChatInterface = () => {
     
     try {
       if (!apiKey) {
-        throw new Error('API Key não configurada. Por favor, configure sua chave OpenAI na seção de Jurisprudência.');
+        throw new Error('API Key não configurada. Por favor, configure sua chave OpenAI.');
       }
       
       // Create array with system message and conversation history
@@ -190,18 +186,22 @@ const ChatInterface = () => {
           />
           <Button 
             type="submit" 
-            disabled={isLoading || !input.trim() || !apiKey} 
+            disabled={isLoading || !input.trim() || !isKeyConfigured} 
             size="icon"
             className="bg-eco-primary hover:bg-eco-dark"
           >
             <Send className="h-4 w-4" />
           </Button>
         </div>
-        {!apiKey && (
-          <p className="text-amber-600 text-xs mt-2 flex items-center">
-            <AlertTriangle className="h-3 w-3 mr-1" />
-            Configure sua chave API OpenAI na seção "Jurisprudência" para usar o chat
-          </p>
+        {!isKeyConfigured && (
+          <div className="mt-2">
+            <OpenAIKeyInput 
+              onKeySubmit={setApiKey}
+              forceOpen={!isKeyConfigured}
+              buttonVariant="default"
+              buttonSize="default"
+            />
+          </div>
         )}
       </form>
     </div>

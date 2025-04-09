@@ -1,5 +1,5 @@
-
 import { SearchResult } from './openaiService';
+import { getApiKey } from './apiKeyService';
 
 export interface ChatMessage {
   id: string;
@@ -23,14 +23,17 @@ export const sendChatMessage = async (
   apiKey: string
 ): Promise<string> => {
   try {
-    if (!apiKey) {
+    // Verificar se a chave foi fornecida ou usar a armazenada
+    const key = apiKey || getApiKey();
+    
+    if (!key) {
       throw new Error('API key não fornecida');
     }
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${key}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({

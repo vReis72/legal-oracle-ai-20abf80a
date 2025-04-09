@@ -11,27 +11,30 @@ import Documentos from "./pages/Documentos";
 import Alertas from "./pages/Alertas";
 import PecasJuridicas from "./pages/PecasJuridicas";
 import NotFound from "./pages/NotFound";
+import { ApiKeyProvider } from "./context/ApiKeyContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Layout />}>
-            <Route index element={<Index />} />
-            <Route path="/jurisprudencia" element={<Jurisprudencia />} />
-            <Route path="/documentos" element={<Documentos />} />
-            <Route path="/alertas" element={<Alertas />} />
-            <Route path="/pecas" element={<PecasJuridicas />} />
-            <Route path="*" element={<NotFound />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <ApiKeyProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Layout />}>
+              <Route index element={<Index />} />
+              <Route path="/jurisprudencia" element={<Jurisprudencia />} />
+              <Route path="/documentos" element={<Documentos />} />
+              <Route path="/alertas" element={<Alertas />} />
+              <Route path="/pecas" element={<PecasJuridicas />} />
+              <Route path="*" element={<NotFound />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </ApiKeyProvider>
   </QueryClientProvider>
 );
 

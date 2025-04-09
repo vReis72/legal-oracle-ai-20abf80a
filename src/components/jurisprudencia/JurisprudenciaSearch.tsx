@@ -1,12 +1,14 @@
+
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { SearchResult, searchJurisprudencia } from '@/services/openaiService';
-import OpenAIKeyInput from './OpenAIKeyInput';
 import SimpleSearchForm from './SimpleSearchForm';
 import AdvancedSearchForm from './AdvancedSearchForm';
 import SearchResults from './SearchResults';
 import ErrorMessage from './ErrorMessage';
+import OpenAIKeyInput from '@/components/shared/OpenAIKeyInput';
+import { useApiKey } from '@/context/ApiKeyContext';
 
 // Mock data for fallback
 const mockSearchResults: SearchResult[] = [
@@ -58,14 +60,9 @@ const JurisprudenciaSearch: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
-  const [apiKey, setApiKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-
-  const handleApiKeySubmit = (key: string) => {
-    setApiKey(key);
-    setError(null);
-  };
+  const { apiKey, setApiKey, isKeyConfigured } = useApiKey();
 
   const handleSimpleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -161,7 +158,7 @@ const JurisprudenciaSearch: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full">
-      <OpenAIKeyInput onKeySubmit={handleApiKeySubmit} />
+      <OpenAIKeyInput onKeySubmit={setApiKey} forceOpen={!isKeyConfigured} />
       
       <Tabs defaultValue="simples" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
@@ -196,8 +193,16 @@ const JurisprudenciaSearch: React.FC = () => {
         <SearchResults 
           results={results}
           hasSearched={hasSearched}
-          sortByRelevance={sortByRelevance}
-          sortByDate={sortByDate}
+          sortByRelevance={() => {
+            const sorted = [...results].sort((a, b) => b.relevancia - a.relevancia);
+            setResults(sorted);
+          }}
+          sortByDate={() => {
+            const sorted = [...results].sort((a, b) => 
+              new Date(b.data).getTime() - new Date(a.data).getTime()
+            );
+            setResults(sorted);
+          }}
         />
       )}
     </div>
