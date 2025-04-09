@@ -1,11 +1,92 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import React from 'react';
+import ChatInterface from '@/components/ai/ChatInterface';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Scale, BookOpen, FileText, Bell, MessageSquare } from "lucide-react";
+import { Link } from 'react-router-dom';
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
+    <div className="eco-container">
+      <div className="max-w-3xl mx-auto text-center mb-10">
+        <h1 className="text-4xl font-serif font-bold mb-4 text-eco-dark">
+          <Scale className="inline-block mr-2 mb-1 h-10 w-10 text-eco-primary" />
+          EcoLegal Oracle
+        </h1>
+        <p className="text-xl text-muted-foreground">
+          Seu assistente de IA especializado em direito ambiental
+        </p>
+      </div>
+      
+      <div className="mb-10">
+        <ChatInterface />
+      </div>
+      
+      <div className="mb-4">
+        <h2 className="text-2xl font-serif font-semibold mb-2 text-eco-dark">
+          Recursos Disponíveis
+        </h2>
+        <p className="text-muted-foreground">
+          Explore todas as ferramentas do EcoLegal Oracle para otimizar sua atuação no direito ambiental
+        </p>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <Link to="/" className="block">
+          <Card className="h-full hover:shadow-md transition-all">
+            <CardHeader className="pb-2">
+              <MessageSquare className="h-6 w-6 text-eco-primary mb-2" />
+              <CardTitle>Assistente</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription>
+                Tire dúvidas e receba orientações especializadas em direito ambiental
+              </CardDescription>
+            </CardContent>
+          </Card>
+        </Link>
+        
+        <Link to="/jurisprudencia" className="block">
+          <Card className="h-full hover:shadow-md transition-all">
+            <CardHeader className="pb-2">
+              <BookOpen className="h-6 w-6 text-eco-primary mb-2" />
+              <CardTitle>Jurisprudência</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription>
+                Pesquise e analise precedentes relevantes em matéria ambiental
+              </CardDescription>
+            </CardContent>
+          </Card>
+        </Link>
+        
+        <Link to="/documentos" className="block">
+          <Card className="h-full hover:shadow-md transition-all">
+            <CardHeader className="pb-2">
+              <FileText className="h-6 w-6 text-eco-primary mb-2" />
+              <CardTitle>Documentos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription>
+                Analise pareceres, autos de infração e licenças ambientais
+              </CardDescription>
+            </CardContent>
+          </Card>
+        </Link>
+        
+        <Link to="/alertas" className="block">
+          <Card className="h-full hover:shadow-md transition-all">
+            <CardHeader className="pb-2">
+              <Bell className="h-6 w-6 text-eco-primary mb-2" />
+              <CardTitle>Alertas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription>
+                Receba notificações sobre novas normas e resoluções ambientais
+              </CardDescription>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
     </div>
   );
