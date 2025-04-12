@@ -16,7 +16,7 @@ const Header = () => {
       <div className="container mx-auto flex flex-col md:flex-row justify-between items-center">
         <div className="flex items-center mb-4 md:mb-0">
           <Scale className="h-8 w-8 mr-2" />
-          <Link to="/" className="text-2xl font-serif font-bold">EcoLegal Oracle</Link>
+          <Link to="/" className="text-2xl font-serif font-bold">Legal Oracle AI</Link>
         </div>
         
         <Tabs value={currentPath} className="w-full md:w-auto">
