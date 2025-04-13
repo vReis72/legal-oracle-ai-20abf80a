@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -40,8 +39,7 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
           disabled={isLoading || !input.trim() || !isKeyConfigured} 
           className="p-2 hover:bg-transparent flex-shrink-0"
         >
-          {/* Using a robot icon from Lucide as fallback */}
-          <Send className="h-12 w-12 hover:scale-105 transition-transform" />
+          <Send className="h-16 w-16 hover:scale-105 transition-transform" />
         </Button>
       </div>
       {!isKeyConfigured && (
