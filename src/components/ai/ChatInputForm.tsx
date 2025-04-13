@@ -2,6 +2,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Send } from "lucide-react";
 import OpenAIKeyInput from '@/components/shared/OpenAIKeyInput';
 
 interface ChatInputFormProps {
@@ -39,11 +40,8 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
           disabled={isLoading || !input.trim() || !isKeyConfigured} 
           className="p-2 hover:bg-transparent flex-shrink-0"
         >
-          <img 
-            src="/lovable-uploads/legal-oracle-robot.png" 
-            alt="Legal Oracle AI Robot" 
-            className="h-12 w-12 hover:scale-105 transition-transform"
-          />
+          {/* Using a robot icon from Lucide as fallback */}
+          <Send className="h-12 w-12 hover:scale-105 transition-transform" />
         </Button>
       </div>
       {!isKeyConfigured && (
