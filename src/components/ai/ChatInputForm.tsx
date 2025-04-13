@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { Bot, Send } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import OpenAIKeyInput from '@/components/shared/OpenAIKeyInput';
@@ -24,7 +23,7 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
 }) => {
   return (
     <form onSubmit={handleSendMessage} className="p-4 border-t bg-background">
-      <div className="flex gap-2 items-center">
+      <div className="relative flex items-center">
         <Textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -38,9 +37,10 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
           disabled={isLoading || !input.trim() || !isKeyConfigured} 
           className="absolute right-6 bottom-6 p-0 hover:bg-transparent"
         >
-          <Bot 
-            className="h-8 w-8 text-eco-primary hover:text-eco-dark transition-colors" 
-            strokeWidth={1.5} 
+          <img 
+            src="/lovable-uploads/legal-oracle-robot.png" 
+            alt="Legal Oracle AI Robot" 
+            className="h-12 w-12 hover:scale-105 transition-transform"
           />
         </Button>
       </div>
@@ -59,3 +59,4 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
 };
 
 export default ChatInputForm;
+
