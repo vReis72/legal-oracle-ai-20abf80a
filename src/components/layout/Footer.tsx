@@ -12,7 +12,7 @@ const Footer = () => {
             <span className="font-serif font-bold">Legal Oracle AI</span>
           </div>
           <div className="text-sm text-eco-light/70">
-            <p>© 2025 Legal Oracle AI. Uma solução de IA para o Direito Ambiental.</p>
+            <p>© 2025 Legal Oracle AI. O seu Assistente Jurídico pessoal. By: K1nGs Data Mining & Artificial Intelligence.</p>
           </div>
         </div>
       </div>
