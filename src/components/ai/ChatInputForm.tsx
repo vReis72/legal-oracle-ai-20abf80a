@@ -23,19 +23,21 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
 }) => {
   return (
     <form onSubmit={handleSendMessage} className="p-4 border-t bg-background">
-      <div className="relative flex items-center">
-        <Textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Digite sua dúvida sobre Direito e clique no robozinho ao lado..."
-          className="resize-none pr-12"
-          rows={2}
-        />
+      <div className="flex gap-2 items-end">
+        <div className="relative flex-1">
+          <Textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Digite sua dúvida sobre Direito e clique no robozinho ao lado..."
+            className="resize-none"
+            rows={2}
+          />
+        </div>
         <Button 
           type="submit" 
           variant="ghost"
           disabled={isLoading || !input.trim() || !isKeyConfigured} 
-          className="absolute right-6 bottom-6 p-0 hover:bg-transparent"
+          className="p-2 hover:bg-transparent flex-shrink-0"
         >
           <img 
             src="/lovable-uploads/legal-oracle-robot.png" 
@@ -59,4 +61,3 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
 };
 
 export default ChatInputForm;
-
