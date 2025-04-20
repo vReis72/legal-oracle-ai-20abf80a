@@ -73,7 +73,7 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     <ApiKeyContext.Provider value={{ 
       apiKey, 
       setApiKey, 
-      isKeyConfigured: !!apiKey,
+      isKeyConfigured: !!apiKey || hasApiKey(),
       checkApiKey
     }}>
       {children}

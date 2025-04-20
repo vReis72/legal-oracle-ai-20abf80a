@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Key, Check } from 'lucide-react';
 import { useApiKey } from '@/context/ApiKeyContext';
+import { hasApiKey } from '@/services/apiKeyService';
 
 interface OpenAIKeyInputProps {
   onKeySubmit?: (key: string) => void;
@@ -20,16 +21,19 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
   buttonVariant = "outline", 
   buttonSize = "sm" 
 }) => {
-  const [isOpen, setIsOpen] = useState(forceOpen);
+  const [isOpen, setIsOpen] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [isValidating, setIsValidating] = useState(false);
   const { apiKey, setApiKey, isKeyConfigured } = useApiKey();
   const { toast } = useToast();
 
   useEffect(() => {
-    // Abrir diálogo se forceOpen é true e nenhuma API key está configurada
-    if (forceOpen && !isKeyConfigured) {
+    // Só abrir o diálogo se a chave não estiver configurada E forceOpen for true
+    const keyExistsInStorage = hasApiKey();
+    if (forceOpen && !keyExistsInStorage && !isKeyConfigured) {
       setIsOpen(true);
+    } else {
+      setIsOpen(false);
     }
   }, [forceOpen, isKeyConfigured]);
 

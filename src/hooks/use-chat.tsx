@@ -9,7 +9,7 @@ export const useChat = () => {
     {
       id: '1',
       role: 'assistant',
-      content: 'Olá! Sou o assistente especializado em direito. Como posso ajudar você hoje?',
+      content: 'Olá! Sou o Legal Oracle IA, assistente especializado em direito. Como posso ajudar você hoje?',
       timestamp: new Date()
     }
   ]);

@@ -20,6 +20,9 @@ const ApiKeyCheck: React.FC<ApiKeyCheckProps> = ({ children }) => {
         setShowDialog(true);
       }, 1000);
       return () => clearTimeout(timer);
+    } else {
+      // Garantir que o diálogo não seja exibido se a chave já estiver configurada
+      setShowDialog(false);
     }
   }, [isKeyConfigured]);
 
@@ -30,9 +33,9 @@ const ApiKeyCheck: React.FC<ApiKeyCheckProps> = ({ children }) => {
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Bem-vindo ao EcoLegal Oracle</DialogTitle>
+            <DialogTitle>Bem-vindo ao Legal Oracle IA</DialogTitle>
             <DialogDescription>
-              Para utilizar todos os recursos do EcoLegal Oracle, é necessário configurar sua chave da API OpenAI.
+              Para utilizar todos os recursos do Legal Oracle IA, é necessário configurar sua chave da API OpenAI.
               Você pode obter uma chave em <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-eco-primary hover:underline">platform.openai.com/api-keys</a>.
             </DialogDescription>
           </DialogHeader>
