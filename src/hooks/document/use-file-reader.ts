@@ -11,7 +11,15 @@
 export const readFileContent = (file: File): Promise<string> => {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
+    
+    // Timeout para evitar que a leitura fique presa
+    const timeoutId = setTimeout(() => {
+      reader.abort();
+      reject(new Error("Timeout ao ler o arquivo"));
+    }, 30000); // 30 segundos de timeout
+    
     reader.onload = (event) => {
+      clearTimeout(timeoutId);
       if (event.target?.result) {
         let content = event.target.result as string;
         
@@ -29,10 +37,24 @@ export const readFileContent = (file: File): Promise<string> => {
         reject(new Error("Falha ao ler o arquivo"));
       }
     };
-    reader.onerror = () => reject(new Error("Erro ao ler o arquivo"));
+    
+    reader.onerror = () => {
+      clearTimeout(timeoutId);
+      reject(new Error("Erro ao ler o arquivo"));
+    };
+    
+    reader.onabort = () => {
+      clearTimeout(timeoutId);
+      reject(new Error("Leitura do arquivo abortada"));
+    };
     
     // Para arquivos PDF, tentamos como texto primeiro
-    reader.readAsText(file);
+    try {
+      reader.readAsText(file);
+    } catch (error) {
+      clearTimeout(timeoutId);
+      reject(error);
+    }
   });
 };
 

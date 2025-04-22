@@ -29,9 +29,6 @@ export const useDocumentProcessor = (
    * @param file Arquivo a ser processado
    */
   const processFile = async (file: File) => {
-    // Sempre consideramos a API Key como configurada se chegamos a este ponto
-    // devido às verificações anteriores no fluxo
-    
     // Validação do tamanho do arquivo apenas
     if (!validateFileSize(file)) {
       return;
@@ -96,7 +93,7 @@ export const useDocumentProcessor = (
           };
         });
       
-      // Atualizar documento com resultados
+      // Garantir que o intervalo seja limpo e o upload finalizado
       clearInterval(uploadInterval);
       completeUpload();
       
@@ -106,17 +103,17 @@ export const useDocumentProcessor = (
           ? {
               ...doc,
               processed: true,
-              content: analysis.content,
-              summary: analysis.summary,
-              highlights: analysis.highlights,
-              keyPoints: analysis.keyPoints
+              content: analysis.content || "Conteúdo não disponível",
+              summary: analysis.summary || "Resumo não disponível",
+              highlights: analysis.highlights || [],
+              keyPoints: analysis.keyPoints || []
             } 
           : doc
       ));
       
       toast({
         title: "Documento processado",
-        description: isPdf && analysis.keyPoints?.some(kp => kp.title?.includes("Aviso"))
+        description: isPdf && analysis.keyPoints?.some(kp => kp.title?.includes("Aviso") || kp.title?.includes("PDF com problemas"))
           ? "O PDF foi analisado, mas com algumas limitações na extração de texto."
           : "O documento foi analisado com sucesso.",
       });
@@ -136,7 +133,7 @@ export const useDocumentProcessor = (
             : "Ocorreu um erro inesperado durante o processamento.",
       });
       
-      // Atualizar o documento que falhou
+      // Atualizar o documento que falhou - IMPORTANTE: marcar como processado para sair do estado de loading
       setDocuments(prev => prev.map(doc => 
         doc.id === newDocument.id 
           ? {
@@ -155,6 +152,7 @@ export const useDocumentProcessor = (
           : doc
       ));
       
+      // É importante garantir que o upload seja cancelado corretamente
       cancelUpload();
     }
   };

@@ -33,7 +33,7 @@ export const cleanDocumentContent = (fileContent: string): {
     cleanedContent = cleanedContent.replace(/\s+/g, ' ');
     
     // Obtém uma amostra maior para análise
-    const sampleContent = cleanedContent.substring(0, 30000);
+    const sampleContent = cleanedContent.substring(0, 15000); // Reduzimos o tamanho para processamento mais rápido
     
     // Verifica se o conteúdo está ilegível
     const isUnreadable = isContentMostlyUnreadable(sampleContent);
@@ -43,15 +43,14 @@ export const cleanDocumentContent = (fileContent: string): {
       isBinary: true,
       isUnreadable,
       warning: isUnreadable 
-        ? "O conteúdo extraído do PDF está completamente ilegível e corrompido, consistindo principalmente de caracteres aleatórios e sem sentido. Não há informações úteis ou compreensíveis disponíveis para análise."
+        ? "O conteúdo extraído do PDF está completamente ilegível. O arquivo pode ser uma digitalização sem OCR ou estar protegido."
         : "Este documento parece ser um PDF com extração limitada de texto. A análise pode estar incompleta."
     };
   }
   
   // Se o conteúdo não parece ser binário, mas ainda é muito grande, limitamos
-  // Aumentamos para 30000 caracteres para melhor análise em documentos de texto válidos
   return {
-    cleanContent: fileContent.substring(0, 30000),
+    cleanContent: fileContent.substring(0, 15000), // Reduzimos o tamanho para processamento mais rápido
     isBinary: false,
     isUnreadable: false
   };

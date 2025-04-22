@@ -24,13 +24,20 @@ export const processDocument = async (
     const { cleanContent, isBinary, isUnreadable, warning } = cleanDocumentContent(fileContent);
     
     // Se o documento estiver completamente ilegível, retornamos uma análise que explica o problema
+    // sem tentar processá-lo com a API para evitar timeout
     if (isUnreadable) {
-      console.error('Conteúdo do documento ilegível:', warning);
+      console.log('Documento detectado como ilegível, retornando resposta padrão');
       return createPdfErrorAnalysis(warning);
     }
     
     // Verificar se é um PDF com problemas de extração
     const isPdf = fileName.toLowerCase().endsWith('.pdf');
+    
+    // Se o conteúdo for muito pequeno após limpeza e for um PDF, provavelmente é ilegível
+    if (isPdf && cleanContent.length < 100) {
+      console.log('PDF com conteúdo muito curto após limpeza, provavelmente ilegível');
+      return createPdfErrorAnalysis("O PDF contém muito pouco texto extraível.");
+    }
     
     // Criar prompt para a análise
     const prompt = isPdf 
