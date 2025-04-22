@@ -39,7 +39,7 @@ const Index = () => {
             </CardHeader>
             <CardContent>
               <CardDescription>
-                Tire dúvidas e receba orientações especializadas em direito
+                Tire suas dúvidas, receba orientações, dicas e sugestões na área do Direito, conversando em linguagem natural com seu assistente jurídico pessoal
               </CardDescription>
             </CardContent>
           </Card>
