@@ -12,7 +12,7 @@ import Alertas from "./pages/Alertas";
 import PecasJuridicas from "./pages/PecasJuridicas";
 import NotFound from "./pages/NotFound";
 import { ApiKeyProvider } from "./context/ApiKeyContext";
-import { useState } from "react";
+import React, { useState } from "react";
 
 const App = () => {
   // Move the QueryClient initialization inside the component
