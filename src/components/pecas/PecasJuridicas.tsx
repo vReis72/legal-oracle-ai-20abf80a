@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,79 +43,91 @@ interface Peca {
   conteudo?: string;
 }
 
-const mockTemplates: Template[] = [
+const modelosReais: Template[] = [
   {
     id: '1',
-    nome: 'Impugnação de Auto de Infração Ambiental',
-    categoria: 'Defesa Administrativa',
-    descricao: 'Modelo para impugnar autos de infração emitidos por órgãos ambientais como IBAMA e ICMBio.',
+    nome: 'Petição Inicial de Cobrança',
+    categoria: 'Cível',
+    descricao: 'Modelo padrão para promover ação de cobrança de dívida em face de pessoa física ou jurídica.',
     campos: [
-      { nome: 'Número do Auto de Infração', tipo: 'texto', obrigatorio: true },
-      { nome: 'Data do Auto de Infração', tipo: 'data', obrigatorio: true },
-      { nome: 'Órgão Emissor', tipo: 'opcao', obrigatorio: true, opcoes: ['IBAMA', 'ICMBio', 'Secretaria Estadual', 'Secretaria Municipal'] },
-      { nome: 'Valor da Multa', tipo: 'numero', obrigatorio: true },
-      { nome: 'Nome do Autuado', tipo: 'texto', obrigatorio: true },
-      { nome: 'Descrição da Infração', tipo: 'texto', obrigatorio: true }
+      { nome: 'Nome do Autor', tipo: 'texto', obrigatorio: true },
+      { nome: 'Nome do Réu', tipo: 'texto', obrigatorio: true },
+      { nome: 'Valor da Cobrança', tipo: 'numero', obrigatorio: true },
+      { nome: 'Motivo da Cobrança', tipo: 'texto', obrigatorio: true },
+      { nome: 'Vara/Comarca', tipo: 'texto', obrigatorio: true }
     ]
   },
   {
     id: '2',
-    nome: 'Petição Inicial de Ação Civil Pública Ambiental',
-    categoria: 'Ação Judicial',
-    descricao: 'Modelo para propositura de Ação Civil Pública por danos ambientais.',
+    nome: 'Contestação Trabalhista',
+    categoria: 'Trabalhista',
+    descricao: 'Modelo para apresentar defesa em reclamação trabalhista.',
     campos: [
-      { nome: 'Vara/Comarca', tipo: 'texto', obrigatorio: true },
-      { nome: 'Nome do Réu', tipo: 'texto', obrigatorio: true },
-      { nome: 'Descrição do Dano Ambiental', tipo: 'texto', obrigatorio: true },
-      { nome: 'Local do Dano', tipo: 'texto', obrigatorio: true },
-      { nome: 'Data do Dano', tipo: 'data', obrigatorio: true },
-      { nome: 'Valor da Causa', tipo: 'numero', obrigatorio: true }
+      { nome: 'Nome da Reclamante', tipo: 'texto', obrigatorio: true },
+      { nome: 'Nome da Reclamada', tipo: 'texto', obrigatorio: true },
+      { nome: 'Vara do Trabalho', tipo: 'texto', obrigatorio: true },
+      { nome: 'Principais Pontos da Defesa', tipo: 'texto', obrigatorio: true }
     ]
   },
   {
     id: '3',
-    nome: 'Recurso de Multa Ambiental',
-    categoria: 'Defesa Administrativa',
-    descricao: 'Modelo para recorrer de decisões administrativas em primeira instância sobre multas ambientais.',
+    nome: 'Recurso de Apelação Cível',
+    categoria: 'Cível',
+    descricao: 'Modelo para apresentação de apelação contra sentença em processos cíveis.',
     campos: [
+      { nome: 'Nome do Apelante', tipo: 'texto', obrigatorio: true },
+      { nome: 'Nome do Apelado', tipo: 'texto', obrigatorio: true },
       { nome: 'Número do Processo', tipo: 'texto', obrigatorio: true },
-      { nome: 'Órgão Julgador', tipo: 'texto', obrigatorio: true },
-      { nome: 'Data da Decisão', tipo: 'data', obrigatorio: true },
-      { nome: 'Nome do Recorrente', tipo: 'texto', obrigatorio: true },
-      { nome: 'Resumo da Decisão Recorrida', tipo: 'texto', obrigatorio: true }
+      { nome: 'Vara/Tribunal', tipo: 'texto', obrigatorio: true },
+      { nome: 'Razões da Apelação', tipo: 'texto', obrigatorio: true }
     ]
   },
   {
     id: '4',
-    nome: 'Contestação em Ação Ambiental',
-    categoria: 'Ação Judicial',
-    descricao: 'Modelo para apresentar defesa em ações judiciais ambientais.',
+    nome: 'Mandado de Segurança',
+    categoria: 'Constitucional',
+    descricao: 'Modelo padrão de mandado de segurança para proteção de direito líquido e certo.',
     campos: [
-      { nome: 'Número do Processo', tipo: 'texto', obrigatorio: true },
-      { nome: 'Nome do Autor', tipo: 'texto', obrigatorio: true },
-      { nome: 'Nome do Réu', tipo: 'texto', obrigatorio: true },
-      { nome: 'Vara/Tribunal', tipo: 'texto', obrigatorio: true },
-      { nome: 'Resumo da Acusação', tipo: 'texto', obrigatorio: true }
+      { nome: 'Nome do Impetrante', tipo: 'texto', obrigatorio: true },
+      { nome: 'Autoridade Coatora', tipo: 'texto', obrigatorio: true },
+      { nome: 'Direito Violado', tipo: 'texto', obrigatorio: true },
+      { nome: 'Tribunal Competente', tipo: 'opcao', obrigatorio: true, opcoes: [
+        'Justiça Estadual', 'Justiça Federal', 'Justiça do Trabalho', 'STJ', 'STF', 'TRF-1', 'TRF-2', 'TRF-3', 'TRF-4', 'TRF-5', 'TJSP', 'TJRJ', 'TRE', 'TRT'
+      ] },
+      { nome: 'Descrição dos Fatos', tipo: 'texto', obrigatorio: true }
     ]
   },
   {
     id: '5',
-    nome: 'Termo de Compromisso de Ajustamento de Conduta (TAC)',
-    categoria: 'Acordos',
-    descricao: 'Modelo de TAC para regularização de condutas lesivas ao meio ambiente.',
+    nome: 'Acordo Extrajudicial',
+    categoria: 'Geral',
+    descricao: 'Minuta de acordo extrajudicial com possibilidade de ampla personalização.',
     campos: [
-      { nome: 'Compromitente (Órgão Ambiental)', tipo: 'texto', obrigatorio: true },
-      { nome: 'Compromissário', tipo: 'texto', obrigatorio: true },
-      { nome: 'Descrição do Dano/Irregularidade', tipo: 'texto', obrigatorio: true },
-      { nome: 'Localização da Área', tipo: 'texto', obrigatorio: true },
-      { nome: 'Prazo para Regularização', tipo: 'numero', obrigatorio: true },
-      { nome: 'Valor da Multa por Descumprimento', tipo: 'numero', obrigatorio: true }
+      { nome: 'Nome da Parte 1', tipo: 'texto', obrigatorio: true },
+      { nome: 'Nome da Parte 2', tipo: 'texto', obrigatorio: true },
+      { nome: 'Objeto do Acordo', tipo: 'texto', obrigatorio: true },
+      { nome: 'Valor Envolvido', tipo: 'numero', obrigatorio: false },
+      { nome: 'Cidade/Data', tipo: 'texto', obrigatorio: true }
+    ]
+  },
+  {
+    id: '6',
+    nome: 'Pedido de Habeas Corpus',
+    categoria: 'Criminal',
+    descricao: 'Modelo para pedido de habeas corpus perante tribunal competente.',
+    campos: [
+      { nome: 'Nome do Paciente', tipo: 'texto', obrigatorio: true },
+      { nome: 'Autoridade Coatora', tipo: 'texto', obrigatorio: true },
+      { nome: 'Fato Gerador', tipo: 'texto', obrigatorio: true },
+      { nome: 'Tribunal Competente', tipo: 'opcao', obrigatorio: true, opcoes: [
+        'Tribunal de Justiça Estadual', 'Tribunal Regional Federal', 'STJ', 'STF'
+      ] }
     ]
   }
 ];
 
 const PecasJuridicas = () => {
-  const [templates] = useState<Template[]>(mockTemplates);
+  const [templates] = useState<Template[]>(modelosReais);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [pecas, setPecas] = useState<Peca[]>([
     {
@@ -147,59 +158,29 @@ const PecasJuridicas = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<string>('');
   
-  // Mock content for demonstration
   const mockContent = `
-EXCELENTÍSSIMO(A) SENHOR(A) PRESIDENTE DO INSTITUTO BRASILEIRO DO MEIO AMBIENTE E DOS RECURSOS NATURAIS RENOVÁVEIS – IBAMA
+EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO DA ${novaPeca.campos?.["Vara/Comarca"] || '[VARA/COMARCA]'} 
 
-AUTO DE INFRAÇÃO Nº 123456-A
-PROCESSO ADMINISTRATIVO Nº 02008.000123/2024-01
+${novaPeca.campos?.["Nome do Autor"] || '[NOME DO AUTOR]'}, por seu advogado infra-assinado, vem propor a presente
 
-EMPRESA XYZ LTDA., pessoa jurídica de direito privado, inscrita no CNPJ sob o nº XX.XXX.XXX/0001-XX, com sede na [endereço completo], por seus advogados que esta subscrevem (procuração anexa), vem, respeitosamente, à presença de Vossa Excelência, apresentar
+AÇÃO DE COBRANÇA
 
-IMPUGNAÇÃO AO AUTO DE INFRAÇÃO
-
-lavrado em 05/03/2024, pelos fatos e fundamentos jurídicos a seguir expostos.
+em face de ${novaPeca.campos?.["Nome do Réu"] || '[NOME DO RÉU]'}, pelos seguintes fatos e fundamentos jurídicos:
 
 I – DOS FATOS
 
-Em 05/03/2024, a Impugnante foi autuada pelo IBAMA por suposta infração ambiental, consubstanciada na "supressão de vegetação nativa em Área de Preservação Permanente sem autorização do órgão ambiental competente", sendo aplicada multa no valor de R$ 50.000,00 (cinquenta mil reais).
+${novaPeca.campos?.["Motivo da Cobrança"] || '[DESCREVA O MOTIVO DA COBRANÇA]'}
 
-Contudo, como será demonstrado, a autuação padece de vícios formais e materiais que comprometem sua validade, impondo-se o seu cancelamento.
+II – DO DIREITO
 
-II – DAS PRELIMINARES
+O direito à cobrança está fundamentado nos arts. 389 e 395 do Código Civil. Comprovada a inadimplência e o valor devido de R$ ${novaPeca.campos?.["Valor da Cobrança"] || '[VALOR]'}, resta ao autor a tutela jurisdicional.
 
-II.1 – DA NULIDADE DO AUTO DE INFRAÇÃO POR VÍCIO FORMAL
+III – DOS PEDIDOS
 
-O auto de infração não atende aos requisitos mínimos previstos no art. 96 do Decreto nº 6.514/2008, notadamente quanto à descrição precisa da infração supostamente cometida e à indicação dos dispositivos legais e regulamentares infringidos.
-
-A descrição genérica impede o pleno exercício do direito de defesa, assegurado pela Constituição Federal e pela Lei nº 9.784/1999, que regula o processo administrativo federal.
-
-II.2 – DA AUSÊNCIA DE NEXO CAUSAL
-
-Não há nos autos elementos probatórios que demonstrem o nexo de causalidade entre a conduta da Impugnante e o dano ambiental apontado no auto de infração.
-
-III – DO MÉRITO
-
-III.1 – DA INEXISTÊNCIA DE INFRAÇÃO AMBIENTAL
-
-A área objeto da autuação não constitui Área de Preservação Permanente, conforme se comprova pelos estudos técnicos em anexo, elaborados por profissionais habilitados, com Anotação de Responsabilidade Técnica registrada junto ao CREA.
-
-III.2 – DA LICENÇA AMBIENTAL VÁLIDA
-
-A Impugnante possui licença ambiental válida para suas atividades, emitida pela Secretaria Estadual de Meio Ambiente (documento anexo), com base em estudos técnicos aprovados pelo órgão ambiental competente.
-
-III.3 – DA DESPROPORCIONALIDADE DA MULTA
-
-Ainda que se admitisse a ocorrência de infração, o que se cogita apenas por amor ao debate, o valor da multa aplicada mostra-se manifestamente desproporcional, não observando os critérios estabelecidos nos arts. 4º e 6º da Lei nº 9.605/98.
-
-IV – DOS PEDIDOS
-
-Ante o exposto, requer-se:
-
-a) O recebimento e processamento da presente impugnação;
-b) A anulação do Auto de Infração nº 123456-A, pelos vícios formais apontados;
-c) Subsidiariamente, o cancelamento da penalidade imposta, ante a inexistência de infração ambiental;
-d) Ainda subsidiariamente, a redução do valor da multa aplicada, observando-se os princípios da razoabilidade e proporcionalidade.
+Diante do exposto, requer:
+a) A citação do réu para, querendo, apresentar defesa;
+b) A condenação ao pagamento do valor devido;
+c) A condenação do réu em custas e honorários.
 
 Nestes termos,
 Pede deferimento.
@@ -207,8 +188,8 @@ Pede deferimento.
 [Local], [Data]
 
 [Advogado]
-OAB/XX nº XXXXX
-  `;
+OAB/UF nº XXXXX
+`;
 
   const handleSelectTemplate = (templateId: string) => {
     const template = templates.find(t => t.id === templateId);
@@ -235,7 +216,6 @@ OAB/XX nº XXXXX
   const handleCreatePeca = () => {
     setIsGenerating(true);
     
-    // Simulate API delay for generating document
     setTimeout(() => {
       const newPeca: Peca = {
         id: Date.now().toString(),
@@ -251,7 +231,6 @@ OAB/XX nº XXXXX
       setGeneratedContent(mockContent);
       setIsGenerating(false);
       
-      // Reset form
       setNovaPeca({
         nome: '',
         templateId: '',
