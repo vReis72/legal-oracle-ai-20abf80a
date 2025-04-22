@@ -15,12 +15,12 @@ export const analyzeDocumentWithAI = async (
   const apiKey = getApiKey();
   
   if (!apiKey) {
-    throw new Error('API key não fornecida');
+    throw new Error('API key não encontrada');
   }
 
-  // Aumentar timeout para 60 segundos para permitir análise mais completa
+  // Aumentar timeout para 120 segundos para permitir análise mais completa em PDFs grandes
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 60000);
+  const timeoutId = setTimeout(() => controller.abort(), 120000);
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -30,12 +30,12 @@ export const analyzeDocumentWithAI = async (
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: "gpt-4o", // Usando modelo mais capaz para melhor análise
+        model: "gpt-4o", // Usando modelo mais capaz para melhor análise de PDFs
         messages: [
           {
             role: 'system',
             content: isPdf 
-              ? 'Você é um assistente especializado em extrair e analisar conteúdo de PDFs, mesmo quando o texto está mal formatado ou parcialmente corrompido.'
+              ? 'Você é um assistente especializado em extrair e analisar conteúdo de PDFs, mesmo quando o texto está mal formatado ou parcialmente corrompido. Foque em extrair as informações mais relevantes e ignorar partes ilegíveis.'
               : 'Você é um assistente jurídico especializado que analisa documentos com precisão, sem inventar informações.'
           },
           {
@@ -43,8 +43,8 @@ export const analyzeDocumentWithAI = async (
             content: prompt
           }
         ],
-        temperature: 0.1,
-        max_tokens: 2500,
+        temperature: 0.1, // Mantém consistência nas respostas
+        max_tokens: 4000, // Aumentamos para documentos mais longos
       }),
       signal: controller.signal,
     });

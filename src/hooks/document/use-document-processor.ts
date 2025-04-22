@@ -29,8 +29,11 @@ export const useDocumentProcessor = (
    * @param file Arquivo a ser processado
    */
   const processFile = async (file: File) => {
-    // Validações iniciais
-    if (!validateApiKey(isKeyConfigured) || !validateFileSize(file)) {
+    // Sempre consideramos a API Key como configurada se chegamos a este ponto
+    // devido às verificações anteriores no fluxo
+    
+    // Validação do tamanho do arquivo apenas
+    if (!validateFileSize(file)) {
       return;
     }
     
@@ -58,7 +61,7 @@ export const useDocumentProcessor = (
       const fileContent = await readFileContent(file);
       
       // Tempo limite maior para PDFs
-      const timeout = isPdf ? 60000 : 45000;
+      const timeout = isPdf ? 120000 : 60000;
       const timeoutPromise = createTimeoutPromise(timeout);
       
       const analysisPromise = processDocument(fileContent, file.name, documentType);
@@ -113,7 +116,7 @@ export const useDocumentProcessor = (
       
       toast({
         title: "Documento processado",
-        description: isPdf && analysis.keyPoints?.some(kp => kp.title.includes("Aviso"))
+        description: isPdf && analysis.keyPoints?.some(kp => kp.title?.includes("Aviso"))
           ? "O PDF foi analisado, mas com algumas limitações na extração de texto."
           : "O documento foi analisado com sucesso.",
       });

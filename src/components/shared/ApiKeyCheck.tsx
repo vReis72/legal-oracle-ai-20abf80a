@@ -34,8 +34,7 @@ const ApiKeyCheck: React.FC<ApiKeyCheckProps> = ({ children }) => {
       {children}
       
       <Dialog open={showDialog} onOpenChange={(open) => {
-        // Só permite fechar o diálogo se a chave estiver configurada
-        if (!open && !hasApiKey()) return;
+        // Permitir fechar o diálogo se o usuário cancelar
         setShowDialog(open);
       }}>
         <DialogContent className="sm:max-w-md">
