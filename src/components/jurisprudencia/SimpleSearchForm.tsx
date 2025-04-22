@@ -24,7 +24,7 @@ const SimpleSearchForm: React.FC<SimpleSearchFormProps> = ({
     <div className="space-y-4">
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle>Busca Semântica de Jurisprudência</CardTitle>
+          <CardTitle>Busca de Jurisprudência</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSimpleSearch} className="space-y-2">
@@ -58,4 +58,3 @@ const SimpleSearchForm: React.FC<SimpleSearchFormProps> = ({
 };
 
 export default SimpleSearchForm;
-
