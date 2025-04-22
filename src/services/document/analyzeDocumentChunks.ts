@@ -2,22 +2,16 @@
 import { DocumentAnalysis, DocumentType } from '../documentTypes';
 import { analyzeDocumentWithAI } from '../documentAnalysisApi';
 import { createDocumentAnalysisPrompt } from '../documentPrompts';
+import type { GptModel } from '@/hooks/use-documents';
 
-/**
- * Analisa chunks de documento usando a API
- * @param chunks Chunks de texto para análise
- * @param fileName Nome do arquivo
- * @param documentType Tipo de documento
- * @returns Análises por chunk
- */
 export const analyzeDocumentChunks = async (
   chunks: string[],
   fileName: string,
-  documentType: DocumentType
+  documentType: DocumentType,
+  gptModel: GptModel = 'gpt-4-turbo'
 ): Promise<DocumentAnalysis[]> => {
   const isPdf = fileName.toLowerCase().endsWith('.pdf');
-  
-  // Para cada chunk, cria um prompt e envia para análise
+
   const analysisPromises = chunks.map(async (chunk, index) => {
     try {
       const prompt = createDocumentAnalysisPrompt(
@@ -25,12 +19,11 @@ export const analyzeDocumentChunks = async (
         `${fileName} (parte ${index + 1}/${chunks.length})`, 
         documentType
       );
-      
-      return await analyzeDocumentWithAI(prompt, isPdf);
+      // Agora passamos o modelo explicitamente, se possível
+      return await analyzeDocumentWithAI(prompt, isPdf, gptModel);
     } catch (error) {
       console.error(`Erro na análise do chunk ${index + 1}:`, error);
-      
-      // Retorna um objeto parcial de erro para este chunk
+
       return {
         summary: `[Erro na análise da parte ${index + 1}/${chunks.length}]`,
         keyPoints: [{

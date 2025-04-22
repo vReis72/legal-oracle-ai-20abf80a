@@ -10,6 +10,8 @@ interface DocumentUploaderProps {
   uploading: boolean;
   uploadProgress: number;
   getStatusMessage?: () => string;
+  gptModel: 'gpt-3.5-turbo' | 'gpt-4-turbo';
+  setGptModel: (model: 'gpt-3.5-turbo' | 'gpt-4-turbo') => void;
 }
 
 const DocumentUploader: React.FC<DocumentUploaderProps> = ({ 
@@ -20,16 +22,43 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
     if (uploadProgress < 50) return "Enviando documento...";
     if (uploadProgress < 100) return "Processando documento...";
     return "Finalizando análise...";
-  }
+  },
+  gptModel,
+  setGptModel
 }) => {
   return (
     <Card>
       <CardHeader className="pb-3">
         <CardTitle>Análise de Documentos Jurídicos</CardTitle>
         <CardDescription>
-          Faça upload de pareceres, autos de infração e licenças para análise automática.
+          Faça upload de pareceres, autos de infração e licenças para análise automática.<br />
           Aceitamos arquivos PDF, DOCX e TXT.
         </CardDescription>
+        <div className="mt-4 flex items-center gap-2">
+          <span className="text-sm text-muted-foreground mr-3">Tipo de análise:</span>
+          <button
+            className={cn(
+              "px-2 py-1 rounded-md text-xs border",
+              gptModel === 'gpt-3.5-turbo' ? "bg-eco-primary text-white border-eco-primary" : "bg-muted"
+            )}
+            onClick={() => setGptModel('gpt-3.5-turbo')}
+            disabled={uploading}
+            type="button"
+          >
+            ⚡ Rápido (GPT-3.5)
+          </button>
+          <button
+            className={cn(
+              "px-2 py-1 rounded-md text-xs border",
+              gptModel === 'gpt-4-turbo' ? "bg-eco-primary text-white border-eco-primary" : "bg-muted"
+            )}
+            onClick={() => setGptModel('gpt-4-turbo')}
+            disabled={uploading}
+            type="button"
+          >
+            🧠 Profundo (GPT-4)
+          </button>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="flex items-center">

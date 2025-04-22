@@ -14,7 +14,9 @@ const DocumentReader = () => {
     selectedDocument, 
     setSelectedDocument, 
     handleFileUpload,
-    getStatusMessage
+    getStatusMessage,
+    gptModel,
+    setGptModel
   } = useDocuments();
 
   return (
@@ -24,6 +26,8 @@ const DocumentReader = () => {
         uploading={uploading} 
         uploadProgress={uploadProgress}
         getStatusMessage={getStatusMessage}
+        gptModel={gptModel}
+        setGptModel={setGptModel}
       />
 
       <div className="flex flex-col flex-grow">

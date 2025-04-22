@@ -9,6 +9,7 @@ import { useHandleFileReadError } from './useHandleFileReadError';
 import { useHandleProcessError } from './useHandleProcessError';
 import { useUpdateDocumentWithAnalysis } from './useUpdateDocumentWithAnalysis';
 import { useSetupProcessingTimeout } from './useSetupProcessingTimeout';
+import type { GptModel } from '../use-documents';
 
 interface UseProcessFileProps {
   setDocuments: React.Dispatch<React.SetStateAction<Document[]>>;
@@ -17,18 +18,17 @@ interface UseProcessFileProps {
   upload: ReturnType<typeof import('./use-upload-progress').useUploadProgress>;
   isKeyConfigured: boolean;
   setStatusMessage: React.Dispatch<React.SetStateAction<string>>;
+  gptModel?: GptModel;
 }
 
-/**
- * Hook especializado no processamento de arquivos
- */
 export const useProcessFile = ({
   setDocuments,
   setSelectedDocument,
   toast,
   upload,
   isKeyConfigured,
-  setStatusMessage
+  setStatusMessage,
+  gptModel = 'gpt-4-turbo'
 }: UseProcessFileProps) => {
   const { validateFileSize, validateApiKey } = useDocumentValidation();
   const { setOrReplaceTimeout, clear: clearTimeout } = useProcessingTimeout();
@@ -59,9 +59,6 @@ export const useProcessFile = ({
     setOrReplaceTimeout,
   });
 
-  /**
-   * Processa o arquivo submetido pelo usuário
-   */
   const processFile = async (file: File) => {
     if (!validateFileSize(file)) return;
     if (!validateApiKey(isKeyConfigured)) return;
@@ -81,14 +78,13 @@ export const useProcessFile = ({
     setDocuments(prev => [newDocument, ...prev]);
     setSelectedDocument(newDocument);
 
-    // Configura timeout de segurança
     setupProcessingTimeout(newDocument, uploadInterval);
 
     try {
       setStatusMessage("Lendo conteúdo do arquivo...");
       let fileContent = await Promise.race([
         readFileContent(file),
-        createTimeoutPromise(fileFormat === 'pdf' ? 60000 : 30000) // Aumentamos os timeouts
+        createTimeoutPromise(fileFormat === 'pdf' ? 60000 : 30000)
       ]);
 
       setStatusMessage("Dividindo texto em partes para análise...");
@@ -103,18 +99,17 @@ export const useProcessFile = ({
       }
 
       setStatusMessage(`Analisando ${chunks.length} partes do documento...`);
-      const analysisResults = await analyzeDocumentChunks(chunks, file.name, documentType);
+      // Passa o modelo até a camada de análise dos chunks:
+      const analysisResults = await analyzeDocumentChunks(chunks, file.name, documentType, gptModel);
 
       setStatusMessage("Combinando resultados da análise...");
       const combinedAnalysis = combineChunkAnalysis(analysisResults);
 
-      // Limpa timeouts e intervalos
       clearTimeout();
       clearInterval(uploadInterval);
       upload.completeUpload();
       setStatusMessage("");
 
-      // Atualiza o documento com a análise
       updateDocumentWithAnalysis(newDocument, combinedAnalysis);
 
     } catch (error) {
