@@ -22,3 +22,5 @@ export interface DocumentAnalysis {
 }
 
 export type DocumentType = 'parecer' | 'auto-de-infracao' | 'licenca';
+
+export type FileFormat = 'pdf' | 'txt' | 'docx' | 'doc' | 'unknown';

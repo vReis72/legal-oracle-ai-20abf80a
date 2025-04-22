@@ -5,10 +5,6 @@ import { useDocumentProcessor } from './document/use-document-processor';
 
 /**
  * Hook principal para upload de documentos
- * @param documents Lista de documentos
- * @param setDocuments Função para atualizar a lista de documentos
- * @param setSelectedDocument Função para atualizar o documento selecionado
- * @returns Funções e estados para upload de documentos
  */
 export const useDocumentUpload = (
   documents: Document[], 

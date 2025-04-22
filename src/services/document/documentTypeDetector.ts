@@ -1,5 +1,5 @@
 
-import { DocumentType } from './documentTypes';
+import { DocumentType } from '../documentTypes';
 
 /**
  * Determina o tipo de documento com base no nome do arquivo
@@ -27,4 +27,25 @@ export const determineDocumentType = (fileName: string): DocumentType => {
   
   // Tipo padrão se não for possível determinar
   return 'parecer';
+};
+
+/**
+ * Determina o formato do arquivo com base na extensão
+ * @param fileName Nome do arquivo
+ * @returns Formato do arquivo
+ */
+export const determineFileFormat = (fileName: string): 'pdf' | 'txt' | 'docx' | 'doc' | 'unknown' => {
+  const extension = fileName.split('.').pop()?.toLowerCase() || '';
+  
+  if (extension === 'pdf') {
+    return 'pdf';
+  } else if (extension === 'txt') {
+    return 'txt';
+  } else if (extension === 'docx') {
+    return 'docx';
+  } else if (extension === 'doc') {
+    return 'doc';
+  }
+  
+  return 'unknown';
 };

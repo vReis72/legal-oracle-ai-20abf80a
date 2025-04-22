@@ -1,11 +1,12 @@
 
-import { useToast } from '@/hooks/use-toast';
-import { useUploadProgress } from './use-upload-progress';
-import { useProcessFile } from './use-process-file';
+import { useState } from 'react';
 import { Document } from '@/types/document';
+import { useToast } from '@/hooks/use-toast';
+import { useProcessFile } from './use-process-file';
+import { useUploadProgress } from './use-upload-progress';
 
 /**
- * Hook principal e organizador de processamento de documentos
+ * Hook principal para processamento de documentos
  */
 export const useDocumentProcessor = (
   documents: Document[],
@@ -13,19 +14,23 @@ export const useDocumentProcessor = (
   setSelectedDocument: React.Dispatch<React.SetStateAction<Document | null>>,
   isKeyConfigured: boolean
 ) => {
-  // Toast (shadcn)
+  // Estado para controle de mensagens de status
+  const [statusMessage, setStatusMessage] = useState<string>('');
+  
+  // Toast notifications
   const { toast } = useToast();
 
   // Progresso de upload
   const upload = useUploadProgress();
 
-  // Uso da lógica isolada para processar arquivo
+  // Processamento de arquivo
   const { processFile } = useProcessFile({
     setDocuments,
     setSelectedDocument,
     toast,
     upload,
     isKeyConfigured,
+    setStatusMessage
   });
 
   /**
@@ -38,10 +43,24 @@ export const useDocumentProcessor = (
     }
   };
 
+  /**
+   * Obtém a mensagem de status com base no progresso
+   */
+  const getStatusMessage = () => {
+    if (statusMessage) {
+      return statusMessage;
+    }
+    
+    if (upload.uploadProgress < 30) return "Enviando documento...";
+    if (upload.uploadProgress < 70) return "Extraindo e processando texto...";
+    if (upload.uploadProgress < 90) return "Analisando conteúdo...";
+    return "Finalizando análise...";
+  };
+
   return {
     uploading: upload.uploading,
     uploadProgress: upload.uploadProgress,
     handleFileUpload,
-    getStatusMessage: upload.getStatusMessage
+    getStatusMessage
   };
 };

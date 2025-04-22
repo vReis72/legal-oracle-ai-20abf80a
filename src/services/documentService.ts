@@ -7,17 +7,22 @@
 export * from './documentTypes';
 
 // Funcionalidades centrais
-export * from './documentTypeDetector';
-export * from './documentProcessor';
-export * from './documentUtils';
+export * from './document/documentTypeDetector';
+export * from './document/documentProcessor';
 export * from './documentAnalysisApi';
-export * from './documentErrorHandler';
-export * from './documentContentValidator';
-export * from './documentContentCleaner';
-export * from './documentConverterService';
 
 // Re-exporta as funções principais para compatibilidade com código existente
-import { processDocument } from './documentProcessor';
-import { determineDocumentType } from './documentTypeDetector';
+import { determineDocumentType } from './document/documentTypeDetector';
+import { processAndChunkContent, analyzeDocumentChunks, combineChunkAnalysis } from './document/documentProcessor';
 
-export { processDocument, determineDocumentType };
+// Função de processamento do documento para manter compatibilidade com código existente
+export const processDocument = async (fileContent: string, fileName: string, documentType: any): Promise<any> => {
+  const isPdf = fileName.toLowerCase().endsWith('.pdf');
+  const fileFormat = isPdf ? 'pdf' : 'txt';
+  
+  const { chunks } = processAndChunkContent(fileContent, fileName, fileFormat);
+  const analysisResults = await analyzeDocumentChunks(chunks, fileName, documentType);
+  return combineChunkAnalysis(analysisResults);
+};
+
+export { determineDocumentType };
