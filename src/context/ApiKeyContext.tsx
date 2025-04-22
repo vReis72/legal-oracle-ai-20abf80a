@@ -1,6 +1,6 @@
 
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import { getApiKey, saveApiKey, hasApiKey } from '@/services/apiKeyService';
+import { getApiKey, saveApiKey, hasApiKey, setDefaultApiKey } from '@/services/apiKeyService';
 import { useToast } from '@/hooks/use-toast';
 
 interface ApiKeyContextType {
@@ -16,13 +16,16 @@ interface ApiKeyProviderProps {
   children: ReactNode;
 }
 
+// Chave padrão (pode ser configurada para uma chave de teste ou para a chave fornecida)
+const DEFAULT_API_KEY = "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";
+
 export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   const [apiKey, setApiKeyState] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  // Load API key from localStorage on initialization
-  useEffect(() => {
+  // Função para atualizar o estado da chave baseado no localStorage
+  const updateApiKeyFromStorage = () => {
     try {
       const storedKey = getApiKey();
       if (storedKey) {
@@ -33,9 +36,40 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
       }
     } catch (error) {
       console.error("Erro ao carregar API key:", error);
+    }
+  };
+
+  // Carregar API key do localStorage na inicialização
+  useEffect(() => {
+    try {
+      // Tentar carregar a chave existente
+      updateApiKeyFromStorage();
+      
+      // Se não houver chave, definir a padrão
+      if (!hasApiKey() && DEFAULT_API_KEY) {
+        if (setDefaultApiKey(DEFAULT_API_KEY)) {
+          console.log("API key padrão configurada automaticamente");
+          updateApiKeyFromStorage();
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao inicializar API key:", error);
     } finally {
       setIsLoading(false);
     }
+  }, []);
+
+  // Escutar eventos de atualização da chave
+  useEffect(() => {
+    const handleApiKeyUpdate = () => {
+      updateApiKeyFromStorage();
+    };
+    
+    window.addEventListener('apikey_updated', handleApiKeyUpdate);
+    
+    return () => {
+      window.removeEventListener('apikey_updated', handleApiKeyUpdate);
+    };
   }, []);
 
   const setApiKey = (key: string) => {

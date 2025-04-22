@@ -15,9 +15,9 @@ const ApiKeyCheck: React.FC<ApiKeyCheckProps> = ({ children }) => {
   
   useEffect(() => {
     // Verificar se a chave já está configurada no localStorage ou no contexto
-    const keyExistsInStorage = hasApiKey();
+    const keyExists = hasApiKey() || isKeyConfigured;
     
-    if (!isKeyConfigured && !keyExistsInStorage) {
+    if (!keyExists) {
       // Aguardar 1 segundo para mostrar o diálogo (para evitar flash durante o carregamento)
       const timer = setTimeout(() => {
         setShowDialog(true);
@@ -33,7 +33,11 @@ const ApiKeyCheck: React.FC<ApiKeyCheckProps> = ({ children }) => {
     <>
       {children}
       
-      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+      <Dialog open={showDialog} onOpenChange={(open) => {
+        // Só permite fechar o diálogo se a chave estiver configurada
+        if (!open && !hasApiKey()) return;
+        setShowDialog(open);
+      }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Bem-vindo ao Legal Oracle IA</DialogTitle>

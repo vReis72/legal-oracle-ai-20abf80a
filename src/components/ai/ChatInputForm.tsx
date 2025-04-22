@@ -23,7 +23,7 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
   isKeyConfigured,
   setApiKey
 }) => {
-  // Verificar se a chave existe no localStorage também
+  // Verificar se a chave existe no localStorage ou no contexto
   const keyExistsInStorage = hasApiKey();
   const isApiConfigured = isKeyConfigured || keyExistsInStorage;
   
@@ -34,7 +34,7 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Digite sua dúvida sobre Direito e clique no robozinho ao lado..."
+            placeholder="Digite sua dúvida sobre Direito e clique no ícone de envio ao lado..."
             className="resize-none"
             rows={2}
           />

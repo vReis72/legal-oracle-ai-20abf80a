@@ -10,7 +10,9 @@ const API_KEY_NAME = 'openai_api_key';
  */
 export const getApiKey = (): string | null => {
   try {
-    return localStorage.getItem(API_KEY_NAME);
+    const key = localStorage.getItem(API_KEY_NAME);
+    // Verificação adicional para garantir que uma chave vazia não seja considerada válida
+    return key && key.trim() !== '' ? key : null;
   } catch (error) {
     console.error('Erro ao acessar localStorage:', error);
     return null;
@@ -26,6 +28,9 @@ export const saveApiKey = (key: string): void => {
     if (key && key.trim()) {
       localStorage.setItem(API_KEY_NAME, key.trim());
       console.log('API Key salva com sucesso no localStorage');
+      
+      // Disparar um evento personalizado para notificar que a chave foi salva
+      window.dispatchEvent(new CustomEvent('apikey_updated', { detail: key }));
     }
   } catch (error) {
     console.error('Erro ao salvar no localStorage:', error);
@@ -54,7 +59,27 @@ export const removeApiKey = (): void => {
   try {
     localStorage.removeItem(API_KEY_NAME);
     console.log('API Key removida do localStorage');
+    
+    // Disparar um evento personalizado para notificar que a chave foi removida
+    window.dispatchEvent(new CustomEvent('apikey_updated', { detail: null }));
   } catch (error) {
     console.error('Erro ao remover do localStorage:', error);
   }
+};
+
+/**
+ * Define uma chave API padrão se nenhuma estiver configurada
+ * @param defaultKey A chave padrão a ser usada
+ */
+export const setDefaultApiKey = (defaultKey: string): boolean => {
+  if (!hasApiKey() && defaultKey && defaultKey.trim() !== '') {
+    try {
+      saveApiKey(defaultKey);
+      return true;
+    } catch (error) {
+      console.error('Erro ao definir chave padrão:', error);
+      return false;
+    }
+  }
+  return false;
 };

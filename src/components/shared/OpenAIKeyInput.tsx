@@ -28,25 +28,16 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
   const { toast } = useToast();
 
   // Verificar se já existe uma chave armazenada
-  const keyExistsInStorage = hasApiKey();
+  const keyConfigured = hasApiKey() || isKeyConfigured;
 
   useEffect(() => {
     // Só abrir o diálogo se forceOpen for true E não houver chave configurada
-    if (forceOpen && !isKeyConfigured && !keyExistsInStorage) {
+    if (forceOpen && !keyConfigured) {
       setIsOpen(true);
     } else {
       setIsOpen(false);
     }
-  }, [forceOpen, isKeyConfigured, keyExistsInStorage]);
-
-  const validateApiKey = async (key: string): Promise<boolean> => {
-    if (!key.trim().startsWith('sk-')) {
-      return false;
-    }
-    
-    // Vamos considerar válido sem fazer chamada à API para evitar gasto desnecessário
-    return true;
-  };
+  }, [forceOpen, keyConfigured]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,13 +82,18 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
   };
 
   // Se forceOpen for true mas a chave já estiver configurada, não mostramos nada
-  if (forceOpen && (isKeyConfigured || keyExistsInStorage)) {
+  if (forceOpen && keyConfigured) {
     return null;
   }
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Dialog open={isOpen} onOpenChange={(open) => {
+        // Permitir fechar o diálogo somente se não estamos forçando ele aberto
+        // ou se a chave já estiver configurada
+        if (forceOpen && !keyConfigured && !open) return;
+        setIsOpen(open);
+      }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Configurar API OpenAI</DialogTitle>
@@ -135,8 +131,8 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
             onClick={handleUpdateKey}
             className="flex items-center gap-1 text-xs"
           >
-            {isKeyConfigured || keyExistsInStorage ? <Check className="h-3 w-3" /> : <Key className="h-3 w-3" />}
-            {isKeyConfigured || keyExistsInStorage ? "API Configurada" : "Configurar API"}
+            {keyConfigured ? <Check className="h-3 w-3" /> : <Key className="h-3 w-3" />}
+            {keyConfigured ? "API Configurada" : "Configurar API"}
           </Button>
         </div>
       )}
