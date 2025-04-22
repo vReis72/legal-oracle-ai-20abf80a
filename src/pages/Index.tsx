@@ -53,7 +53,7 @@ const Index = () => {
             </CardHeader>
             <CardContent>
               <CardDescription>
-                Peça para que seu assistente jurídico pessoal pesquise e encontre precedentes judiciais relevantes para você e seu trabalho. Tudo muito rápido e de maneira descomplicada. É só pedir
+                Peça para seu assistente jurídico pessoal pesquisar e encontrar precedentes judiciais relevantes. Tudo muito simples e rápido
               </CardDescription>
             </CardContent>
           </Card>
