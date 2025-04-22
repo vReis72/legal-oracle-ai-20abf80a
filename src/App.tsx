@@ -12,30 +12,34 @@ import Alertas from "./pages/Alertas";
 import PecasJuridicas from "./pages/PecasJuridicas";
 import NotFound from "./pages/NotFound";
 import { ApiKeyProvider } from "./context/ApiKeyContext";
+import { useState } from "react";
 
-const queryClient = new QueryClient();
+const App = () => {
+  // Move the QueryClient initialization inside the component
+  const [queryClient] = useState(() => new QueryClient());
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ApiKeyProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Layout />}>
-              <Route index element={<Index />} />
-              <Route path="/jurisprudencia" element={<Jurisprudencia />} />
-              <Route path="/documentos" element={<Documentos />} />
-              <Route path="/alertas" element={<Alertas />} />
-              <Route path="/pecas" element={<PecasJuridicas />} />
-              <Route path="*" element={<NotFound />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </ApiKeyProvider>
-  </QueryClientProvider>
-);
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ApiKeyProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Layout />}>
+                <Route index element={<Index />} />
+                <Route path="/jurisprudencia" element={<Jurisprudencia />} />
+                <Route path="/documentos" element={<Documentos />} />
+                <Route path="/alertas" element={<Alertas />} />
+                <Route path="/pecas" element={<PecasJuridicas />} />
+                <Route path="*" element={<NotFound />} />
+              </Route>
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </ApiKeyProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
