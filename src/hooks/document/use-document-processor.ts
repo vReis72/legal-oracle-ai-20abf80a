@@ -191,7 +191,8 @@ export const useDocumentProcessor = (
         }
         
         toast({
-          variant: "warning",
+          // Mudando de "warning" para "default" para corresponder aos tipos permitidos
+          variant: "default",
           title: "Documento sem conteúdo",
           description: isPdf 
             ? "O PDF parece não conter texto extraível. Verifique se é uma digitalização sem OCR."
