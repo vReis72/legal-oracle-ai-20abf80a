@@ -1,4 +1,3 @@
-
 import React from 'react';
 import ChatInterface from '@/components/ai/ChatInterface';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -68,7 +67,7 @@ const Index = () => {
             </CardHeader>
             <CardContent>
               <CardDescription>
-                Analise pareceres, autos de infração e diversos documentos jurídicos
+                Deixe a IA trabalhar para você. Suba seus arquivos e peça para que o seu assistente jurídico leia, analise e gere resumos a partir dos seus documentos
               </CardDescription>
             </CardContent>
           </Card>
