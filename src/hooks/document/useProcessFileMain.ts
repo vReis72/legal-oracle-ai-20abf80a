@@ -88,7 +88,7 @@ export const useProcessFile = ({
       setStatusMessage("Lendo conteúdo do arquivo...");
       let fileContent = await Promise.race([
         readFileContent(file),
-        createTimeoutPromise(fileFormat === 'pdf' ? 30000 : 20000)
+        createTimeoutPromise(fileFormat === 'pdf' ? 60000 : 30000) // Aumentamos os timeouts
       ]);
 
       setStatusMessage("Dividindo texto em partes para análise...");

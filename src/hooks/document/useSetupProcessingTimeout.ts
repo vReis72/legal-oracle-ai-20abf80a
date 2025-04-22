@@ -16,6 +16,7 @@ export const useSetupProcessingTimeout = ({
   setOrReplaceTimeout
 }: UseSetupProcessingTimeoutProps) => {
   return (document: Document, uploadInterval: number) => {
+    // Aumentamos para 90 segundos para permitir processamento de documentos maiores
     setOrReplaceTimeout(() => {
       console.log('Timeout de segurança acionado');
       clearInterval(uploadInterval);
@@ -42,6 +43,6 @@ export const useSetupProcessingTimeout = ({
         title: "Tempo limite excedido",
         description: "O processamento do documento demorou muito. Tente novamente com um documento menor.",
       });
-    }, 45000);
+    }, 90000); // Aumentado de 45000 para 90000 (90 segundos)
   };
 };

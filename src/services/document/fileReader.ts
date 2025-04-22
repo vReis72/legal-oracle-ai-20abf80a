@@ -12,11 +12,11 @@ export const readFileContent = (file: File): Promise<string> => {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     
-    // Timeout para evitar que a leitura fique presa
+    // Timeout aumentado para 60 segundos para arquivos maiores
     const timeoutId = setTimeout(() => {
       reader.abort();
       reject(new Error("Tempo limite excedido ao ler o arquivo"));
-    }, 30000);
+    }, 60000);
     
     reader.onload = (event) => {
       clearTimeout(timeoutId);

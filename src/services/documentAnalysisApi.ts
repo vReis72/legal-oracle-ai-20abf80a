@@ -18,9 +18,9 @@ export const analyzeDocumentWithAI = async (
     throw new Error('API key não encontrada');
   }
 
-  // Aumentar timeout para 120 segundos para permitir análise mais completa em PDFs grandes
+  // Aumentado para 180 segundos para permitir análise mais completa em PDFs grandes
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 120000);
+  const timeoutId = setTimeout(() => controller.abort(), 180000);
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
