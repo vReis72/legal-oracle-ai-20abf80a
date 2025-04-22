@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Document } from '@/types/document';
 import { processDocument, determineDocumentType } from '@/services/documentService';
@@ -23,6 +23,14 @@ export const useDocumentProcessor = (
   const { toast } = useToast();
   const { uploading, uploadProgress, simulateUploadProgress, completeUpload, cancelUpload, getStatusMessage } = useUploadProgress();
   const { validateFileSize, validateApiKey } = useDocumentValidation();
+  const [processingTimeout, setProcessingTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  // Limpar timeouts ao desmontar o componente
+  useEffect(() => {
+    return () => {
+      if (processingTimeout) clearTimeout(processingTimeout);
+    };
+  }, [processingTimeout]);
 
   /**
    * Processa um arquivo enviado pelo usuário
@@ -31,6 +39,11 @@ export const useDocumentProcessor = (
   const processFile = async (file: File) => {
     // Validação do tamanho do arquivo apenas
     if (!validateFileSize(file)) {
+      return;
+    }
+    
+    // Validação da chave API
+    if (!validateApiKey(isKeyConfigured)) {
       return;
     }
     
@@ -53,13 +66,50 @@ export const useDocumentProcessor = (
     setDocuments(prev => [newDocument, ...prev]);
     setSelectedDocument(newDocument);
     
+    // Configurar um timeout de segurança geral - nunca deixar o processamento preso por mais de 3 minutos
+    const timeout = setTimeout(() => {
+      console.log("Timeout de segurança global acionado");
+      
+      // Garantir que o upload seja finalizado
+      clearInterval(uploadInterval);
+      completeUpload();
+      
+      // Marcar documento como processado com mensagem de erro
+      setDocuments(prev => prev.map(doc => 
+        doc.id === newDocument.id 
+          ? {
+              ...doc,
+              processed: true,
+              summary: "O processamento do documento demorou muito e foi interrompido.",
+              content: "O tempo limite para processamento foi excedido. Tente novamente com um documento menor ou em formato texto.",
+              highlights: [],
+              keyPoints: [{
+                title: "Erro no processamento",
+                description: "O tempo limite para análise foi excedido."
+              }]
+            } 
+          : doc
+      ));
+      
+      toast({
+        variant: "destructive",
+        title: "Tempo limite excedido",
+        description: "O processamento do documento demorou muito. Tente novamente com um documento menor.",
+      });
+    }, 180000); // 3 minutos no máximo
+    
+    setProcessingTimeout(timeout);
+    
     try {
-      // Ler o conteúdo do arquivo
-      const fileContent = await readFileContent(file);
+      // Ler o conteúdo do arquivo - com timeout aumentado
+      const fileContent = await Promise.race([
+        readFileContent(file),
+        createTimeoutPromise(isPdf ? 90000 : 45000) // 90 segundos para PDFs, 45 para outros
+      ]);
       
       // Tempo limite maior para PDFs
-      const timeout = isPdf ? 120000 : 60000;
-      const timeoutPromise = createTimeoutPromise(timeout);
+      const analysisTimeout = isPdf ? 120000 : 60000;
+      const timeoutPromise = createTimeoutPromise(analysisTimeout);
       
       const analysisPromise = processDocument(fileContent, file.name, documentType);
       
@@ -93,6 +143,12 @@ export const useDocumentProcessor = (
           };
         });
       
+      // Limpar o timeout de segurança
+      if (processingTimeout) {
+        clearTimeout(processingTimeout);
+        setProcessingTimeout(null);
+      }
+      
       // Garantir que o intervalo seja limpo e o upload finalizado
       clearInterval(uploadInterval);
       completeUpload();
@@ -119,6 +175,12 @@ export const useDocumentProcessor = (
       });
       
     } catch (error) {
+      // Limpar o timeout de segurança
+      if (processingTimeout) {
+        clearTimeout(processingTimeout);
+        setProcessingTimeout(null);
+      }
+      
       clearInterval(uploadInterval);
       console.error('Erro no processamento:', error);
       

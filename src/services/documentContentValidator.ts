@@ -36,15 +36,18 @@ export const isPotentiallyBinaryContent = (fileContent: string): boolean => {
 export const isContentMostlyUnreadable = (content: string): boolean => {
   // Se for muito curto após limpeza, provavelmente é ilegível
   const cleanedContent = content.replace(/\s+/g, ' ').trim();
-  if (cleanedContent.length < 50) return true;
+  if (cleanedContent.length < 30) return true;
+  
+  // Reduzimos os critérios de ilegibilidade para tentar processar mais PDFs
   
   // Calcula a porcentagem de caracteres não imprimíveis ou estranhos
   const sample = content.substring(0, 5000);
   const nonReadableChars = (sample.match(/[\x00-\x08\x0E-\x1F\x7F-\xFF\ufffd]/g) || []).length;
   const nonReadableRatio = nonReadableChars / sample.length;
   
-  // Se mais de 40% dos caracteres forem não imprimíveis, consideramos ilegível
-  if (nonReadableRatio > 0.4) return true;
+  // Aumentamos a tolerância - se mais de 60% dos caracteres forem não imprimíveis, consideramos ilegível
+  // (antes era 40%)
+  if (nonReadableRatio > 0.6) return true;
   
   // Verifica por palavras conhecidas em português
   const commonPortugueseWords = ["de", "a", "o", "que", "e", "do", "da", "em", "um", "para", "com", "não", "uma", "os", "no", "se", "na", "por", "mais", "as", "dos", "como", "mas", "ao", "ele", "das", "à", "seu", "sua", "ou", "quando", "muito", "nos", "já", "eu", "também", "só", "pelo", "pela", "até", "isso"];
@@ -56,6 +59,7 @@ export const isContentMostlyUnreadable = (content: string): boolean => {
     if (regex.test(sample)) wordsFound++;
   });
   
-  // Se menos de 5 palavras comuns foram encontradas, provavelmente é ilegível
-  return wordsFound < 5;
+  // Reduzimos o critério - se menos de 3 palavras comuns foram encontradas, provavelmente é ilegível
+  // (antes era 5)
+  return wordsFound < 3;
 };

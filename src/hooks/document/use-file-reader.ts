@@ -16,20 +16,28 @@ export const readFileContent = (file: File): Promise<string> => {
     const timeoutId = setTimeout(() => {
       reader.abort();
       reject(new Error("Timeout ao ler o arquivo"));
-    }, 30000); // 30 segundos de timeout
+    }, 60000); // Aumentamos para 60 segundos de timeout
     
     reader.onload = (event) => {
       clearTimeout(timeoutId);
       if (event.target?.result) {
         let content = event.target.result as string;
         
-        // Para PDFs, fazemos uma limpeza básica para melhorar a extração
+        // Para PDFs, tentamos fazer uma limpeza mais agressiva
         if (file.name.toLowerCase().endsWith('.pdf')) {
           console.log("Limpando conteúdo de PDF para melhor processamento");
+          
           // Remover caracteres nulos que podem prejudicar o processamento
           content = content.replace(/\0/g, ' ');
+          
           // Normalizar quebras de linha
           content = content.replace(/\r\n/g, '\n');
+          
+          // Remover caracteres de controle e bytes estranhos que podem vir em PDFs
+          content = content.replace(/[\x01-\x09\x0B-\x0C\x0E-\x1F\x7F-\x9F]/g, ' ');
+          
+          // Substituir sequências longas de espaços por um único espaço
+          content = content.replace(/\s{2,}/g, ' ');
         }
         
         resolve(content);
@@ -48,8 +56,8 @@ export const readFileContent = (file: File): Promise<string> => {
       reject(new Error("Leitura do arquivo abortada"));
     };
     
-    // Para arquivos PDF, tentamos como texto primeiro
     try {
+      // Para PDFs e outros arquivos, tentamos como texto
       reader.readAsText(file);
     } catch (error) {
       clearTimeout(timeoutId);

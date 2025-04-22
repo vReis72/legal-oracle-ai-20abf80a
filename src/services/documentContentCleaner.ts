@@ -20,6 +20,8 @@ export const cleanDocumentContent = (fileContent: string): {
   
   // Conteúdo parece ser de um PDF não extraído corretamente
   if (isBinary) {
+    console.log("Detectado conteúdo binário, tentando limpar");
+    
     // Tenta extrair algum texto útil mesmo de PDFs com problemas
     let cleanedContent = fileContent;
     
@@ -33,10 +35,16 @@ export const cleanDocumentContent = (fileContent: string): {
     cleanedContent = cleanedContent.replace(/\s+/g, ' ');
     
     // Obtém uma amostra maior para análise
-    const sampleContent = cleanedContent.substring(0, 15000); // Reduzimos o tamanho para processamento mais rápido
+    const sampleContent = cleanedContent.substring(0, 30000); // Aumentamos o tamanho da amostra
     
     // Verifica se o conteúdo está ilegível
     const isUnreadable = isContentMostlyUnreadable(sampleContent);
+    
+    if (isUnreadable) {
+      console.log("Conteúdo considerado ilegível após tentativas de limpeza");
+    } else {
+      console.log("Conteúdo limpo com sucesso, tentando processamento");
+    }
     
     return {
       cleanContent: sampleContent,
@@ -50,7 +58,7 @@ export const cleanDocumentContent = (fileContent: string): {
   
   // Se o conteúdo não parece ser binário, mas ainda é muito grande, limitamos
   return {
-    cleanContent: fileContent.substring(0, 15000), // Reduzimos o tamanho para processamento mais rápido
+    cleanContent: fileContent.substring(0, 30000), // Aumentamos o tamanho para capturar mais contexto
     isBinary: false,
     isUnreadable: false
   };

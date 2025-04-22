@@ -27,31 +27,42 @@ export const processDocument = async (
     // sem tentar processá-lo com a API para evitar timeout
     if (isUnreadable) {
       console.log('Documento detectado como ilegível, retornando resposta padrão');
-      return createPdfErrorAnalysis(warning);
+      return createPdfErrorAnalysis(warning || "O documento parece estar em um formato que dificulta a extração de texto.");
     }
     
     // Verificar se é um PDF com problemas de extração
     const isPdf = fileName.toLowerCase().endsWith('.pdf');
     
     // Se o conteúdo for muito pequeno após limpeza e for um PDF, provavelmente é ilegível
-    if (isPdf && cleanContent.length < 100) {
+    if (isPdf && cleanContent.length < 50) {
       console.log('PDF com conteúdo muito curto após limpeza, provavelmente ilegível');
-      return createPdfErrorAnalysis("O PDF contém muito pouco texto extraível.");
+      return createPdfErrorAnalysis("O PDF contém muito pouco texto extraível ou está protegido.");
     }
     
-    // Criar prompt para a análise
+    // Criar prompt para a análise - garantir que temos texto suficiente para analisar
+    const contentForAnalysis = cleanContent.length > 100 ? cleanContent : 
+      fileContent.substring(0, 30000); // Se a limpeza removeu muito conteúdo, usamos o original
+    
     const prompt = isPdf 
-      ? createPdfAnalysisPrompt(cleanContent, fileName, fileType)
-      : createDocumentAnalysisPrompt(cleanContent, fileName, fileType);
+      ? createPdfAnalysisPrompt(contentForAnalysis, fileName, fileType)
+      : createDocumentAnalysisPrompt(contentForAnalysis, fileName, fileType);
 
     console.log('Enviando requisição para API OpenAI...');
 
-    // Enviar para análise e obter resultado
-    const analysis = await analyzeDocumentWithAI(prompt, isPdf);
+    // Enviar para análise e obter resultado - com timeout para garantir que não fica preso
+    const analysis = await Promise.race([
+      analyzeDocumentWithAI(prompt, isPdf),
+      new Promise<DocumentAnalysis>((_, reject) => 
+        setTimeout(() => reject(new Error("Tempo limite da API excedido")), 60000)
+      )
+    ]).catch(error => {
+      console.error("Erro na análise da API:", error);
+      return isPdf ? createPdfErrorAnalysis() : createGenericErrorAnalysis(fileName, isPdf);
+    });
     
     // Adicionar o conteúdo original se não houver na resposta
     if (!analysis.content) {
-      analysis.content = cleanContent;
+      analysis.content = cleanContent.substring(0, 10000); // Limitamos para evitar problemas de desempenho
     }
     
     return analysis;
