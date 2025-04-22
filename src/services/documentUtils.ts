@@ -11,3 +11,6 @@ export * from './documentContentCleaner';
 
 // Re-exporta as funções de geração de prompts
 export * from './documentPrompts';
+
+// Re-exporta as funções de conversão de documentos
+export * from './documentConverterService';

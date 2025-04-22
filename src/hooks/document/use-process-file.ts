@@ -102,7 +102,7 @@ export const useProcessFile = ({
       ));
       clearTimeout();
       toast({
-        variant: "destructive",
+        variant: "default",
         title: "Erro na leitura",
         description: isPdf
           ? "Não foi possível ler o conteúdo do PDF. O arquivo pode estar protegido ou danificado."
@@ -111,48 +111,14 @@ export const useProcessFile = ({
       return;
     }
 
-    // Verificação de conteúdo nulo ou mínimo
-    if (!fileContent || fileContent.trim().length < 50) {
-      console.log("Conteúdo do arquivo muito pequeno ou vazio");
-      clearInterval(uploadInterval);
-      upload.completeUpload();
-      setDocuments(prev => prev.map(doc =>
-        doc.id === newDocument.id
-          ? {
-            ...doc,
-            processed: true,
-            summary: "Documento vazio ou com conteúdo mínimo",
-            content: fileContent || "Sem conteúdo",
-            highlights: [],
-            keyPoints: [{
-              title: "Documento vazio",
-              description: isPdf
-                ? "O PDF não contém texto extraível. Pode ser uma digitalização sem OCR."
-                : "O arquivo não contém texto suficiente para análise."
-            }]
-          }
-          : doc
-      ));
-      clearTimeout();
-      toast({
-        variant: "default",
-        title: "Documento sem conteúdo",
-        description: isPdf
-          ? "O PDF parece não conter texto extraível. Verifique se é uma digitalização sem OCR."
-          : "O arquivo contém muito pouco texto para análise."
-      });
-      return;
-    }
-
-    const limitedContent = fileContent.length > 10000
-      ? fileContent.substring(0, 10000)
-      : fileContent;
-
     try {
-      const analysis = await processDocument(limitedContent, file.name, documentType);
+      // Agora usamos o serviço centralizado de processamento que já inclui extração e chunking
+      const analysis = await processDocument(fileContent, file.name, documentType);
+      
       clearTimeout();
       clearInterval(uploadInterval);
       upload.completeUpload();
+      
       setDocuments(prev => prev.map(doc =>
         doc.id === newDocument.id
           ? {
@@ -166,10 +132,12 @@ export const useProcessFile = ({
           : doc
       ));
 
+      // Simplificamos a notificação
       toast({
+        variant: "default",
         title: "Documento processado",
-        description: isPdf && (analysis.summary?.includes("PDF") || analysis.keyPoints?.some(kp => kp.title?.includes("PDF")))
-          ? "O PDF foi analisado, mas com algumas limitações na extração de texto."
+        description: analysis.summary?.includes("[Aviso") || analysis.keyPoints?.some(kp => kp.title?.includes("Aviso"))
+          ? "O documento foi analisado, mas com algumas limitações."
           : "O documento foi analisado com sucesso.",
       });
     } catch (error) {
@@ -182,7 +150,7 @@ export const useProcessFile = ({
               ...doc,
               processed: true,
               summary: "Erro durante a análise do documento",
-              content: limitedContent.substring(0, 1000) + "\n\n[Conteúdo truncado devido a erro]",
+              content: fileContent?.substring(0, 1000) + "\n\n[Conteúdo truncado devido a erro]" || "Erro no processamento",
               highlights: [],
               keyPoints: [{
                 title: "Erro na análise",

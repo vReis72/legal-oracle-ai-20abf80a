@@ -14,6 +14,7 @@ export * from './documentAnalysisApi';
 export * from './documentErrorHandler';
 export * from './documentContentValidator';
 export * from './documentContentCleaner';
+export * from './documentConverterService';
 
 // Re-exporta as funções principais para compatibilidade com código existente
 import { processDocument } from './documentProcessor';

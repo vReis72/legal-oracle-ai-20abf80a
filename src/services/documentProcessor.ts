@@ -1,6 +1,6 @@
 
 import { DocumentAnalysis, DocumentType } from './documentTypes';
-import { cleanDocumentContent } from './documentContentCleaner';
+import { extractAndChunkContent, combineChunkAnalysis } from './documentConverterService';
 import { createPdfAnalysisPrompt, createDocumentAnalysisPrompt } from './documentPrompts';
 import { analyzeDocumentWithAI } from './documentAnalysisApi';
 import { createPdfErrorAnalysis, createGenericErrorAnalysis } from './documentErrorHandler';
@@ -26,56 +26,101 @@ export const processDocument = async (
       return createPdfErrorAnalysis("O documento está vazio ou contém muito pouco texto.");
     }
     
-    // Limpar e verificar o conteúdo
-    const { cleanContent, isBinary, isUnreadable, warning } = cleanDocumentContent(fileContent);
+    // Utiliza o novo serviço de conversão para extrair e chunkar o texto
+    const { chunks, isComplete, warnings, isBinary } = extractAndChunkContent(fileContent, fileName);
     
-    // Se o documento estiver completamente ilegível, retornamos uma análise que explica o problema
-    // sem tentar processá-lo com a API para evitar timeout
-    if (isUnreadable) {
-      console.log('Documento detectado como ilegível, retornando resposta padrão');
-      return createPdfErrorAnalysis(warning || "O documento parece estar em um formato que dificulta a extração de texto.");
+    // Se não conseguiu extrair nenhum chunk válido
+    if (chunks.length === 0 || !isComplete) {
+      console.log('Falha na extração de conteúdo do documento');
+      return createPdfErrorAnalysis(
+        warnings?.[0] || "Não foi possível extrair conteúdo legível do documento."
+      );
     }
     
-    // Verificar se é um PDF com problemas de extração
     const isPdf = fileName.toLowerCase().endsWith('.pdf');
     
-    // Se o conteúdo for muito pequeno após limpeza e for um PDF, provavelmente é ilegível
-    if (isPdf && cleanContent.length < 50) {
+    // Se temos apenas um chunk muito pequeno e é um PDF, provavelmente é ilegível
+    if (isPdf && chunks.length === 1 && chunks[0].length < 100) {
       console.log('PDF com conteúdo muito curto após limpeza, provavelmente ilegível');
       return createPdfErrorAnalysis("O PDF contém muito pouco texto extraível ou está protegido.");
     }
     
-    // Limite adicional para garantir que o conteúdo não é grande demais para processamento
-    const contentForAnalysis = cleanContent.substring(0, 4000);
+    console.log(`Processando ${chunks.length} chunks de texto`);
     
-    console.log(`Conteúdo após limpeza: ${contentForAnalysis.length} caracteres`);
-    
-    // Criar prompt para a análise
-    const prompt = isPdf 
-      ? createPdfAnalysisPrompt(contentForAnalysis, fileName, fileType)
-      : createDocumentAnalysisPrompt(contentForAnalysis, fileName, fileType);
-
-    console.log('Enviando requisição para API OpenAI...');
-
-    // Enviar para análise e obter resultado - com timeout para garantir que não fica preso
-    try {
-      const analysis = await Promise.race([
-        analyzeDocumentWithAI(prompt, isPdf),
-        new Promise<DocumentAnalysis>((_, reject) => 
-          setTimeout(() => reject(new Error("Tempo limite da API excedido")), 30000)
-        )
-      ]);
+    // Para cada chunk, cria um prompt e envia para análise
+    const analysisPromises = chunks.map(async (chunk, index) => {
+      const isLastChunk = index === chunks.length - 1;
       
-      // Adicionar o conteúdo original se não houver na resposta
-      if (!analysis.content) {
-        analysis.content = contentForAnalysis.substring(0, 2000);
+      try {
+        // Cria um prompt específico para o chunk
+        const prompt = isPdf 
+          ? createPdfAnalysisPrompt(chunk, `${fileName} (parte ${index + 1}/${chunks.length})`, fileType)
+          : createDocumentAnalysisPrompt(chunk, `${fileName} (parte ${index + 1}/${chunks.length})`, fileType);
+        
+        console.log(`Enviando chunk ${index + 1}/${chunks.length} para API OpenAI...`);
+        
+        // Envia para análise com timeout para garantir que não fica preso
+        const analysis = await Promise.race([
+          analyzeDocumentWithAI(prompt, isPdf),
+          new Promise<DocumentAnalysis>((_, reject) => 
+            setTimeout(() => reject(new Error(`Tempo limite da API excedido para chunk ${index + 1}`)), 30000)
+          )
+        ]);
+        
+        return {
+          ...analysis,
+          // Guarda uma parte do conteúdo original
+          content: isLastChunk ? chunk.substring(0, 2000) : undefined
+        };
+      } catch (error) {
+        console.error(`Erro na análise do chunk ${index + 1}:`, error);
+        // Retorna um objeto parcial de erro para este chunk
+        return {
+          summary: `[Erro na análise da parte ${index + 1}/${chunks.length}]`,
+          keyPoints: [{
+            title: `Erro na parte ${index + 1}`,
+            description: "Esta seção do documento não pôde ser analisada."
+          }],
+          highlights: [],
+          content: isLastChunk ? chunk.substring(0, 1000) : undefined
+        };
       }
-      
-      return analysis;
-    } catch (error) {
-      console.error("Erro na análise da API:", error);
+    });
+    
+    // Espera todas as análises terminarem
+    const chunkResults = await Promise.allSettled(analysisPromises);
+    
+    // Filtra apenas os resultados bem-sucedidos
+    const successfulResults = chunkResults
+      .filter((result): result is PromiseFulfilledResult<DocumentAnalysis> => result.status === 'fulfilled')
+      .map(result => result.value);
+    
+    // Se não há nenhum resultado bem-sucedido
+    if (successfulResults.length === 0) {
+      console.error('Todas as análises de chunks falharam');
       return isPdf ? createPdfErrorAnalysis() : createGenericErrorAnalysis(fileName, isPdf);
     }
+    
+    // Combina os resultados da análise de todos os chunks
+    const combinedAnalysis = combineChunkAnalysis(successfulResults);
+    
+    // Adiciona advertência se houve erros em alguns chunks
+    if (successfulResults.length < chunks.length) {
+      const failedCount = chunks.length - successfulResults.length;
+      combinedAnalysis.summary = `[Aviso: ${failedCount} parte(s) do documento não pôde(puderam) ser analisada(s)]\n\n${combinedAnalysis.summary}`;
+    }
+    
+    // Adiciona avisos do processo de extração, se houver
+    if (warnings && warnings.length > 0) {
+      // Adiciona um ponto-chave sobre problemas na extração
+      combinedAnalysis.keyPoints = combinedAnalysis.keyPoints || [];
+      combinedAnalysis.keyPoints.push({
+        title: "Aviso sobre qualidade da extração",
+        description: warnings[0]
+      });
+    }
+    
+    return combinedAnalysis;
   } catch (error) {
     console.error('Erro ao processar documento:', error);
     
