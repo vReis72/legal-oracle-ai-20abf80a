@@ -2,7 +2,7 @@
 import React from 'react';
 import ChatInterface from '@/components/ai/ChatInterface';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Scale, BookOpen, FileText, Bell, MessageSquare } from "lucide-react";
+import { Scale, BookOpen, FileText, Bell, MessageSquare, FileCode } from "lucide-react";
 import { Link } from 'react-router-dom';
 
 const Index = () => {
@@ -83,6 +83,20 @@ const Index = () => {
             <CardContent>
               <CardDescription>
                 Receba notificações sobre novas normas e resoluções legais
+              </CardDescription>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link to="/pecas" className="block">
+          <Card className="h-full hover:shadow-md transition-all">
+            <CardHeader className="pb-2">
+              <FileCode className="h-6 w-6 text-eco-primary mb-2" />
+              <CardTitle>Peças Jurídicas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription>
+                Crie suas peças jurídicas a partir de modelos prontos, com auxílio de Inteligência Artificial
               </CardDescription>
             </CardContent>
           </Card>
