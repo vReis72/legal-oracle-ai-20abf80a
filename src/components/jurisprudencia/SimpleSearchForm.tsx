@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, Loader2, Search } from 'lucide-react';
@@ -25,9 +25,6 @@ const SimpleSearchForm: React.FC<SimpleSearchFormProps> = ({
       <Card>
         <CardHeader className="pb-3">
           <CardTitle>Busca Semântica de Jurisprudência</CardTitle>
-          <CardDescription>
-            Pesquise utilizando linguagem natural para encontrar precedentes relevantes
-          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSimpleSearch} className="space-y-2">
@@ -61,3 +58,4 @@ const SimpleSearchForm: React.FC<SimpleSearchFormProps> = ({
 };
 
 export default SimpleSearchForm;
+
