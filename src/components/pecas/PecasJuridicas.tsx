@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,132 +20,27 @@ import {
   CheckCircle, 
   ArrowRight, 
   Calendar, 
-  Clock, 
   AlertTriangle,
   Loader2 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { modelosReais } from './modelosReais';
+import { Template, Peca } from './types';
 
-interface Template {
-  id: string;
-  nome: string;
-  categoria: string;
-  descricao: string;
-  campos: { nome: string; tipo: 'texto' | 'data' | 'numero' | 'opcao'; obrigatorio: boolean; opcoes?: string[] }[];
+// Função para gerar conteúdo básico, para customizar por template
+function gerarConteudo(template: Template, campos: Record<string, string>) {
+  return `Modelo de ${template.nome}
+
+${template.campos.map(campo => `${campo.nome}: ${campos[campo.nome] || '[não preenchido]'}`).join('\n')}
+
+[Conteúdo gerado automaticamente. Recomenda-se revisão manual e complementação.]`;
 }
-
-interface Peca {
-  id: string;
-  nome: string;
-  template: string;
-  dataCriacao: Date;
-  status: 'rascunho' | 'concluida';
-  conteudo?: string;
-}
-
-const modelosReais: Template[] = [
-  {
-    id: '1',
-    nome: 'Petição Inicial de Cobrança',
-    categoria: 'Cível',
-    descricao: 'Modelo padrão para promover ação de cobrança de dívida em face de pessoa física ou jurídica.',
-    campos: [
-      { nome: 'Nome do Autor', tipo: 'texto', obrigatorio: true },
-      { nome: 'Nome do Réu', tipo: 'texto', obrigatorio: true },
-      { nome: 'Valor da Cobrança', tipo: 'numero', obrigatorio: true },
-      { nome: 'Motivo da Cobrança', tipo: 'texto', obrigatorio: true },
-      { nome: 'Vara/Comarca', tipo: 'texto', obrigatorio: true }
-    ]
-  },
-  {
-    id: '2',
-    nome: 'Contestação Trabalhista',
-    categoria: 'Trabalhista',
-    descricao: 'Modelo para apresentar defesa em reclamação trabalhista.',
-    campos: [
-      { nome: 'Nome da Reclamante', tipo: 'texto', obrigatorio: true },
-      { nome: 'Nome da Reclamada', tipo: 'texto', obrigatorio: true },
-      { nome: 'Vara do Trabalho', tipo: 'texto', obrigatorio: true },
-      { nome: 'Principais Pontos da Defesa', tipo: 'texto', obrigatorio: true }
-    ]
-  },
-  {
-    id: '3',
-    nome: 'Recurso de Apelação Cível',
-    categoria: 'Cível',
-    descricao: 'Modelo para apresentação de apelação contra sentença em processos cíveis.',
-    campos: [
-      { nome: 'Nome do Apelante', tipo: 'texto', obrigatorio: true },
-      { nome: 'Nome do Apelado', tipo: 'texto', obrigatorio: true },
-      { nome: 'Número do Processo', tipo: 'texto', obrigatorio: true },
-      { nome: 'Vara/Tribunal', tipo: 'texto', obrigatorio: true },
-      { nome: 'Razões da Apelação', tipo: 'texto', obrigatorio: true }
-    ]
-  },
-  {
-    id: '4',
-    nome: 'Mandado de Segurança',
-    categoria: 'Constitucional',
-    descricao: 'Modelo padrão de mandado de segurança para proteção de direito líquido e certo.',
-    campos: [
-      { nome: 'Nome do Impetrante', tipo: 'texto', obrigatorio: true },
-      { nome: 'Autoridade Coatora', tipo: 'texto', obrigatorio: true },
-      { nome: 'Direito Violado', tipo: 'texto', obrigatorio: true },
-      { nome: 'Tribunal Competente', tipo: 'opcao', obrigatorio: true, opcoes: [
-        'Justiça Estadual', 'Justiça Federal', 'Justiça do Trabalho', 'STJ', 'STF', 'TRF-1', 'TRF-2', 'TRF-3', 'TRF-4', 'TRF-5', 'TJSP', 'TJRJ', 'TRE', 'TRT'
-      ] },
-      { nome: 'Descrição dos Fatos', tipo: 'texto', obrigatorio: true }
-    ]
-  },
-  {
-    id: '5',
-    nome: 'Acordo Extrajudicial',
-    categoria: 'Geral',
-    descricao: 'Minuta de acordo extrajudicial com possibilidade de ampla personalização.',
-    campos: [
-      { nome: 'Nome da Parte 1', tipo: 'texto', obrigatorio: true },
-      { nome: 'Nome da Parte 2', tipo: 'texto', obrigatorio: true },
-      { nome: 'Objeto do Acordo', tipo: 'texto', obrigatorio: true },
-      { nome: 'Valor Envolvido', tipo: 'numero', obrigatorio: false },
-      { nome: 'Cidade/Data', tipo: 'texto', obrigatorio: true }
-    ]
-  },
-  {
-    id: '6',
-    nome: 'Pedido de Habeas Corpus',
-    categoria: 'Criminal',
-    descricao: 'Modelo para pedido de habeas corpus perante tribunal competente.',
-    campos: [
-      { nome: 'Nome do Paciente', tipo: 'texto', obrigatorio: true },
-      { nome: 'Autoridade Coatora', tipo: 'texto', obrigatorio: true },
-      { nome: 'Fato Gerador', tipo: 'texto', obrigatorio: true },
-      { nome: 'Tribunal Competente', tipo: 'opcao', obrigatorio: true, opcoes: [
-        'Tribunal de Justiça Estadual', 'Tribunal Regional Federal', 'STJ', 'STF'
-      ] }
-    ]
-  }
-];
 
 const PecasJuridicas = () => {
   const [templates] = useState<Template[]>(modelosReais);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
-  const [pecas, setPecas] = useState<Peca[]>([
-    {
-      id: '1',
-      nome: 'Impugnação Auto IBAMA 123456',
-      template: '1',
-      dataCriacao: new Date(2024, 2, 15),
-      status: 'concluida'
-    },
-    {
-      id: '2',
-      nome: 'ACP contra Mineradora XYZ',
-      template: '2',
-      dataCriacao: new Date(2024, 3, 5),
-      status: 'rascunho'
-    }
-  ]);
+  const [pecas, setPecas] = useState<Peca[]>([]);
   const [novaPeca, setNovaPeca] = useState<{
     nome: string;
     templateId: string;
@@ -157,39 +53,6 @@ const PecasJuridicas = () => {
   const [selectedPeca, setSelectedPeca] = useState<Peca | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<string>('');
-  
-  const mockContent = `
-EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO DA ${novaPeca.campos?.["Vara/Comarca"] || '[VARA/COMARCA]'} 
-
-${novaPeca.campos?.["Nome do Autor"] || '[NOME DO AUTOR]'}, por seu advogado infra-assinado, vem propor a presente
-
-AÇÃO DE COBRANÇA
-
-em face de ${novaPeca.campos?.["Nome do Réu"] || '[NOME DO RÉU]'}, pelos seguintes fatos e fundamentos jurídicos:
-
-I – DOS FATOS
-
-${novaPeca.campos?.["Motivo da Cobrança"] || '[DESCREVA O MOTIVO DA COBRANÇA]'}
-
-II – DO DIREITO
-
-O direito à cobrança está fundamentado nos arts. 389 e 395 do Código Civil. Comprovada a inadimplência e o valor devido de R$ ${novaPeca.campos?.["Valor da Cobrança"] || '[VALOR]'}, resta ao autor a tutela jurisdicional.
-
-III – DOS PEDIDOS
-
-Diante do exposto, requer:
-a) A citação do réu para, querendo, apresentar defesa;
-b) A condenação ao pagamento do valor devido;
-c) A condenação do réu em custas e honorários.
-
-Nestes termos,
-Pede deferimento.
-
-[Local], [Data]
-
-[Advogado]
-OAB/UF nº XXXXX
-`;
 
   const handleSelectTemplate = (templateId: string) => {
     const template = templates.find(t => t.id === templateId);
@@ -198,7 +61,7 @@ OAB/UF nº XXXXX
       setNovaPeca(prev => ({ 
         ...prev, 
         templateId: templateId,
-        campos: {} // Reset campos when changing template
+        campos: {}
       }));
     }
   };
@@ -215,36 +78,40 @@ OAB/UF nº XXXXX
 
   const handleCreatePeca = () => {
     setIsGenerating(true);
-    
+
     setTimeout(() => {
+      if (!selectedTemplate) return;
+
+      const newContent = gerarConteudo(selectedTemplate, novaPeca.campos);
+
       const newPeca: Peca = {
         id: Date.now().toString(),
         nome: novaPeca.nome,
         template: novaPeca.templateId,
         dataCriacao: new Date(),
         status: 'concluida',
-        conteudo: mockContent
+        conteudo: newContent
       };
-      
+
       setPecas(prev => [...prev, newPeca]);
       setSelectedPeca(newPeca);
-      setGeneratedContent(mockContent);
+      setGeneratedContent(newContent);
       setIsGenerating(false);
-      
+
       setNovaPeca({
         nome: '',
         templateId: '',
         campos: {}
       });
       setSelectedTemplate(null);
-    }, 3000);
+    }, 2200);
   };
 
   const handleEditPeca = (pecaId: string) => {
     const peca = pecas.find(p => p.id === pecaId);
     if (peca) {
       setSelectedPeca(peca);
-      setGeneratedContent(mockContent); // In real app, load actual content
+      setGeneratedContent(peca.conteudo || '');
     }
   };
   
@@ -258,11 +125,9 @@ OAB/UF nº XXXXX
   
   const isCamposPreenchidos = () => {
     if (!selectedTemplate) return false;
-    
     const camposObrigatorios = selectedTemplate.campos
       .filter(c => c.obrigatorio)
       .map(c => c.nome);
-    
     return camposObrigatorios.every(campo => 
       novaPeca.campos[campo] && novaPeca.campos[campo].trim() !== ''
     );
@@ -275,15 +140,14 @@ OAB/UF nº XXXXX
           <TabsTrigger value="criar">Criar Peça Jurídica</TabsTrigger>
           <TabsTrigger value="minhas">Minhas Peças</TabsTrigger>
         </TabsList>
-        
         <TabsContent value="criar" className="space-y-4 mt-2">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-1 space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Modelos Disponíveis</CardTitle>
+                  <CardTitle>Modelos de Peças</CardTitle>
                   <CardDescription>
-                    Selecione um modelo para sua peça jurídica
+                    Selecione um modelo conforme a área ou o tipo de processo
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
@@ -322,7 +186,6 @@ OAB/UF nº XXXXX
                   <CardContent>
                     <h3 className="font-medium mb-2">{selectedTemplate.nome}</h3>
                     <p className="text-sm text-muted-foreground mb-4">{selectedTemplate.descricao}</p>
-                    
                     <Accordion type="single" collapsible className="w-full">
                       <AccordionItem value="campos">
                         <AccordionTrigger className="text-sm">
@@ -349,19 +212,17 @@ OAB/UF nº XXXXX
                 </Card>
               )}
             </div>
-            
             <div className="md:col-span-2">
               <Card className="h-full">
                 <CardHeader>
                   <CardTitle>Preencher Informações</CardTitle>
                   <CardDescription>
                     {selectedTemplate 
-                      ? `Forneça os dados para gerar sua peça "${selectedTemplate.nome}"`
-                      : "Selecione um modelo à esquerda para começar"
+                      ? `Preencha para criar a peça "${selectedTemplate.nome}"`
+                      : "Selecione um modelo ao lado para começar"
                     }
                   </CardDescription>
                 </CardHeader>
-                
                 {selectedTemplate ? (
                   <CardContent className="space-y-4">
                     <div>
@@ -369,21 +230,19 @@ OAB/UF nº XXXXX
                         Nome da Peça <span className="text-red-500">*</span>
                       </label>
                       <Input
-                        placeholder="Ex: Impugnação Auto de Infração IBAMA 123/2024"
+                        placeholder="Ex: Petição - Cliente Fulano"
                         value={novaPeca.nome}
                         onChange={e => setNovaPeca({...novaPeca, nome: e.target.value})}
                       />
                     </div>
-                    
                     <div className="space-y-4">
                       {selectedTemplate.campos.map((campo, index) => (
                         <div key={index}>
                           <label className="text-sm font-medium mb-1 block">
                             {campo.nome} {campo.obrigatorio && <span className="text-red-500">*</span>}
                           </label>
-                          
                           {campo.tipo === 'texto' && (
-                            campo.nome.toLowerCase().includes('descrição') ? (
+                            campo.nome.toLowerCase().includes('fundamentação') || campo.nome.toLowerCase().includes('fundamentos') ? (
                               <Textarea
                                 placeholder={`Digite ${campo.nome.toLowerCase()}`}
                                 value={novaPeca.campos[campo.nome] || ''}
@@ -398,7 +257,6 @@ OAB/UF nº XXXXX
                               />
                             )
                           )}
-                          
                           {campo.tipo === 'data' && (
                             <Input
                               type="date"
@@ -406,7 +264,6 @@ OAB/UF nº XXXXX
                               onChange={e => handleCampoChange(campo.nome, e.target.value)}
                             />
                           )}
-                          
                           {campo.tipo === 'numero' && (
                             <Input
                               type="number"
@@ -415,7 +272,6 @@ OAB/UF nº XXXXX
                               onChange={e => handleCampoChange(campo.nome, e.target.value)}
                             />
                           )}
-                          
                           {campo.tipo === 'opcao' && campo.opcoes && (
                             <Select
                               value={novaPeca.campos[campo.nome] || ''}
@@ -434,7 +290,6 @@ OAB/UF nº XXXXX
                         </div>
                       ))}
                     </div>
-                    
                     <Dialog>
                       <DialogTrigger asChild>
                         <Button 
@@ -449,7 +304,7 @@ OAB/UF nº XXXXX
                         <DialogHeader>
                           <DialogTitle>Confirmar Geração de Peça</DialogTitle>
                           <DialogDescription>
-                            Você está prestes a gerar uma peça jurídica com base nas informações fornecidas.
+                            A peça será gerada segundo o modelo selecionado e os dados informados.
                           </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4 py-4">
@@ -460,35 +315,26 @@ OAB/UF nº XXXXX
                               <p className="text-xs text-muted-foreground">{selectedTemplate.nome}</p>
                             </div>
                           </div>
-                          
                           {isGenerating ? (
                             <div className="flex items-center justify-center py-8">
                               <div className="flex flex-col items-center">
                                 <Loader2 className="h-8 w-8 animate-spin text-eco-primary mb-4" />
                                 <p className="text-sm font-medium">Gerando documento...</p>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  Aguarde enquanto a IA elabora sua peça jurídica
-                                </p>
                               </div>
                             </div>
                           ) : (
                             <div>
                               <p className="text-sm">
-                                A IA irá analisar as informações fornecidas para criar uma peça jurídica personalizada.
-                                Este processo leva alguns segundos.
+                                Confira os dados antes de confirmar. O texto será gerado de forma genérica e estruturada para sua área.
                               </p>
                               <ul className="text-sm mt-2 space-y-1">
                                 <li className="flex items-center">
                                   <CheckCircle className="h-3 w-3 text-green-500 mr-2" />
-                                  Aplicação de legislação ambiental atualizada
+                                  Estrutura adaptada para qualquer área do Direito
                                 </li>
                                 <li className="flex items-center">
                                   <CheckCircle className="h-3 w-3 text-green-500 mr-2" />
-                                  Estruturação conforme práticas jurídicas correntes
-                                </li>
-                                <li className="flex items-center">
-                                  <CheckCircle className="h-3 w-3 text-green-500 mr-2" />
-                                  Incorporação de jurisprudência relevante
+                                  Documento editável e pronto para revisão
                                 </li>
                               </ul>
                             </div>
@@ -518,7 +364,7 @@ OAB/UF nº XXXXX
                     <FileText className="h-16 w-16 text-muted-foreground opacity-30 mb-4" />
                     <h3 className="text-lg font-medium">Selecione um Modelo</h3>
                     <p className="text-sm text-muted-foreground max-w-xs mt-2">
-                      Escolha um dos modelos disponíveis à esquerda para começar a criar sua peça jurídica.
+                      Escolha um dos modelos disponíveis ao lado para começar a criar sua peça jurídica.
                     </p>
                     <AlertTriangle className="h-4 w-4 text-amber-500 mt-4" />
                     <p className="text-xs text-muted-foreground mt-1">
@@ -530,7 +376,6 @@ OAB/UF nº XXXXX
             </div>
           </div>
         </TabsContent>
-        
         <TabsContent value="minhas" className="mt-2">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[calc(100vh-16rem)]">
             <div className="md:col-span-1">
@@ -561,7 +406,7 @@ OAB/UF nº XXXXX
                               <div>
                                 <h4 className="font-medium text-sm">{peca.nome}</h4>
                                 <p className="text-xs text-muted-foreground">
-                                  {template?.nome || 'Modelo personalizado'}
+                                  {template?.nome || 'Modelo'}
                                 </p>
                               </div>
                               <Badge variant={peca.status === 'concluida' ? 'default' : 'outline'}>
@@ -575,7 +420,6 @@ OAB/UF nº XXXXX
                           </div>
                         );
                       })}
-                      
                       {pecas.length === 0 && (
                         <div className="flex flex-col items-center justify-center py-8 text-center">
                           <p className="text-muted-foreground">Nenhuma peça encontrada.</p>
@@ -587,7 +431,6 @@ OAB/UF nº XXXXX
                 </CardContent>
               </Card>
             </div>
-            
             <div className="md:col-span-2">
               {selectedPeca ? (
                 <Card className="h-full flex flex-col">
@@ -617,7 +460,6 @@ OAB/UF nº XXXXX
                       </Button>
                     </div>
                   </CardHeader>
-                  
                   <CardContent className="flex-grow p-0 relative">
                     <div className="absolute inset-0 flex flex-col">
                       <div className="bg-muted/30 p-2 border-t border-b flex items-center justify-between">
@@ -638,7 +480,6 @@ OAB/UF nº XXXXX
                           </Button>
                         </div>
                       </div>
-                      
                       <ScrollArea className="flex-grow p-4">
                         <div className="bg-white rounded-md p-6 font-serif text-sm leading-relaxed whitespace-pre-line">
                           {generatedContent || 'Carregando conteúdo...'}
@@ -652,7 +493,7 @@ OAB/UF nº XXXXX
                   <FileText className="h-16 w-16 text-muted-foreground opacity-30 mb-4" />
                   <h3 className="text-lg font-medium">Selecione uma Peça</h3>
                   <p className="text-sm text-muted-foreground max-w-sm mt-2">
-                    Escolha uma peça jurídica à esquerda para visualizar seu conteúdo.
+                    Escolha uma peça jurídica ao lado para visualizar seu conteúdo.
                   </p>
                 </Card>
               )}
@@ -665,3 +506,4 @@ OAB/UF nº XXXXX
 };
 
 export default PecasJuridicas;
+
