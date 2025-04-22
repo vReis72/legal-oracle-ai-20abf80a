@@ -1,24 +1,18 @@
 
 import { useToast } from '@/hooks/use-toast';
 
-// Cache para evitar múltiplas instâncias do hook useToast
-let toastCache: ReturnType<typeof useToast> | null = null;
-
 /**
- * Hook para validação de documentos
- * @returns Funções para validar documentos
+ * Hook for document validation
+ * @returns Functions to validate documents
  */
 export const useDocumentValidation = () => {
-  // Usamos uma única instância do hook useToast para evitar problemas com hooks
-  if (!toastCache) {
-    toastCache = useToast();
-  }
-  const { toast } = toastCache;
+  // Always call the hook directly - this is the proper way to use hooks
+  const { toast } = useToast();
 
   /**
-   * Verifica se o arquivo tem um tamanho válido
-   * @param file Arquivo a ser validado
-   * @returns Boolean indicando se o arquivo é válido
+   * Verifies if the file has a valid size
+   * @param file File to be validated
+   * @returns Boolean indicating if the file is valid
    */
   const validateFileSize = (file: File): boolean => {
     const isPdf = file.name.toLowerCase().endsWith('.pdf');
@@ -40,9 +34,9 @@ export const useDocumentValidation = () => {
   };
 
   /**
-   * Verifica se a API key está configurada
-   * @param isKeyConfigured Estado da API key
-   * @returns Boolean indicando se a API key está configurada
+   * Verifies if the API key is configured
+   * @param isKeyConfigured API key state
+   * @returns Boolean indicating if the API key is configured
    */
   const validateApiKey = (isKeyConfigured: boolean): boolean => {
     // Verificamos tanto o contexto quanto o localStorage
