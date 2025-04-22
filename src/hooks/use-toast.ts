@@ -1,3 +1,4 @@
+
 import * as React from "react"
 
 import type {
@@ -187,5 +188,8 @@ function useToast() {
     dismiss: (toastId?: string) => dispatch({ type: "DISMISS_TOAST", toastId }),
   }
 }
+
+// Export the UseToastReturn type that's used by our hook files
+export type UseToastReturn = ReturnType<typeof useToast>;
 
 export { useToast, toast }

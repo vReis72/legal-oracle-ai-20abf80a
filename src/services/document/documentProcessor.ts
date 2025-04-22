@@ -1,6 +1,6 @@
 
 import { DocumentAnalysis, DocumentType } from '../documentTypes';
-import { processAndChunkContent, ProcessingResult } from './processAndChunkContent';
+import { processAndChunkContent } from './processAndChunkContent';
 import { analyzeDocumentChunks } from './analyzeDocumentChunks';
 import { combineChunkAnalysis } from './combineChunkAnalysis';
 import { determineDocumentType } from './documentTypeDetector';
@@ -8,7 +8,8 @@ import { determineDocumentType } from './documentTypeDetector';
 /**
  * Re-exporta funções principais de processamento, chunking e análise.
  */
-export { processAndChunkContent, ProcessingResult };
+export { processAndChunkContent };
+export type { ProcessingResult } from './processAndChunkContent';
 export { analyzeDocumentChunks };
 export { combineChunkAnalysis };
 
