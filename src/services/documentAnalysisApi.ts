@@ -1,16 +1,18 @@
-
 import { DocumentAnalysis } from './documentTypes';
 import { getApiKey } from './apiKeyService';
+import type { GptModel } from '@/hooks/use-documents';
 
 /**
  * Envia o conteúdo do documento para análise via OpenAI API
  * @param prompt Prompt preparado para análise
  * @param isPdf Indica se o documento é um PDF
+ * @param gptModel Modelo GPT a ser utilizado
  * @returns Resultado da análise do documento
  */
 export const analyzeDocumentWithAI = async (
   prompt: string,
-  isPdf: boolean
+  isPdf: boolean,
+  gptModel: GptModel = 'gpt-4-turbo'
 ): Promise<DocumentAnalysis> => {
   const apiKey = getApiKey();
   
@@ -30,7 +32,7 @@ export const analyzeDocumentWithAI = async (
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: "gpt-4o", // Usando modelo mais capaz para melhor análise de PDFs
+        model: gptModel, // Utiliza o modelo especificado
         messages: [
           {
             role: 'system',

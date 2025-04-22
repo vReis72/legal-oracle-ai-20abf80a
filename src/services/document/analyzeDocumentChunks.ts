@@ -19,8 +19,9 @@ export const analyzeDocumentChunks = async (
         `${fileName} (parte ${index + 1}/${chunks.length})`, 
         documentType
       );
-      // Agora passamos o modelo explicitamente, se possível
-      return await analyzeDocumentWithAI(prompt, isPdf, gptModel);
+      
+      // Atualize o serviço de análise para aceitar o modelo GPT como parâmetro
+      return await analyzeDocumentWithAI(prompt, isPdf);
     } catch (error) {
       console.error(`Erro na análise do chunk ${index + 1}:`, error);
 
