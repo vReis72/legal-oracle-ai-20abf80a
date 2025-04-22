@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useApiKey } from '@/context/ApiKeyContext';
 import OpenAIKeyInput from './OpenAIKeyInput';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { hasApiKey } from '@/services/apiKeyService';
 
 interface ApiKeyCheckProps {
   children: React.ReactNode;
@@ -13,8 +14,10 @@ const ApiKeyCheck: React.FC<ApiKeyCheckProps> = ({ children }) => {
   const [showDialog, setShowDialog] = useState(false);
   
   useEffect(() => {
-    // Verificar se a chave já está configurada
-    if (!isKeyConfigured) {
+    // Verificar se a chave já está configurada no localStorage ou no contexto
+    const keyExistsInStorage = hasApiKey();
+    
+    if (!isKeyConfigured && !keyExistsInStorage) {
       // Aguardar 1 segundo para mostrar o diálogo (para evitar flash durante o carregamento)
       const timer = setTimeout(() => {
         setShowDialog(true);

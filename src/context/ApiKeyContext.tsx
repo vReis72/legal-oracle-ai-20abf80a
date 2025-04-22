@@ -65,15 +65,19 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     return hasKey;
   };
 
+  // Se ainda estamos carregando, não renderiza nada
   if (isLoading) {
     return null;
   }
+
+  const isKeyConfigured = !!apiKey || hasApiKey();
+  console.log("Estado atual da API key:", isKeyConfigured ? "Configurada" : "Não configurada");
 
   return (
     <ApiKeyContext.Provider value={{ 
       apiKey, 
       setApiKey, 
-      isKeyConfigured: !!apiKey || hasApiKey(),
+      isKeyConfigured: isKeyConfigured,
       checkApiKey
     }}>
       {children}

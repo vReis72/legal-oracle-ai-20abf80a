@@ -27,40 +27,25 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
   const { apiKey, setApiKey, isKeyConfigured } = useApiKey();
   const { toast } = useToast();
 
+  // Verificar se já existe uma chave armazenada
+  const keyExistsInStorage = hasApiKey();
+
   useEffect(() => {
-    // Só abrir o diálogo se a chave não estiver configurada E forceOpen for true
-    const keyExistsInStorage = hasApiKey();
-    if (forceOpen && !keyExistsInStorage && !isKeyConfigured) {
+    // Só abrir o diálogo se forceOpen for true E não houver chave configurada
+    if (forceOpen && !isKeyConfigured && !keyExistsInStorage) {
       setIsOpen(true);
     } else {
       setIsOpen(false);
     }
-  }, [forceOpen, isKeyConfigured]);
+  }, [forceOpen, isKeyConfigured, keyExistsInStorage]);
 
   const validateApiKey = async (key: string): Promise<boolean> => {
     if (!key.trim().startsWith('sk-')) {
       return false;
     }
     
-    try {
-      setIsValidating(true);
-      
-      // Tenta fazer uma chamada simples à API para validar a chave
-      const response = await fetch('https://api.openai.com/v1/models', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${key}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      return response.ok;
-    } catch (error) {
-      console.error('Erro ao validar API key:', error);
-      return false;
-    } finally {
-      setIsValidating(false);
-    }
+    // Vamos considerar válido sem fazer chamada à API para evitar gasto desnecessário
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -84,7 +69,7 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
       return;
     }
     
-    // Salvar chave sem validação adicional para maior rapidez
+    // Salvar a chave
     setApiKey(apiKeyInput.trim());
     
     // Chamar callback se fornecido
@@ -104,6 +89,11 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
   const handleUpdateKey = () => {
     setIsOpen(true);
   };
+
+  // Se forceOpen for true mas a chave já estiver configurada, não mostramos nada
+  if (forceOpen && (isKeyConfigured || keyExistsInStorage)) {
+    return null;
+  }
 
   return (
     <>
@@ -145,8 +135,8 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
             onClick={handleUpdateKey}
             className="flex items-center gap-1 text-xs"
           >
-            {isKeyConfigured ? <Check className="h-3 w-3" /> : <Key className="h-3 w-3" />}
-            {isKeyConfigured ? "API Configurada" : "Configurar API"}
+            {isKeyConfigured || keyExistsInStorage ? <Check className="h-3 w-3" /> : <Key className="h-3 w-3" />}
+            {isKeyConfigured || keyExistsInStorage ? "API Configurada" : "Configurar API"}
           </Button>
         </div>
       )}

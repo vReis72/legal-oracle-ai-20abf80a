@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Send } from "lucide-react";
 import OpenAIKeyInput from '@/components/shared/OpenAIKeyInput';
+import { hasApiKey } from '@/services/apiKeyService';
 
 interface ChatInputFormProps {
   input: string;
@@ -22,6 +23,10 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
   isKeyConfigured,
   setApiKey
 }) => {
+  // Verificar se a chave existe no localStorage também
+  const keyExistsInStorage = hasApiKey();
+  const isApiConfigured = isKeyConfigured || keyExistsInStorage;
+  
   return (
     <form onSubmit={handleSendMessage} className="p-4 border-t bg-background">
       <div className="flex gap-2 items-end">
@@ -37,17 +42,17 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
         <Button 
           type="submit" 
           variant="ghost"
-          disabled={isLoading || !input.trim() || !isKeyConfigured} 
+          disabled={isLoading || !input.trim() || !isApiConfigured} 
           className="p-2 hover:bg-transparent flex-shrink-0"
         >
           <Send className="h-16 w-16 hover:scale-105 transition-transform" />
         </Button>
       </div>
-      {!isKeyConfigured && (
+      {!isApiConfigured && (
         <div className="mt-2">
           <OpenAIKeyInput 
             onKeySubmit={setApiKey}
-            forceOpen={!isKeyConfigured}
+            forceOpen={!isApiConfigured}
             buttonVariant="default"
             buttonSize="default"
           />
