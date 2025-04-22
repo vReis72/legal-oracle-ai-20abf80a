@@ -40,28 +40,26 @@ export const useUploadProgress = () => {
       clearInterval(uploadIntervalId);
     }
     
-    // Configurar tempo máximo de 2 minutos para PDFs, 1 minuto para outros arquivos
-    const maxTime = isPdf ? 120000 : 60000;
+    // Configurar tempo máximo reduzido para 60 segundos para PDFs, 30 segundos para outros arquivos
+    const maxTime = isPdf ? 60000 : 30000;
     setMaxProgressTime(maxTime);
     
+    // Acelerar o progresso visual para evitar sensação de lentidão
     const interval = window.setInterval(() => {
-      // Progresso mais lento para PDFs para dar impressão de processamento mais complexo
-      const increment = isPdf ? 1 : 2;
+      // Progresso mais rápido para PDFs e outros documentos
+      const increment = isPdf ? 3 : 5;
       progress += increment;
       
       // Nunca chega a 100% até o processamento terminar
-      // E limitamos a 95% para garantir que o processamento seja visível
       if (progress < 95) {
         setUploadProgress(progress);
-      } else {
-        // Se já atingiu 95%, vamos garantir que o upload não fica preso
-        if (progress >= 200) {
-          console.log("Forçando conclusão do upload após tempo limite");
-          clearInterval(interval);
-          completeUpload();
-        }
+      } else if (progress >= 150) {
+        // Se já passou muito tempo em 95%, força a conclusão
+        console.log("Forçando conclusão do upload após tempo limite");
+        clearInterval(interval);
+        completeUpload();
       }
-    }, 200); // Reduzimos a velocidade para dar mais feedback visual
+    }, 150); // Mais frequente para feedback visual melhor
     
     // Armazenar o ID para limpeza posterior
     setUploadIntervalId(interval);
@@ -86,7 +84,7 @@ export const useUploadProgress = () => {
     setTimeout(() => {
       setUploading(false);
       setUploadProgress(0);
-    }, 800); // Aumentamos para melhor feedback visual
+    }, 500); // Reduzido para resposta mais rápida
   };
 
   /**
@@ -108,9 +106,9 @@ export const useUploadProgress = () => {
    * Retorna o status atual do upload baseado no progresso
    */
   const getStatusMessage = () => {
-    if (uploadProgress < 30) return "Enviando documento...";
-    if (uploadProgress < 60) return "Processando documento...";
-    if (uploadProgress < 90) return "Analisando conteúdo...";
+    if (uploadProgress < 20) return "Enviando documento...";
+    if (uploadProgress < 50) return "Processando documento...";
+    if (uploadProgress < 80) return "Analisando conteúdo...";
     if (uploadProgress < 100) return "Finalizando análise...";
     return "Análise concluída";
   };

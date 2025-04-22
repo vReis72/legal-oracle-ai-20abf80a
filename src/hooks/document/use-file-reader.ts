@@ -16,31 +16,45 @@ export const readFileContent = (file: File): Promise<string> => {
     const timeoutId = setTimeout(() => {
       reader.abort();
       reject(new Error("Timeout ao ler o arquivo"));
-    }, 60000); // Aumentamos para 60 segundos de timeout
+    }, 30000); // Reduzimos para 30 segundos para evitar esperas longas
     
     reader.onload = (event) => {
       clearTimeout(timeoutId);
       if (event.target?.result) {
-        let content = event.target.result as string;
+        let content = '';
         
-        // Para PDFs, tentamos fazer uma limpeza mais agressiva
-        if (file.name.toLowerCase().endsWith('.pdf')) {
-          console.log("Limpando conteúdo de PDF para melhor processamento");
+        try {
+          content = event.target.result as string;
           
-          // Remover caracteres nulos que podem prejudicar o processamento
-          content = content.replace(/\0/g, ' ');
+          // Para PDFs, fazemos uma limpeza agressiva
+          if (file.name.toLowerCase().endsWith('.pdf')) {
+            console.log("Limpando conteúdo de PDF para melhor processamento");
+            
+            // Remover caracteres nulos que podem prejudicar o processamento
+            content = content.replace(/\0/g, ' ');
+            
+            // Normalizar quebras de linha
+            content = content.replace(/\r\n/g, '\n');
+            
+            // Remover caracteres de controle e bytes estranhos que podem vir em PDFs
+            content = content.replace(/[\x01-\x09\x0B-\x0C\x0E-\x1F\x7F-\x9F]/g, ' ');
+            
+            // Substituir sequências longas de espaços por um único espaço
+            content = content.replace(/\s{2,}/g, ' ');
+            
+            // NOVO: Limitar o tamanho do conteúdo para evitar problemas
+            if (content.length > 10000) {
+              console.log(`Limitando conteúdo do PDF de ${content.length} para 10000 caracteres`);
+              content = content.substring(0, 10000);
+            }
+          }
           
-          // Normalizar quebras de linha
-          content = content.replace(/\r\n/g, '\n');
-          
-          // Remover caracteres de controle e bytes estranhos que podem vir em PDFs
-          content = content.replace(/[\x01-\x09\x0B-\x0C\x0E-\x1F\x7F-\x9F]/g, ' ');
-          
-          // Substituir sequências longas de espaços por um único espaço
-          content = content.replace(/\s{2,}/g, ' ');
+          resolve(content);
+        } catch (error) {
+          console.error("Erro ao processar conteúdo:", error);
+          // Em caso de erro, entregamos o conteúdo limitado e limpo
+          resolve(content.substring(0, 5000).replace(/[^\x20-\x7E]/g, ' '));
         }
-        
-        resolve(content);
       } else {
         reject(new Error("Falha ao ler o arquivo"));
       }

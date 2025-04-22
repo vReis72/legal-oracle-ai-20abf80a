@@ -1,13 +1,19 @@
 
 import { useToast } from '@/hooks/use-toast';
-import { hasApiKey } from '@/services/apiKeyService';
+
+// Cache para evitar múltiplas instâncias do hook useToast
+let toastCache: ReturnType<typeof useToast> | null = null;
 
 /**
  * Hook para validação de documentos
  * @returns Funções para validar documentos
  */
 export const useDocumentValidation = () => {
-  const { toast } = useToast();
+  // Usamos uma única instância do hook useToast para evitar problemas com hooks
+  if (!toastCache) {
+    toastCache = useToast();
+  }
+  const { toast } = toastCache;
 
   /**
    * Verifica se o arquivo tem um tamanho válido
@@ -16,16 +22,16 @@ export const useDocumentValidation = () => {
    */
   const validateFileSize = (file: File): boolean => {
     const isPdf = file.name.toLowerCase().endsWith('.pdf');
-    // Aumentamos o limite para PDFs para permitir documentos mais complexos
-    const maxSize = isPdf ? 5 * 1024 * 1024 : 3 * 1024 * 1024;
+    // Limite ainda mais reduzido para garantir processamento
+    const maxSize = isPdf ? 2 * 1024 * 1024 : 1 * 1024 * 1024;
     
     if (file.size > maxSize) {
       toast({
         variant: "destructive",
         title: "Arquivo muito grande",
         description: isPdf 
-          ? "Por favor, selecione um PDF menor que 5MB para análise."
-          : "Por favor, selecione um arquivo menor que 3MB para análise.",
+          ? "Por favor, selecione um PDF menor que 2MB para análise."
+          : "Por favor, selecione um arquivo menor que 1MB para análise.",
       });
       return false;
     }
@@ -40,7 +46,7 @@ export const useDocumentValidation = () => {
    */
   const validateApiKey = (isKeyConfigured: boolean): boolean => {
     // Verificamos tanto o contexto quanto o localStorage
-    if (!isKeyConfigured && !hasApiKey()) {
+    if (!isKeyConfigured) {
       toast({
         variant: "destructive",
         title: "API Key não configurada",
