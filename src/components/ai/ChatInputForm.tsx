@@ -23,7 +23,6 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
   isKeyConfigured,
   setApiKey
 }) => {
-  // Verificar se a chave existe no localStorage ou no contexto
   const keyExistsInStorage = hasApiKey();
   const isApiConfigured = isKeyConfigured || keyExistsInStorage;
   
@@ -45,7 +44,7 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
           disabled={isLoading || !input.trim() || !isApiConfigured} 
           className="p-2 hover:bg-transparent flex-shrink-0"
         >
-          <Send className="h-16 w-16 hover:scale-105 transition-transform" />
+          <Send className="h-10 w-10 hover:scale-105 transition-transform" />
         </Button>
       </div>
       {!isApiConfigured && (
