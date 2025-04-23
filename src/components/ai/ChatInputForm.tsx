@@ -42,9 +42,12 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
           type="submit" 
           variant="ghost"
           disabled={isLoading || !input.trim() || !isApiConfigured} 
-          className="p-2 hover:bg-transparent flex-shrink-0"
+          className="p-2 hover:bg-transparent flex-shrink-0 transition-all duration-300"
         >
-          <Send className="h-10 w-10 hover:scale-105 transition-transform" />
+          <Send 
+            className="h-12 w-12 text-eco-primary hover:scale-110 transition-transform duration-300 ease-in-out" 
+            strokeWidth={2.5} 
+          />
         </Button>
       </div>
       {!isApiConfigured && (
