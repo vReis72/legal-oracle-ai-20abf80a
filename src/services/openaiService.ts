@@ -53,11 +53,14 @@ export const searchJurisprudencia = async (
       throw new Error('API key não fornecida');
     }
 
+    console.log('Enviando requisição de busca para OpenAI...');
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${key}`,
         'Content-Type': 'application/json',
+        'OpenAI-Beta': 'assistants=v1' // Header adicional para API mais recente
       },
       body: JSON.stringify({
         model: "gpt-4o", // Usando GPT-4o para melhores resultados
@@ -78,7 +81,9 @@ export const searchJurisprudencia = async (
     });
 
     if (!response.ok) {
-      throw new Error(`Erro na API: ${response.status}`);
+      const errorData = await response.json();
+      console.error('Erro na resposta da API OpenAI:', errorData);
+      throw new Error(`Erro na API: ${response.status} - ${errorData.error?.message || 'Erro desconhecido'}`);
     }
 
     const data = await response.json();

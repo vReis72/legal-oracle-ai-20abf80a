@@ -1,5 +1,6 @@
+
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import { getApiKey, saveApiKey, hasApiKey, setDefaultApiKey } from '@/services/apiKeyService';
+import { getApiKey, saveApiKey, hasApiKey, setDefaultApiKey, removeApiKey } from '@/services/apiKeyService';
 import { useToast } from '@/hooks/use-toast';
 
 interface ApiKeyContextType {
@@ -7,6 +8,7 @@ interface ApiKeyContextType {
   setApiKey: (key: string) => void;
   isKeyConfigured: boolean;
   checkApiKey: () => boolean;
+  resetApiKey: () => void;
 }
 
 const ApiKeyContext = createContext<ApiKeyContextType | undefined>(undefined);
@@ -37,6 +39,25 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
       console.error("Erro ao carregar API key:", error);
     }
   };
+
+  // Forçar a nova chave no inicialização (remover após testes)
+  useEffect(() => {
+    // Definir a nova chave padrão na inicialização
+    if (DEFAULT_API_KEY) {
+      try {
+        console.log("Configurando nova chave padrão...");
+        // Remover chave antiga para garantir que a nova será usada
+        removeApiKey();
+        // Definir a nova chave
+        if (setDefaultApiKey(DEFAULT_API_KEY)) {
+          console.log("Nova API key padrão configurada automaticamente");
+          updateApiKeyFromStorage();
+        }
+      } catch (error) {
+        console.error("Erro ao definir chave padrão:", error);
+      }
+    }
+  }, []);
 
   // Carregar API key do localStorage na inicialização
   useEffect(() => {
@@ -92,6 +113,23 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     }
   };
 
+  const resetApiKey = () => {
+    try {
+      // Remover chave atual
+      removeApiKey();
+      // Definir a chave padrão novamente
+      if (DEFAULT_API_KEY && setDefaultApiKey(DEFAULT_API_KEY)) {
+        toast({
+          title: "Chave Padrão Restaurada",
+          description: "A chave API padrão foi restaurada com sucesso.",
+        });
+        updateApiKeyFromStorage();
+      }
+    } catch (error) {
+      console.error("Erro ao resetar API key:", error);
+    }
+  };
+
   const checkApiKey = (): boolean => {
     const hasKey = hasApiKey();
     console.log("Verificação de API key:", hasKey ? "Configurada" : "Não configurada");
@@ -111,7 +149,8 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
       apiKey, 
       setApiKey, 
       isKeyConfigured: isKeyConfigured,
-      checkApiKey
+      checkApiKey,
+      resetApiKey
     }}>
       {children}
     </ApiKeyContext.Provider>

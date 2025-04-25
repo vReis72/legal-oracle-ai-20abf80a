@@ -74,7 +74,12 @@ export const removeApiKey = (): void => {
 export const setDefaultApiKey = (defaultKey: string): boolean => {
   if (!hasApiKey() && defaultKey && defaultKey.trim() !== '') {
     try {
-      saveApiKey(defaultKey);
+      // Forçar a remoção de qualquer chave antiga primeiro
+      removeApiKey(); 
+      // Pequena pausa para garantir que a remoção seja concluída
+      setTimeout(() => {
+        saveApiKey(defaultKey);
+      }, 100);
       return true;
     } catch (error) {
       console.error('Erro ao definir chave padrão:', error);
@@ -82,4 +87,18 @@ export const setDefaultApiKey = (defaultKey: string): boolean => {
     }
   }
   return false;
+};
+
+// Função para limpar cache e forçar nova leitura da chave (para depuração)
+export const refreshApiKey = (): void => {
+  try {
+    const key = getApiKey();
+    if (key) {
+      // Remove e salva novamente para forçar atualização
+      removeApiKey();
+      setTimeout(() => saveApiKey(key), 100);
+    }
+  } catch (error) {
+    console.error('Erro ao atualizar API key:', error);
+  }
 };

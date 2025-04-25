@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Key, Check } from 'lucide-react';
+import { Key, Check, RefreshCcw } from 'lucide-react';
 import { useApiKey } from '@/context/ApiKeyContext';
 import { hasApiKey } from '@/services/apiKeyService';
 
@@ -24,7 +24,7 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [isValidating, setIsValidating] = useState(false);
-  const { apiKey, setApiKey, isKeyConfigured } = useApiKey();
+  const { apiKey, setApiKey, isKeyConfigured, resetApiKey } = useApiKey();
   const { toast } = useToast();
 
   // Verificar se já existe uma chave armazenada
@@ -82,6 +82,11 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
     setIsOpen(true);
   };
 
+  const handleResetToDefault = () => {
+    resetApiKey();
+    setIsOpen(false);
+  };
+
   // Se forceOpen for true mas a chave já estiver configurada, não mostramos nada
   if (forceOpen && keyConfigured) {
     return null;
@@ -111,7 +116,17 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
               className="w-full"
               disabled={isValidating}
             />
-            <div className="flex justify-end">
+            <div className="flex justify-between">
+              <Button 
+                type="button"
+                variant="outline"
+                onClick={handleResetToDefault}
+                className="flex items-center gap-1"
+                disabled={isValidating}
+              >
+                <RefreshCcw className="h-4 w-4" />
+                Restaurar Padrão
+              </Button>
               <Button 
                 type="submit" 
                 className="bg-eco-primary hover:bg-eco-dark"
@@ -142,4 +157,3 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
 };
 
 export default OpenAIKeyInput;
-
