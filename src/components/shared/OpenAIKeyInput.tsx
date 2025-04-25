@@ -51,6 +51,7 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
       return;
     }
     
+    // Validar formato da chave OpenAI (permite sk- ou sk-proj-)
     if (!apiKeyInput.trim().startsWith('sk-')) {
       toast({
         variant: "destructive",
@@ -104,7 +105,7 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4 pt-4">
             <Input
-              placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+              placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ou sk-proj-xxxxxxxx"
               value={apiKeyInput}
               onChange={(e) => setApiKeyInput(e.target.value)}
               className="w-full"
@@ -141,3 +142,4 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
 };
 
 export default OpenAIKeyInput;
+

@@ -1,3 +1,4 @@
+
 import { SearchResult } from './openaiService';
 import { getApiKey } from './apiKeyService';
 
@@ -30,7 +31,12 @@ export const sendChatMessage = async (
       throw new Error('API key não fornecida');
     }
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Determinar qual endpoint usar com base no formato da chave
+    const baseUrl = key.startsWith('sk-proj-') 
+      ? 'https://api.openai.com/v1/chat/completions' 
+      : 'https://api.openai.com/v1/chat/completions';
+
+    const response = await fetch(baseUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${key}`,
@@ -63,3 +69,4 @@ export const sendChatMessage = async (
     throw error;
   }
 };
+
