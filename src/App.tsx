@@ -12,6 +12,7 @@ import PecasJuridicas from "./pages/PecasJuridicas";
 import Documentos from "./pages/Documentos";
 import NotFound from "./pages/NotFound";
 import { ApiKeyProvider } from "./context/ApiKeyContext";
+import ApiKeyCheck from "./components/shared/ApiKeyCheck";
 import React, { useState } from "react";
 
 const App = () => {
@@ -25,16 +26,18 @@ const App = () => {
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Layout />}>
-                <Route index element={<Index />} />
-                <Route path="/jurisprudencia" element={<Jurisprudencia />} />
-                <Route path="/documentos" element={<Documentos />} />
-                <Route path="/alertas" element={<Alertas />} />
-                <Route path="/pecas" element={<PecasJuridicas />} />
-                <Route path="*" element={<NotFound />} />
-              </Route>
-            </Routes>
+            <ApiKeyCheck>
+              <Routes>
+                <Route path="/" element={<Layout />}>
+                  <Route index element={<Index />} />
+                  <Route path="/jurisprudencia" element={<Jurisprudencia />} />
+                  <Route path="/documentos" element={<Documentos />} />
+                  <Route path="/alertas" element={<Alertas />} />
+                  <Route path="/pecas" element={<PecasJuridicas />} />
+                  <Route path="*" element={<NotFound />} />
+                </Route>
+              </Routes>
+            </ApiKeyCheck>
           </BrowserRouter>
         </TooltipProvider>
       </ApiKeyProvider>
