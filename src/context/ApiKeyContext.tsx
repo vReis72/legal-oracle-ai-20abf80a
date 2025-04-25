@@ -15,8 +15,8 @@ interface ApiKeyProviderProps {
   children: ReactNode;
 }
 
-// Chave padrão (pode ser configurada para uma chave de teste ou para a chave fornecida)
-const DEFAULT_API_KEY = "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";
+// Nova chave padrão atualizada
+const DEFAULT_API_KEY = "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";
 
 export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   const [apiKey, setApiKeyState] = useState<string | null>(null);
@@ -47,7 +47,7 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
       // Se não houver chave, definir a padrão
       if (!hasApiKey() && DEFAULT_API_KEY) {
         if (setDefaultApiKey(DEFAULT_API_KEY)) {
-          console.log("API key padrão configurada automaticamente");
+          console.log("Nova API key padrão configurada automaticamente");
           updateApiKeyFromStorage();
         }
       }
