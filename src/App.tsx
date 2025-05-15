@@ -1,4 +1,5 @@
 
+import React, { useState } from 'react';  // Add explicit React import
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,7 +14,6 @@ import Documentos from "./pages/Documentos";
 import NotFound from "./pages/NotFound";
 import { ApiKeyProvider } from "./context/ApiKeyContext";
 import ApiKeyCheck from "./components/shared/ApiKeyCheck";
-import React, { useState } from "react";
 
 const App = () => {
   // Move the QueryClient initialization inside the component
