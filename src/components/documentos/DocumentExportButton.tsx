@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { FilePdf } from "lucide-react";
+import { FileText } from "lucide-react";
 import { Document } from "@/types/document";
 import { exportDocumentAsPdf } from "@/utils/pdfExport";
 import { toast } from "sonner";
@@ -38,7 +38,7 @@ const DocumentExportButton: React.FC<DocumentExportButtonProps> = ({
       disabled={disabled || !document.processed || !document.summary}
       title={!document.processed ? "Análise necessária antes de exportar" : "Exportar análise como PDF"}
     >
-      <FilePdf className="mr-2" size={16} />
+      <FileText className="mr-2" size={16} />
       Exportar PDF
     </Button>
   );
