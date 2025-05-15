@@ -22,30 +22,63 @@ export const useDocumentAnalysis = (
     return chunks;
   };
 
-  // Simulated function to analyze document with OpenAI
+  // Real function to analyze document with OpenAI
   const analyzeWithOpenAI = async (text: string): Promise<string> => {
-    // This would normally call the OpenAI API
-    // For now, we'll simulate a response with detailed analysis
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    if (!apiKey) {
+      throw new Error("API key não fornecida. Configure sua chave OpenAI nas configurações.");
+    }
+
+    console.log("Enviando conteúdo para análise OpenAI...");
     
-    // Gerar um resumo mais detalhado baseado no conteúdo do documento
-    if (text.includes("simulado")) {
-      return `## Resumo do Documento "${document.name}"\n\n
-Este documento apresenta uma análise jurídica detalhada sobre questões relevantes ao direito ambiental brasileiro. 
-Os principais pontos abordados incluem:
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'OpenAI-Beta': 'assistants=v1'
+        },
+        body: JSON.stringify({
+          model: "gpt-4o",
+          messages: [
+            {
+              role: 'system',
+              content: 'Você é um especialista em análise de documentos jurídicos. Analise este documento e forneça um resumo detalhado, destacando os pontos mais importantes e relevantes.'
+            },
+            {
+              role: 'user',
+              content: `Analise o seguinte documento jurídico e forneça: 
+              1. Um resumo detalhado 
+              2. Os principais destaques com sua importância (alta, média, baixa)
+              3. Os pontos-chave com título e descrição
+              
+              DOCUMENTO:
+              ${text}`
+            }
+          ],
+          temperature: 0.2,
+          max_tokens: 2000
+        }),
+      });
 
-1. **Responsabilidade ambiental**: O texto aborda questões relacionadas à responsabilidade objetiva por danos ambientais.
-2. **Licenciamento ambiental**: São apresentados procedimentos e requisitos para obtenção de licenças.
-3. **Legislação aplicável**: O documento faz referência à Lei 6.938/81 (Política Nacional do Meio Ambiente) e outras normas ambientais.
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Erro na API OpenAI:", errorData);
+        throw new Error(`Erro na API: ${response.status} - ${errorData.error?.message || 'Erro desconhecido'}`);
+      }
 
-### Observações Relevantes:
-- O documento apresenta argumentação consistente com a jurisprudência atual do STF e STJ
-- Há citações diretas de precedentes importantes
-- Os fundamentos jurídicos estão bem embasados na doutrina contemporânea`;
-    } else {
-      return `## Análise do Documento "${document.name}"\n\n
-Este documento contém pouco conteúdo textual relevante para análise jurídica aprofundada.
-Recomenda-se verificar se o documento foi carregado corretamente ou se possui texto suficiente para processamento.`;
+      const data = await response.json();
+      const content = data.choices[0]?.message?.content;
+      
+      if (!content) {
+        throw new Error("Resposta vazia da API");
+      }
+      
+      console.log("Resposta da API OpenAI recebida com sucesso");
+      return content;
+    } catch (error) {
+      console.error("Falha na chamada da API OpenAI:", error);
+      throw error;
     }
   };
 
@@ -64,7 +97,7 @@ Recomenda-se verificar se o documento foi carregado corretamente ou se possui te
       // Log para verificar se o conteúdo está sendo processado
       console.log("Iniciando análise do documento com conteúdo:", document.content.substring(0, 100) + "...");
       
-      let summary = "";
+      let analysisResult = "";
       
       // Check if text needs to be split (over 8000 chars)
       if (document.content.length > 8000) {
@@ -73,71 +106,113 @@ Recomenda-se verificar se o documento foi carregado corretamente ou se possui te
         setProgress(30);
         
         // Process each chunk
-        const chunkSummaries: string[] = [];
+        const chunkResults: string[] = [];
         for (let i = 0; i < chunks.length; i++) {
-          const chunkSummary = await analyzeWithOpenAI(chunks[i]);
-          chunkSummaries.push(chunkSummary);
+          const chunkResult = await analyzeWithOpenAI(chunks[i]);
+          chunkResults.push(chunkResult);
           setProgress(30 + ((i + 1) / chunks.length * 40));
         }
         
-        // Combine summaries
-        summary = chunkSummaries.join("\n\n");
+        // Combine results
+        analysisResult = chunkResults.join("\n\n");
         
-        // Final summarization of combined summaries if needed
-        if (summary.length > 8000) {
-          summary = await analyzeWithOpenAI(summary.substring(0, 8000));
+        // Final analysis of combined results if needed
+        if (analysisResult.length > 8000) {
+          analysisResult = await analyzeWithOpenAI(analysisResult.substring(0, 8000) + 
+            "\n\n[Nota: Este é um resumo de múltiplas partes do documento. Forneça uma análise consolidada.]");
         }
       } else {
         // Process the entire document at once
-        summary = await analyzeWithOpenAI(document.content);
+        analysisResult = await analyzeWithOpenAI(document.content);
         setProgress(70);
       }
 
-      // Generate key points and highlights (baseado no resumo gerado)
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setProgress(90);
+      // Parse the OpenAI response to extract summary, highlights, and key points
+      setProgress(85);
       
-      // Criação de destaques reais baseados no conteúdo
-      const highlights = [
-        { 
-          text: "Responsabilidade objetiva por danos ambientais independe de culpa", 
-          page: 1, 
-          importance: "alta" 
-        },
-        { 
-          text: "Requisitos para obtenção de licença ambiental incluem EIA/RIMA", 
-          page: 2, 
-          importance: "média" 
-        },
-        { 
-          text: "Prazos recursais em matéria ambiental seguem regras específicas", 
-          page: 3, 
-          importance: "alta" 
-        }
-      ];
-
-      // Criação de pontos-chave reais baseados no conteúdo
-      const keyPoints = [
-        { 
-          title: "Princípio do Poluidor-Pagador", 
-          description: "O documento enfatiza a aplicação do princípio do poluidor-pagador como base para responsabilização civil ambiental." 
-        },
-        { 
-          title: "Inversão do Ônus da Prova", 
-          description: "Há destaque para a possibilidade de inversão do ônus da prova em ações relacionadas a danos ambientais." 
-        },
-        { 
-          title: "Compensação Ambiental", 
-          description: "O texto aborda mecanismos de compensação ambiental previstos na legislação brasileira." 
-        }
-      ];
+      // Extração de dados da resposta da OpenAI
+      let summary = "";
+      const highlights: Array<{text: string; page: number; importance: string}> = [];
+      const keyPoints: Array<{title: string; description: string}> = [];
+      
+      // Tentar extrair o resumo (primeira seção até encontrar ## ou linha vazia)
+      const parts = analysisResult.split(/(?:##|#)/);
+      if (parts.length > 0) {
+        summary = parts[0].trim();
+      }
+      
+      // Procurar por destaques no texto
+      const highlightsMatch = analysisResult.match(/(?:Destaques|Principais Destaques|Pontos Importantes):([\s\S]*?)(?=##|#|$)/i);
+      if (highlightsMatch && highlightsMatch[1]) {
+        const highlightsText = highlightsMatch[1].trim();
+        const highlightItems = highlightsText.split(/\n-|\n•|\n\d+\./);
+        
+        highlightItems.forEach(item => {
+          const trimmedItem = item.trim();
+          if (!trimmedItem) return;
+          
+          let importance = "média";
+          if (trimmedItem.toLowerCase().includes("alta") || trimmedItem.toLowerCase().includes("importante")) {
+            importance = "alta";
+          } else if (trimmedItem.toLowerCase().includes("baixa")) {
+            importance = "baixa";
+          }
+          
+          highlights.push({
+            text: trimmedItem.replace(/\(.*?\)/, "").trim(),
+            page: 1, // Assumimos página 1 já que não temos informação de página
+            importance
+          });
+        });
+      }
+      
+      // Procurar por pontos-chave no texto
+      const keyPointsMatch = analysisResult.match(/(?:Pontos-Chave|Pontos Chave|Principais Pontos):([\s\S]*?)(?=##|#|$)/i);
+      if (keyPointsMatch && keyPointsMatch[1]) {
+        const keyPointsText = keyPointsMatch[1].trim();
+        const keyPointItems = keyPointsText.split(/\n-|\n•|\n\d+\./);
+        
+        keyPointItems.forEach(item => {
+          const trimmedItem = item.trim();
+          if (!trimmedItem) return;
+          
+          const titleMatch = trimmedItem.match(/^(.*?)(?::|–|-)(.*)$/);
+          if (titleMatch) {
+            keyPoints.push({
+              title: titleMatch[1].trim(),
+              description: titleMatch[2].trim()
+            });
+          } else if (trimmedItem) {
+            keyPoints.push({
+              title: trimmedItem.split(' ').slice(0, 3).join(' ') + "...",
+              description: trimmedItem
+            });
+          }
+        });
+      }
+      
+      // Se não conseguirmos extrair adequadamente, criar pelo menos um item básico
+      if (highlights.length === 0 && analysisResult.length > 0) {
+        highlights.push({
+          text: "Documento analisado com sucesso",
+          page: 1,
+          importance: "média"
+        });
+      }
+      
+      if (keyPoints.length === 0 && analysisResult.length > 0) {
+        keyPoints.push({
+          title: "Análise Completa",
+          description: "O documento foi analisado com sucesso pela API OpenAI"
+        });
+      }
       
       // Update document with analysis results
       const analyzedDocument: Document = {
         ...document,
         id: document.id || uuidv4(),
         processed: true,
-        summary,
+        summary: summary || analysisResult, // Use o texto completo se não conseguirmos extrair o resumo
         highlights,
         keyPoints
       };
@@ -148,7 +223,7 @@ Recomenda-se verificar se o documento foi carregado corretamente ou se possui te
       toast.success("Análise do documento concluída com sucesso!");
     } catch (error) {
       console.error("Erro na análise do documento:", error);
-      setAnalysisError("Ocorreu um erro durante a análise. Por favor, tente novamente.");
+      setAnalysisError(`Ocorreu um erro durante a análise: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
       toast.error("Erro ao analisar o documento. Por favor, tente novamente.");
     } finally {
       setIsAnalyzing(false);
