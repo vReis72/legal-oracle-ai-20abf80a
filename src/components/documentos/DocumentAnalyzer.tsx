@@ -8,18 +8,20 @@ import DocumentSummary from './DocumentSummary';
 import DocumentHighlights from './DocumentHighlights';
 import DocumentKeyPoints from './DocumentKeyPoints';
 import { useDocumentAnalysis } from '@/hooks/document/useDocumentAnalysis';
+import { useApiKey } from '@/context/ApiKeyContext';
 
 interface DocumentAnalyzerProps {
   document: Document;
   onAnalysisComplete: (updatedDocument: Document) => void;
-  apiKey: string;
 }
 
 const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({ 
   document, 
-  onAnalysisComplete,
-  apiKey 
+  onAnalysisComplete
 }) => {
+  // Obter a chave API do contexto em vez de receber como prop
+  const { apiKey } = useApiKey();
+  
   const {
     isAnalyzing,
     progress,

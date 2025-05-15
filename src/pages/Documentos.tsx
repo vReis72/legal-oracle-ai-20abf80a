@@ -5,7 +5,6 @@ import DocumentUploader from '../components/documentos/DocumentUploader';
 import DocumentList from '../components/documentos/DocumentList';
 import DocumentAnalyzer from '../components/documentos/DocumentAnalyzer';
 import { Document } from '@/types/document';
-import { useApiKey } from '@/context/ApiKeyContext';
 import { useDocumentStorage } from '@/hooks/document/useDocumentStorage';
 import { toast } from "sonner";
 
@@ -19,7 +18,6 @@ const Documentos = () => {
   } = useDocumentStorage();
   
   const selectedDocument = getSelectedDocument();
-  const { apiKey } = useApiKey();
 
   const handleDocumentProcessed = (document: Document) => {
     saveDocument(document);
@@ -59,7 +57,6 @@ const Documentos = () => {
                 <DocumentAnalyzer 
                   document={selectedDocument} 
                   onAnalysisComplete={handleAnalysisComplete}
-                  apiKey={apiKey}
                 />
               ) : (
                 <div className="text-center p-8 border rounded-lg">
