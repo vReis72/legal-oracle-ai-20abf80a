@@ -106,7 +106,7 @@ export const useDocumentAnalysis = (
         throw new Error("Análise gerou resultado vazio");
       }
       
-      const { summary, highlights, keyPoints } = parseAnalysisResult(analysisResult);
+      const { summary, highlights, keyPoints, conclusion } = parseAnalysisResult(analysisResult);
       
       if (!summary) {
         console.warn("Processamento não gerou resumo adequado");
@@ -127,7 +127,8 @@ export const useDocumentAnalysis = (
         keyPoints: keyPoints.length > 0 ? keyPoints : [{
           title: "Análise Incompleta",
           description: "Não foi possível extrair pontos-chave deste documento."
-        }]
+        }],
+        conclusion: conclusion || "Não foi possível gerar uma conclusão para este documento."
       };
       
       // Complete

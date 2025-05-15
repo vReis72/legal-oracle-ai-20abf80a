@@ -11,9 +11,12 @@ export interface Document {
     text: string;
     page: number;
     importance: string;
+    explanation?: string;
   }>;
   keyPoints?: Array<{
     title: string;
     description: string;
+    fundamento?: string;
   }>;
+  conclusion?: string;
 }

@@ -7,9 +7,10 @@ import DocumentStatus from './DocumentStatus';
 import DocumentSummary from './DocumentSummary';
 import DocumentHighlights from './DocumentHighlights';
 import DocumentKeyPoints from './DocumentKeyPoints';
+import DocumentConclusion from './DocumentConclusion';
 import { useDocumentAnalysis } from '@/hooks/document/useDocumentAnalysis';
 import { useApiKey } from '@/context/ApiKeyContext';
-import ErrorMessage from '../ai/ErrorMessage'; // Import the ErrorMessage component
+import ErrorMessage from '../ai/ErrorMessage'; 
 
 interface DocumentAnalyzerProps {
   document: Document;
@@ -44,6 +45,7 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
         <DocumentSummary summary={document.summary} />
         <DocumentHighlights highlights={document.highlights} />
         <DocumentKeyPoints keyPoints={document.keyPoints} />
+        <DocumentConclusion conclusion={document.conclusion} />
       </div>
     );
   };

@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 
 /**
@@ -46,23 +45,49 @@ export const analyzeWithOpenAI = async (text: string, apiKey: string): Promise<s
         messages: [
           {
             role: 'system',
-            content: 'Você é um especialista em análise de documentos jurídicos brasileiros. Analise este documento e forneça um resumo detalhado, destacando os pontos mais importantes e relevantes. Não mencione em sua análise que o documento é simulado ou fictício.'
+            content: 'Você é um especialista em análise de documentos jurídicos brasileiros com anos de experiência. Seu trabalho é fornecer análises profundas, bem estruturadas e altamente relevantes, com enfoque nos aspectos mais importantes do documento.'
           },
           {
             role: 'user',
-            content: `Analise o seguinte documento jurídico e forneça: 
-            1. Um resumo detalhado 
-            2. Os principais destaques com sua importância (alta, média, baixa)
-            3. Os pontos-chave com título e descrição
-            
-            IMPORTANTE: Este é um documento real que precisa de análise profissional. NÃO mencione que o documento é fictício ou simulado em sua análise.
-            
-            DOCUMENTO:
-            ${text}`
+            content: `Analise o seguinte documento jurídico e forneça uma análise completa, detalhada e bem fundamentada com a seguinte estrutura:
+
+1. RESUMO DO DOCUMENTO:
+Forneça um resumo abrangente e detalhado do documento jurídico, que capture toda a essência do texto, destacando o contexto, as principais alegações, argumentos e fundamentações jurídicas. O resumo deve ser completo e ter pelo menos 3 parágrafos.
+
+2. DESTAQUES:
+Identifique no mínimo 5 pontos cruciais do documento, organizados por ordem de importância (alta, média, baixa). Cada destaque deve incluir:
+- O texto exato ou paráfrase precisa do trecho importante
+- Explicação detalhada de por que este ponto é relevante
+- Implicações jurídicas deste destaque
+- Conexão com jurisprudência ou legislação relevante, quando aplicável
+
+3. PONTOS-CHAVE:
+Apresente no mínimo 5 pontos-chave organizados por temas distintos do documento. Cada ponto deve ter:
+- Título claro e informativo
+- Descrição detalhada do ponto (mínimo de 3 linhas)
+- Fundamentação jurídica relacionada
+- Possíveis consequências ou desdobramentos deste ponto
+
+4. CONCLUSÃO:
+Forneça uma conclusão jurídica bem fundamentada sobre o documento, considerando:
+- Mérito jurídico dos argumentos apresentados
+- Prognóstico com base na jurisprudência atual
+- Pontos fortes e fracos da argumentação
+- Recomendações específicas baseadas no contexto do documento
+
+IMPORTANTE:
+- Mantenha uma análise objetiva, imparcial e tecnicamente precisa
+- Cite artigos, precedentes e princípios jurídicos relevantes
+- Evite generalizações e análises superficiais
+- Não omita informações importantes, mesmo que controversas
+- Este é um documento real que precisa de análise profissional criteriosa
+
+DOCUMENTO PARA ANÁLISE:
+${text}`
           }
         ],
-        temperature: 0.2,
-        max_tokens: 2000
+        temperature: 0.1,
+        max_tokens: 3000
       }),
     });
 
