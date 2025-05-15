@@ -43,7 +43,7 @@ export const useDocumentAnalysis = (
           messages: [
             {
               role: 'system',
-              content: 'Você é um especialista em análise de documentos jurídicos. Analise este documento e forneça um resumo detalhado, destacando os pontos mais importantes e relevantes.'
+              content: 'Você é um especialista em análise de documentos jurídicos brasileiros. Analise este documento e forneça um resumo detalhado, destacando os pontos mais importantes e relevantes. Não mencione em sua análise que o documento é simulado ou fictício.'
             },
             {
               role: 'user',
@@ -51,6 +51,8 @@ export const useDocumentAnalysis = (
               1. Um resumo detalhado 
               2. Os principais destaques com sua importância (alta, média, baixa)
               3. Os pontos-chave com título e descrição
+              
+              IMPORTANTE: Este é um documento real que precisa de análise profissional. NÃO mencione que o documento é fictício ou simulado em sua análise.
               
               DOCUMENTO:
               ${text}`
@@ -191,19 +193,28 @@ export const useDocumentAnalysis = (
         });
       }
       
-      // Se não conseguirmos extrair adequadamente, criar pelo menos um item básico
-      if (highlights.length === 0 && analysisResult.length > 0) {
-        highlights.push({
-          text: "Documento analisado com sucesso",
-          page: 1,
-          importance: "média"
-        });
+      // Se não conseguirmos extrair adequadamente, usar o texto completo como resumo
+      if (!summary && analysisResult) {
+        summary = analysisResult;
       }
       
-      if (keyPoints.length === 0 && analysisResult.length > 0) {
+      // Se não conseguimos extrair destaques, criar pelo menos um destaque padrão
+      if (highlights.length === 0 && analysisResult) {
+        const firstSentence = analysisResult.split('.')[0];
+        if (firstSentence) {
+          highlights.push({
+            text: firstSentence.trim() + ".",
+            page: 1,
+            importance: "alta"
+          });
+        }
+      }
+      
+      // Se não conseguimos extrair pontos-chave, criar pelo menos um ponto-chave padrão
+      if (keyPoints.length === 0 && analysisResult) {
         keyPoints.push({
-          title: "Análise Completa",
-          description: "O documento foi analisado com sucesso pela API OpenAI"
+          title: "Análise Jurídica",
+          description: analysisResult.substring(0, 200) + "..."
         });
       }
       
@@ -212,7 +223,7 @@ export const useDocumentAnalysis = (
         ...document,
         id: document.id || uuidv4(),
         processed: true,
-        summary: summary || analysisResult, // Use o texto completo se não conseguirmos extrair o resumo
+        summary: summary || analysisResult,
         highlights,
         keyPoints
       };
