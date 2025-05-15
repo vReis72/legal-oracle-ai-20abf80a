@@ -1,88 +1,56 @@
 
-import { getApiKey } from './apiKeyService';
+import { toast } from "sonner";
 
-export interface SearchResult {
-  id: string;
-  tribunal: string;
-  processo: string;
-  relator: string;
-  data: string;
-  ementa: string;
-  relevancia: number;
-  tags: string[];
-}
+/**
+ * Analyze text content with OpenAI API
+ * 
+ * @param text Text content to analyze
+ * @param apiKey OpenAI API key
+ * @returns Analyzed content from OpenAI
+ */
+export const analyzeWithOpenAI = async (text: string, apiKey: string): Promise<string> => {
+  if (!apiKey) {
+    throw new Error("API key não fornecida. Configure sua chave OpenAI nas configurações.");
+  }
 
-// Função para construir os prompts para a API OpenAI
-const buildPrompt = (query: string, isAdvanced: boolean = false) => {
-  const basePrompt = `Atue como um advogado especialista em direito brasileiro, pesquisando jurisprudência relevante.
+  console.log("Enviando conteúdo para análise OpenAI...");
   
-  Baseado na consulta do usuário: "${query}"
-  
-  Retorne APENAS 4 decisões judiciais relevantes em formato JSON, seguindo exatamente esta estrutura:
-  [
-    {
-      "id": "um identificador único, como um número ou código",
-      "tribunal": "sigla do tribunal (STF, STJ, TRF-1, etc.)",
-      "processo": "número do processo",
-      "relator": "nome do relator com título (Min., Des., etc)",
-      "data": "data no formato YYYY-MM-DD",
-      "ementa": "texto da ementa da decisão, resumido e com pelo menos 200 caracteres",
-      "relevancia": "um número entre 0 e 100 indicando a relevância para a consulta",
-      "tags": ["3 a 5 palavras-chave separadas por vírgula"]
-    }
-  ]
-  
-  Lembre-se de focar na área do direito relevante para a consulta e retornar apenas casos reais da jurisprudência brasileira. Não invente dados.`;
-
-  return isAdvanced 
-    ? `${basePrompt}\n\nEsta é uma busca avançada, então por favor seja mais específico quanto aos resultados e considere especialmente os seguintes aspectos: ${query}` 
-    : basePrompt;
-};
-
-// Função para realizar a busca semântica na API OpenAI
-export const searchJurisprudencia = async (
-  query: string, 
-  apiKey: string,
-  isAdvanced: boolean = false
-): Promise<SearchResult[]> => {
   try {
-    // Verificar se a chave foi fornecida ou usar a armazenada
-    const key = apiKey || getApiKey();
-    
-    if (!key) {
-      throw new Error('API key não fornecida');
-    }
-
-    console.log('Enviando requisição de busca para OpenAI...');
-    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${key}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'OpenAI-Beta': 'assistants=v1' // Header adicional para API mais recente
+        'OpenAI-Beta': 'assistants=v1'
       },
       body: JSON.stringify({
-        model: "gpt-4o", // Usando GPT-4o para melhores resultados
+        model: "gpt-4o",
         messages: [
           {
             role: 'system',
-            content: 'Você é um especialista em jurisprudência ambiental brasileira.'
+            content: 'Você é um especialista em análise de documentos jurídicos brasileiros. Analise este documento e forneça um resumo detalhado, destacando os pontos mais importantes e relevantes. Não mencione em sua análise que o documento é simulado ou fictício.'
           },
           {
             role: 'user',
-            content: buildPrompt(query, isAdvanced)
+            content: `Analise o seguinte documento jurídico e forneça: 
+            1. Um resumo detalhado 
+            2. Os principais destaques com sua importância (alta, média, baixa)
+            3. Os pontos-chave com título e descrição
+            
+            IMPORTANTE: Este é um documento real que precisa de análise profissional. NÃO mencione que o documento é fictício ou simulado em sua análise.
+            
+            DOCUMENTO:
+            ${text}`
           }
         ],
         temperature: 0.2,
-        max_tokens: 2000,
-        top_p: 0.9
+        max_tokens: 2000
       }),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('Erro na resposta da API OpenAI:', errorData);
+      console.error("Erro na API OpenAI:", errorData);
       throw new Error(`Erro na API: ${response.status} - ${errorData.error?.message || 'Erro desconhecido'}`);
     }
 
@@ -90,21 +58,13 @@ export const searchJurisprudencia = async (
     const content = data.choices[0]?.message?.content;
     
     if (!content) {
-      throw new Error('Resposta vazia da API');
+      throw new Error("Resposta vazia da API");
     }
     
-    // Extrair JSON da resposta
-    const jsonMatch = content.match(/\[\s*\{.*\}\s*\]/s);
-    if (!jsonMatch) {
-      throw new Error('Formato de resposta inválido');
-    }
-    
-    const jsonContent = jsonMatch[0];
-    const results = JSON.parse(jsonContent) as SearchResult[];
-    
-    return results;
+    console.log("Resposta da API OpenAI recebida com sucesso");
+    return content;
   } catch (error) {
-    console.error('Erro ao buscar jurisprudência:', error);
+    console.error("Falha na chamada da API OpenAI:", error);
     throw error;
   }
 };
