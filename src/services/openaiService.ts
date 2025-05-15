@@ -12,8 +12,12 @@ export const analyzeWithOpenAI = async (text: string, apiKey: string): Promise<s
   if (!apiKey) {
     throw new Error("API key não fornecida. Configure sua chave OpenAI nas configurações.");
   }
+  
+  if (!text || text.trim().length === 0) {
+    throw new Error("Nenhum texto fornecido para análise.");
+  }
 
-  console.log("Enviando conteúdo para análise OpenAI...");
+  console.log(`Enviando conteúdo para análise OpenAI (${text.length} caracteres)...`);
   
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -48,13 +52,33 @@ export const analyzeWithOpenAI = async (text: string, apiKey: string): Promise<s
       }),
     });
 
+    // Check for network errors
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorData = await response.json().catch(() => ({ error: { message: 'Erro desconhecido' } }));
       console.error("Erro na API OpenAI:", errorData);
-      throw new Error(`Erro na API: ${response.status} - ${errorData.error?.message || 'Erro desconhecido'}`);
+      
+      // Handle common HTTP errors with more specific messages
+      if (response.status === 401) {
+        throw new Error("API key inválida ou expirada. Verifique suas credenciais.");
+      } else if (response.status === 429) {
+        throw new Error("Limite de requisições excedido. Tente novamente mais tarde.");
+      } else if (response.status === 500) {
+        throw new Error("Erro no servidor OpenAI. Tente novamente mais tarde.");
+      } else {
+        throw new Error(`Erro na API: ${response.status} - ${errorData.error?.message || 'Erro desconhecido'}`);
+      }
     }
 
-    const data = await response.json();
+    const data = await response.json().catch(() => {
+      throw new Error("Falha ao processar resposta da API. Formato inesperado.");
+    });
+    
+    // Validate response structure
+    if (!data || !data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
+      console.error("Estrutura de resposta inválida:", data);
+      throw new Error("Resposta da API com estrutura inválida");
+    }
+    
     const content = data.choices[0]?.message?.content;
     
     if (!content) {
@@ -65,6 +89,16 @@ export const analyzeWithOpenAI = async (text: string, apiKey: string): Promise<s
     return content;
   } catch (error) {
     console.error("Falha na chamada da API OpenAI:", error);
-    throw error;
+    
+    // Enhance error context
+    if (error instanceof Error) {
+      // Network-related errors
+      if (error.message.includes('Failed to fetch') || error.message.includes('Network')) {
+        throw new Error("Falha de conexão com a API OpenAI. Verifique sua conexão de internet.");
+      }
+      throw error;
+    }
+    
+    throw new Error("Erro desconhecido durante a análise do documento");
   }
 };

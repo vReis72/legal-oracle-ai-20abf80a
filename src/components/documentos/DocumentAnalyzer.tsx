@@ -9,6 +9,7 @@ import DocumentHighlights from './DocumentHighlights';
 import DocumentKeyPoints from './DocumentKeyPoints';
 import { useDocumentAnalysis } from '@/hooks/document/useDocumentAnalysis';
 import { useApiKey } from '@/context/ApiKeyContext';
+import ErrorMessage from '../ai/ErrorMessage'; // Import the ErrorMessage component
 
 interface DocumentAnalyzerProps {
   document: Document;
@@ -54,6 +55,11 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
         isAnalyzing={isAnalyzing}
         onAnalyze={processDocument}
       />
+      
+      {/* Display error message */}
+      {analysisError && (
+        <ErrorMessage error={analysisError} onRetry={processDocument} />
+      )}
       
       {/* Display status messages */}
       {!document.processed && (
