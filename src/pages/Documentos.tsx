@@ -1,31 +1,39 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DocumentUploader from '../components/documentos/DocumentUploader';
 import DocumentList from '../components/documentos/DocumentList';
 import DocumentAnalyzer from '../components/documentos/DocumentAnalyzer';
 import { Document } from '@/types/document';
 import { useApiKey } from '@/context/ApiKeyContext';
+import { useDocumentStorage } from '@/hooks/document/useDocumentStorage';
+import { toast } from "sonner";
 
 const Documentos = () => {
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const { 
+    documents, 
+    saveDocument, 
+    selectedDocumentId, 
+    setSelectedDocumentId, 
+    getSelectedDocument 
+  } = useDocumentStorage();
+  
+  const selectedDocument = getSelectedDocument();
   const { apiKey } = useApiKey();
 
   const handleDocumentProcessed = (document: Document) => {
-    setDocuments(prev => [document, ...prev]);
-    setSelectedDocument(document);
+    saveDocument(document);
+    setSelectedDocumentId(document.id);
+    toast.success("Documento carregado e salvo localmente");
   };
 
   const handleDocumentSelect = (document: Document) => {
-    setSelectedDocument(document);
+    setSelectedDocumentId(document.id);
   };
 
   const handleAnalysisComplete = (updatedDocument: Document) => {
-    setDocuments(prev => 
-      prev.map(doc => doc.id === updatedDocument.id ? updatedDocument : doc)
-    );
-    setSelectedDocument(updatedDocument);
+    saveDocument(updatedDocument);
+    toast.success("Análise concluída e salva localmente");
   };
 
   return (
@@ -63,7 +71,7 @@ const Documentos = () => {
               <DocumentList 
                 documents={documents} 
                 onSelectDocument={handleDocumentSelect} 
-                selectedDocumentId={selectedDocument?.id}
+                selectedDocumentId={selectedDocumentId || undefined}
               />
             </TabsContent>
           </Tabs>
