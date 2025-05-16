@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { getApiKey, saveApiKey, hasApiKey, setDefaultApiKey, removeApiKey } from '@/services/apiKeyService';
 import { useToast } from '@/hooks/use-toast';
@@ -18,7 +19,7 @@ interface ApiKeyProviderProps {
 
 // Obter chave da API do ambiente (configurado pelo Railway) ou usar a chave padrão
 const ENV_API_KEY = typeof window !== 'undefined' && window.env?.OPENAI_API_KEY;
-const DEFAULT_API_KEY = ENV_API_KEY || "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";
+const DEFAULT_API_KEY = ENV_API_KEY || "sk-adicione-uma-chave-valida-aqui";
 
 export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   const [apiKey, setApiKeyState] = useState<string | null>(null);
