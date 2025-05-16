@@ -6,6 +6,8 @@ import PdfPreview from './previews/PdfPreview';
 import GenericFilePreview from './previews/GenericFilePreview';
 import FileDetails from './previews/FileDetails';
 import { generatePdfPreview } from '@/utils/pdf/pdfPreviewGenerator';
+import { configurePdfWorker } from '@/utils/pdf/pdfWorkerConfig';
+import { toast } from "sonner";
 
 interface DocumentFilePreviewProps {
   file: File | null;
@@ -17,7 +19,26 @@ const DocumentFilePreview: React.FC<DocumentFilePreviewProps> = ({ file }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Clean up URL objects when component unmounts or file changes
+  // Configure PDF.js worker when component mounts
+  useEffect(() => {
+    const workerResult = configurePdfWorker({ 
+      verbose: true,
+      showToasts: true
+    });
+    
+    if (!workerResult.success) {
+      console.error("PDF worker configuration failed:", workerResult.error);
+    }
+    
+    return () => {
+      // Clean up any preview URLs when component unmounts
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, []);
+
+  // Clean up URL objects when file changes
   useEffect(() => {
     return () => {
       if (previewUrl) {

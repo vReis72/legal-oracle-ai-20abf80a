@@ -1,6 +1,6 @@
 
 import * as pdfjsLib from 'pdfjs-dist';
-import { configurePdfWorker } from './pdfWorkerConfig';
+import { configurePdfWorker, isPdfWorkerConfigured } from './pdfWorkerConfig';
 import { toast } from "sonner";
 
 /**
@@ -11,11 +11,16 @@ import { toast } from "sonner";
  */
 export const generatePdfPreview = async (file: File): Promise<string | null> => {
   try {
-    // Configure PDF.js worker
-    const workerConfigured = configurePdfWorker();
-    if (!workerConfigured) {
-      console.error("PDF worker not configured properly");
-      throw new Error("PDF worker configuration failed");
+    // Configure PDF.js worker if not already configured
+    if (!isPdfWorkerConfigured()) {
+      const workerResult = configurePdfWorker({
+        verbose: true,
+        showToasts: false // We'll handle toasts ourselves in this function
+      });
+      
+      if (!workerResult.success) {
+        throw new Error(`PDF worker configuration failed: ${workerResult.error}`);
+      }
     }
     
     console.log("Generating PDF preview for:", file.name);

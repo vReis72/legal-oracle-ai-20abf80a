@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Upload } from "lucide-react";
@@ -7,26 +7,29 @@ import { Document } from "@/types/document";
 import { useFileUpload } from "@/hooks/document/useFileUpload";
 import { configurePdfWorker } from "@/utils/pdf/pdfWorkerConfig";
 import DocumentFilePreview from './DocumentFilePreview';
+import { toast } from "sonner";
 
 interface DocumentUploaderProps {
   onDocumentProcessed: (document: Document) => void;
 }
 
 const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onDocumentProcessed }) => {
-  const [workerConfigured, setWorkerConfigured] = useState(false);
   const { isUploading, selectedFile, handleFileChange, handleUpload } = useFileUpload({ 
     onDocumentProcessed 
   });
 
-  // Configurar o worker do PDF.js quando o componente é montado
+  // Configure PDF.js worker when the component mounts
   useEffect(() => {
-    const success = configurePdfWorker();
-    setWorkerConfigured(success);
+    const workerResult = configurePdfWorker({
+      verbose: true,
+      showToasts: true
+    });
     
-    if (success) {
-      console.log("Worker do PDF.js configurado com sucesso na montagem do componente");
+    if (workerResult.success) {
+      console.log("Worker do PDF.js configurado com sucesso:", workerResult.workerSrc);
     } else {
-      console.error("Falha ao configurar worker do PDF.js na montagem do componente");
+      console.error("Falha ao configurar worker do PDF.js:", workerResult.error);
+      // Don't show a toast here as configurePdfWorker already does
     }
   }, []);
 
