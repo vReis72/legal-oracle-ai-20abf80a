@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { FileText, File, FileImage } from "lucide-react";
-import * as pdfjsLib from 'pdfjs-dist';
-import { configurePdfWorker } from "@/utils/pdf/pdfWorkerConfig";
-import { toast } from "sonner";
+import ImagePreview from './previews/ImagePreview';
+import PdfPreview from './previews/PdfPreview';
+import GenericFilePreview from './previews/GenericFilePreview';
+import FileDetails from './previews/FileDetails';
+import { generatePdfPreview } from '@/utils/pdf/pdfPreviewGenerator';
 
 interface DocumentFilePreviewProps {
   file: File | null;
@@ -45,89 +46,20 @@ const DocumentFilePreview: React.FC<DocumentFilePreviewProps> = ({ file }) => {
     } 
     // For PDFs, generate a preview of the first page
     else if (file.type === 'application/pdf') {
-      const generatePdfPreview = async () => {
+      const handlePdfPreview = async () => {
         try {
-          // Configure PDF.js worker
-          const workerConfigured = configurePdfWorker();
-          if (!workerConfigured) {
-            console.error("PDF worker not configured properly");
-            throw new Error("PDF worker configuration failed");
-          }
-          
-          console.log("Generating PDF preview for:", file.name);
-          
-          // Load the PDF file
-          const arrayBuffer = await file.arrayBuffer();
-          
-          if (!arrayBuffer || arrayBuffer.byteLength === 0) {
-            throw new Error("PDF file is empty or corrupted");
-          }
-          
-          console.log("PDF ArrayBuffer loaded, size:", arrayBuffer.byteLength);
-          
-          // Create a loading task with additional options
-          const loadingTask = pdfjsLib.getDocument({
-            data: arrayBuffer,
-            cMapUrl: 'https://unpkg.com/pdfjs-dist@latest/cmaps/',
-            cMapPacked: true,
-          });
-          
-          // Set a timeout for PDF loading
-          const pdfDoc = await Promise.race([
-            loadingTask.promise,
-            new Promise((_, reject) => 
-              setTimeout(() => reject(new Error("PDF loading timeout")), 10000)
-            )
-          ]) as pdfjsLib.PDFDocumentProxy;
-          
-          console.log("PDF loaded, pages:", pdfDoc.numPages);
-          
-          // Get the first page
-          if (pdfDoc.numPages > 0) {
-            const page = await pdfDoc.getPage(1);
-            
-            // Create a canvas with appropriate size
-            const canvas = document.createElement('canvas');
-            const viewport = page.getViewport({ scale: 0.5 }); // Scale down for preview
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-            
-            const ctx = canvas.getContext('2d');
-            if (!ctx) {
-              throw new Error("Could not get canvas context");
-            }
-            
-            const renderContext = {
-              canvasContext: ctx,
-              viewport: viewport,
-            };
-            
-            // Render the page
-            await page.render(renderContext).promise;
-            
-            // Convert canvas to data URL
-            const dataUrl = canvas.toDataURL('image/png');
-            setPdfFirstPage(dataUrl);
-            console.log("PDF preview generated successfully");
-          }
-          setIsLoading(false);
-        } catch (err) {
-          console.error('Error generating PDF preview:', err);
-          // More descriptive error message
-          const errorMessage = err instanceof Error ? err.message : "Unknown error";
-          setError(`Could not generate PDF preview: ${errorMessage}`);
-          toast.error(`Falha ao gerar visualização do PDF: ${errorMessage}`);
+          const previewImage = await generatePdfPreview(file);
+          setPdfFirstPage(previewImage);
+        } catch (error) {
+          setError(error instanceof Error ? error.message : "Unknown error");
+        } finally {
           setIsLoading(false);
         }
       };
       
-      generatePdfPreview();
+      handlePdfPreview();
     } 
-    // For text files, just indicate it's a text file
-    else if (file.type === 'text/plain') {
-      setIsLoading(false);
-    } 
-    // For other file types, just show generic file icon
+    // For other file types, just indicate the type
     else {
       setIsLoading(false);
     }
@@ -175,68 +107,22 @@ const DocumentFilePreview: React.FC<DocumentFilePreviewProps> = ({ file }) => {
         <div className="flex flex-col items-center">
           {/* Show image preview */}
           {file.type.startsWith('image/') && previewUrl && (
-            <div className="flex flex-col items-center">
-              <div className="relative w-full h-32 mb-2">
-                <img 
-                  src={previewUrl} 
-                  alt={file.name} 
-                  className="object-contain w-full h-full"
-                />
-              </div>
-            </div>
+            <ImagePreview src={previewUrl} alt={file.name} />
           )}
           
           {/* Show PDF preview */}
-          {file.type === 'application/pdf' && pdfFirstPage && (
-            <div className="flex flex-col items-center">
-              <div className="relative w-full h-32 mb-2">
-                <img 
-                  src={pdfFirstPage} 
-                  alt={`Primeira página de ${file.name}`}
-                  className="object-contain w-full h-full"
-                />
-              </div>
-            </div>
+          {file.type === 'application/pdf' && (
+            <PdfPreview previewImage={pdfFirstPage} fileName={file.name} />
           )}
           
-          {/* Show PDF icon if preview failed */}
-          {file.type === 'application/pdf' && !pdfFirstPage && !error && !isLoading && (
-            <div className="flex flex-col items-center">
-              <FileText size={64} className="text-blue-500 mb-2" />
-            </div>
-          )}
-          
-          {/* Show text file icon */}
-          {file.type === 'text/plain' && (
-            <div className="flex flex-col items-center">
-              <FileText size={64} className="text-blue-500 mb-2" />
-            </div>
-          )}
-          
-          {/* Show DOCX file icon */}
-          {file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' && (
-            <div className="flex flex-col items-center">
-              <FileText size={64} className="text-blue-600 mb-2" />
-            </div>
-          )}
-          
-          {/* Show generic file icon for other types */}
+          {/* Show generic file preview for other types */}
           {!file.type.startsWith('image/') && 
-           file.type !== 'application/pdf' && 
-           file.type !== 'text/plain' &&
-           file.type !== 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' && (
-            <div className="flex flex-col items-center">
-              <File size={64} className="text-gray-500 mb-2" />
-            </div>
+           file.type !== 'application/pdf' && (
+            <GenericFilePreview fileType={file.type} />
           )}
           
-          {/* Show file name for all types */}
-          <p className="text-sm text-center font-medium mt-2 truncate max-w-full">
-            {file.name}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {(file.size / 1024).toFixed(1)} KB
-          </p>
+          {/* Show file details for all types */}
+          <FileDetails name={file.name} size={file.size} />
         </div>
       </CardContent>
     </Card>
