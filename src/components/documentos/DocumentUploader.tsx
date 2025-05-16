@@ -17,17 +17,36 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onDocumentProcessed
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
-      setSelectedFile(event.target.files[0]);
+      const file = event.target.files[0];
+      setSelectedFile(file);
+      console.log("Arquivo selecionado:", file.name, "tipo:", file.type, "tamanho:", file.size, "bytes");
     }
   };
 
-  const extractTextFromFile = (file: File): Promise<string> => {
+  const extractTextFromFile = async (file: File): Promise<string> => {
+    console.log("Iniciando extração de texto do arquivo:", file.name);
+
+    // Para arquivos de texto, podemos ler o conteúdo real
+    if (file.type === 'text/plain') {
+      try {
+        console.log("Lendo arquivo de texto real");
+        const text = await file.text();
+        console.log("Texto real extraído do arquivo, primeiros 100 caracteres:", text.substring(0, 100));
+        return text;
+      } catch (error) {
+        console.error("Erro ao ler arquivo de texto:", error);
+        throw new Error("Falha ao ler o arquivo de texto");
+      }
+    }
+    
+    // Para outros tipos de arquivo, vamos modificar a simulação para ser mais óbvia
     return new Promise((resolve) => {
-      // This is a simulation of text extraction
-      // In a real app, you'd use actual libraries to extract text from PDFs, DOCX, etc.
+      console.log("Simulando extração de texto para o arquivo:", file.name);
+      // NOTA: Esta é uma simulação. Em um app real, extrairíamos o texto do arquivo real.
       setTimeout(() => {
-        // Using a more substantial example text to ensure we have real content
-        const text = `AGRAVO DE INSTRUMENTO. DECISÃO MONOCRÁTICA. CUMPRIMENTO DE SENTENÇA CONTRA A FAZENDA PÚBLICA. PENHORA DE VALORES. IMPOSSIBILIDADE. 
+        // Texto fictício para simulação - claramente marcado como simulação
+        const text = `[TEXTO SIMULADO PARA ${file.name}]
+AGRAVO DE INSTRUMENTO. DECISÃO MONOCRÁTICA. CUMPRIMENTO DE SENTENÇA CONTRA A FAZENDA PÚBLICA. PENHORA DE VALORES. IMPOSSIBILIDADE. 
 
 É cediço que contra a Fazenda Pública não cabe a realização de penhora, em razão do regime de precatórios previsto no artigo 100 da Constituição Federal. Os bens públicos são impenhoráveis, conforme disposto no artigo 833, inciso IX, do Código de Processo Civil.
 
@@ -47,8 +66,7 @@ São Paulo, 10 de março de 2023.
 Desembargador JOÃO SILVA
 Relator`;
 
-        console.log("Extracted text length: " + text.length);
-        console.log("First 100 characters of extracted text: " + text.substring(0, 100));
+        console.log("Texto simulado extraído, primeiros 100 caracteres:", text.substring(0, 100));
         resolve(text);
       }, 1000);
     });
@@ -92,7 +110,9 @@ Relator`;
       };
       
       console.log("Documento criado com sucesso:", document);
-      console.log("Conteúdo extraído:", extractedText.substring(0, 200) + "...");
+      console.log("ID do documento:", document.id);
+      console.log("Nome do documento:", document.name);
+      console.log("Conteúdo COMPLETO do documento:", document.content);
       
       // Call the callback with the processed document
       onDocumentProcessed(document);

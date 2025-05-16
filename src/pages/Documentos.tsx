@@ -20,19 +20,46 @@ const Documentos = () => {
   const selectedDocument = getSelectedDocument();
 
   const handleDocumentProcessed = (document: Document) => {
+    console.log("Documentos.tsx - handleDocumentProcessed - ID:", document.id);
+    console.log("Documentos.tsx - handleDocumentProcessed - Nome:", document.name);
+    console.log("Documentos.tsx - handleDocumentProcessed - Primeiros 100 chars do conteúdo:", document.content?.substring(0, 100));
+    console.log("Documentos.tsx - handleDocumentProcessed - Tamanho do conteúdo:", document.content?.length || 0, "caracteres");
+    
     saveDocument(document);
     setSelectedDocumentId(document.id);
     toast.success("Documento carregado e salvo localmente");
+    
+    console.log("Documentos.tsx - Documento salvo com sucesso");
   };
 
   const handleDocumentSelect = (document: Document) => {
+    console.log("Documentos.tsx - handleDocumentSelect - ID:", document.id);
+    console.log("Documentos.tsx - handleDocumentSelect - Nome:", document.name);
+    console.log("Documentos.tsx - handleDocumentSelect - Primeiros 100 chars do conteúdo:", document.content?.substring(0, 100));
+    
     setSelectedDocumentId(document.id);
   };
 
   const handleAnalysisComplete = (updatedDocument: Document) => {
+    console.log("Documentos.tsx - handleAnalysisComplete - ID:", updatedDocument.id);
+    console.log("Documentos.tsx - handleAnalysisComplete - Conteúdo preservado?", !!updatedDocument.content);
+    console.log("Documentos.tsx - handleAnalysisComplete - Primeiros 100 chars do conteúdo:", updatedDocument.content?.substring(0, 100));
+    
     saveDocument(updatedDocument);
     toast.success("Análise concluída e salva localmente");
   };
+
+  // Adicionar log quando o documento selecionado mudar
+  React.useEffect(() => {
+    if (selectedDocument) {
+      console.log("Documentos.tsx - useEffect - Documento selecionado atualizado:");
+      console.log("  ID:", selectedDocument.id);
+      console.log("  Nome:", selectedDocument.name);
+      console.log("  Conteúdo presente?", !!selectedDocument.content);
+      console.log("  Tamanho do conteúdo:", selectedDocument.content?.length || 0);
+      console.log("  Primeiros 100 chars do conteúdo:", selectedDocument.content?.substring(0, 100));
+    }
+  }, [selectedDocument]);
 
   return (
     <div className="eco-container">

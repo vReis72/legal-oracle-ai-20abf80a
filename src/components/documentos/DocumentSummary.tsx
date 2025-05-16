@@ -1,14 +1,25 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface DocumentSummaryProps {
   summary: string;
-  content?: string;
+  content: string;
 }
 
 const DocumentSummary: React.FC<DocumentSummaryProps> = ({ summary, content }) => {
-  if (!summary && !content) return null;
+  useEffect(() => {
+    console.log("DocumentSummary - Props recebidas:");
+    console.log("  Summary presente?", !!summary, "Tamanho:", summary?.length || 0);
+    console.log("  Conteúdo presente?", !!content, "Tamanho:", content?.length || 0);
+    console.log("  Primeiros 100 caracteres do conteúdo:", content?.substring(0, 100));
+    console.log("  Últimos 100 caracteres do conteúdo:", content?.substring((content?.length || 0) - 100) || "");
+  }, [summary, content]);
+
+  if (!summary && !content) {
+    console.log("DocumentSummary - Sem conteúdo para exibir");
+    return null;
+  }
   
   return (
     <div className="border rounded-lg p-4">
@@ -23,9 +34,9 @@ const DocumentSummary: React.FC<DocumentSummaryProps> = ({ summary, content }) =
         <TabsContent value="conteudo">
           <div className="p-3 border rounded mt-3 bg-slate-50">
             <h4 className="text-sm font-medium text-muted-foreground mb-2">Texto original do documento:</h4>
-            <div className="whitespace-pre-line prose prose-sm max-w-none bg-white p-4 border rounded overflow-auto max-h-[500px]">
+            <pre className="whitespace-pre-line prose prose-sm max-w-none bg-white p-4 border rounded overflow-auto max-h-[500px]">
               {content || "Nenhum texto capturado."}
-            </div>
+            </pre>
           </div>
         </TabsContent>
         

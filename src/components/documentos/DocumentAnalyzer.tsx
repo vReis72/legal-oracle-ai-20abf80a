@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Document } from '@/types/document';
 import DocumentProgressBar from './DocumentProgressBar';
 import DocumentMetadata from './DocumentMetadata';
@@ -31,10 +31,25 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
   } = useDocumentAnalysis(document, onAnalysisComplete, apiKey);
 
   // Adicionar log para depuração do conteúdo do documento
-  console.log("Document content in DocumentAnalyzer:", document.content?.substring(0, 100));
+  useEffect(() => {
+    console.log("DocumentAnalyzer - documento recebido:");
+    console.log("  ID:", document.id);
+    console.log("  Nome:", document.name);
+    console.log("  Processado:", document.processed);
+    console.log("  Conteúdo presente?", !!document.content);
+    console.log("  Tamanho do conteúdo:", document.content?.length || 0, "caracteres");
+    console.log("  Primeiros 100 caracteres do conteúdo:", document.content?.substring(0, 100));
+    console.log("  Últimos 100 caracteres do conteúdo:", document.content?.substring((document.content?.length || 0) - 100) || "");
+  }, [document]);
 
   const renderAnalysisResults = () => {
     if (!document.processed && !document.content) return null;
+
+    console.log("DocumentAnalyzer - renderAnalysisResults - passando conteúdo para DocumentSummary:");
+    console.log("  Summary presente?", !!document.summary);
+    console.log("  Conteúdo presente?", !!document.content);
+    console.log("  Tamanho do conteúdo:", document.content?.length || 0, "caracteres");
+    console.log("  Primeiros 100 caracteres do conteúdo:", document.content?.substring(0, 100));
 
     return (
       <div className="mt-6 space-y-6">
@@ -46,7 +61,7 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
         />
         <DocumentSummary 
           summary={document.summary || ''} 
-          content={document.content} 
+          content={document.content || ''} 
         />
         {document.processed && document.keyPoints && (
           <DocumentKeyPoints keyPoints={document.keyPoints} />
