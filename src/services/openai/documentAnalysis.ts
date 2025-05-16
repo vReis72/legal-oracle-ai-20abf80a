@@ -30,37 +30,50 @@ export const analyzeWithOpenAI = async (text: string, apiKey: string): Promise<s
         messages: [
           {
             role: 'system',
-            content: `Você é um especialista em análise de documentos jurídicos brasileiros.
+            content: `Você é um especialista em análise de documentos jurídicos brasileiros com vasta experiência em várias áreas do direito.
             
-Sua tarefa é analisar APENAS o conteúdo do documento fornecido, sem adicionar informações externas, sem fazer suposições e sem inventar ou inferir conteúdos que não estejam explicitamente presentes no documento. 
+Sua tarefa é analisar com precisão APENAS o texto jurídico fornecido, sem adicionar informações externas ou fazer suposições que não estejam explicitamente presentes no documento.
 
-IMPORTANTE:
-- Baseie-se EXCLUSIVAMENTE no texto fornecido.
-- NÃO utilize conhecimentos externos que não estejam presentes no documento.
-- Se o documento não fornecer informação suficiente para uma análise completa, indique isso claramente em vez de criar conteúdo fictício.
-- Seja conciso e objetivo, focando nos fatos presentes no documento.
-- Se o documento não for um documento jurídico ou não tiver conteúdo analisável, indique isso claramente.`
+DIRETRIZES IMPORTANTES:
+- Baseie-se EXCLUSIVAMENTE no conteúdo do documento fornecido.
+- Seja preciso, objetivo e técnico em sua análise.
+- Se o documento não fornecer informação suficiente, indique claramente as limitações da análise.
+- Não invente informações ou contextos que não estejam presentes no texto.
+- Identifique com precisão dispositivos legais, prazos, partes envolvidas e argumentos centrais do documento.
+- Quando houver citação de legislação, destaque os artigos e leis mencionados.
+- Seja técnico e jurídico na sua linguagem, mas mantenha clareza.`
           },
           {
             role: 'user',
-            content: `Analise o seguinte documento e forneça uma análise estruturada com as seguintes seções:
+            content: `Leia atentamente o texto a seguir, que foi extraído de um documento jurídico. Sua tarefa é:
 
-1. RESUMO DO DOCUMENTO:
-Forneça um resumo factual e conciso que capture APENAS os principais aspectos presentes no documento, sem adicionar interpretações ou conteúdos externos.
+1. Gerar um resumo técnico e objetivo do conteúdo do documento, indicando de forma clara o que foi tratado.
+2. Listar os pontos-chave abordados no texto, especialmente aqueles que merecem atenção detalhada (ex.: dispositivos legais citados, decisões importantes, argumentos centrais, prazos, valores, partes envolvidas, etc.).
+3. Apresentar uma conclusão, oferecendo um parecer sucinto e fundamentado sobre o conteúdo do documento, apontando possíveis consequências, riscos ou próximos passos relevantes a partir do que foi lido.
 
-2. PONTOS-CHAVE:
-Liste de 3 a 5 pontos-chave que estejam EXPLICITAMENTE presentes no documento em formato de tópicos. Se não houver pontos claros suficientes, indique apenas os que existirem. Para cada ponto:
-- Título: Uma breve descrição literal do ponto
-- Descrição: Explicação baseada EXCLUSIVAMENTE no texto, com referências diretas ao conteúdo
+Documento a ser analisado:
+"""
+${text}
+"""
 
-3. CONCLUSÃO:
-Apresente uma conclusão objetiva sobre o documento analisado, baseada APENAS no seu conteúdo explícito. Se o documento não permitir uma conclusão clara, indique: "Não é possível extrair uma conclusão definitiva do documento fornecido".
+Estruture sua resposta exatamente com os seguintes títulos, mantendo esta formatação precisa:
 
-DOCUMENTO PARA ANÁLISE:
-${text}`
+**RESUMO:**
+
+[Escreva aqui seu resumo técnico e objetivo]
+
+**PONTOS-CHAVE:**
+
+- [Primeiro ponto importante]
+- [Segundo ponto importante]
+- [Continue listando todos os pontos relevantes em formato de lista]
+
+**CONCLUSÃO/PARECER:**
+
+[Escreva aqui sua conclusão técnica]`
           }
         ],
-        temperature: 0.1, // Reduzindo para obter respostas mais determinísticas
+        temperature: 0.1,
         max_tokens: 3000
       }),
     });

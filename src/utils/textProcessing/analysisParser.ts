@@ -58,13 +58,20 @@ export const parseAnalysisResult = (analysisResult: string): AnalysisResult => {
   const result = createEmptyResult();
 
   try {
-    // Extract and process each section
-    extractAndProcessSections(analysisResult, result);
+    // Extract and process each section using the new formatted titles
+    extractAndProcessNewFormatSections(analysisResult, result);
     
     // Fallback if no sections were successfully extracted
     if (isMissingAllSections(result)) {
-      console.warn("Failed to parse any sections using section headers, trying alternative approach...");
-      useFallbackParsing(analysisResult, result);
+      console.warn("Failed to parse new format sections, trying alternative approach...");
+      // Try the original format as fallback
+      extractAndProcessSections(analysisResult, result);
+      
+      // If still missing all sections, try ultimate fallback
+      if (isMissingAllSections(result)) {
+        console.warn("Failed to parse any sections using section headers, trying fallback parsing...");
+        useFallbackParsing(analysisResult, result);
+      }
     }
   } catch (error) {
     handleParsingError(error, result);
@@ -77,7 +84,41 @@ export const parseAnalysisResult = (analysisResult: string): AnalysisResult => {
 };
 
 /**
- * Extracts and processes all main sections from the analysis text
+ * Extracts and processes the new format sections from the analysis text
+ */
+const extractAndProcessNewFormatSections = (analysisResult: string, result: AnalysisResult): void => {
+  // Process summary section - new format is "**RESUMO:**"
+  const summarySection = extractSection(analysisResult, '\\*\\*RESUMO:\\*\\*');
+  if (summarySection) {
+    result.summary = summarySection;
+    console.log("Summary extracted successfully from new format:", result.summary.substring(0, 100) + (result.summary.length > 100 ? '...' : ''));
+  } else {
+    console.log("Failed to extract summary section from new format");
+  }
+  
+  // Process key points section - new format is "**PONTOS-CHAVE:**"
+  const keyPointsSection = extractSection(analysisResult, '\\*\\*PONTOS-CHAVE:\\*\\*');
+  
+  if (keyPointsSection) {
+    console.log("Key points section found from new format:", keyPointsSection.substring(0, 100) + (keyPointsSection.length > 100 ? '...' : ''));
+    result.keyPoints = processKeyPoints(keyPointsSection);
+    console.log(`Successfully parsed ${result.keyPoints.length} key points from new format`);
+  } else {
+    console.log("Failed to extract key points section from new format");
+  }
+  
+  // Process conclusion section - new format is "**CONCLUSÃO/PARECER:**"
+  const conclusionSection = extractSection(analysisResult, '\\*\\*CONCLUS[ÃA]O\\/PARECER:\\*\\*');
+  if (conclusionSection) {
+    result.conclusion = conclusionSection;
+    console.log("Conclusion extracted successfully from new format:", result.conclusion.substring(0, 100) + (result.conclusion.length > 100 ? '...' : ''));
+  } else {
+    console.log("Failed to extract conclusion section from new format");
+  }
+};
+
+/**
+ * Extracts and processes all main sections from the analysis text (original format as fallback)
  */
 const extractAndProcessSections = (analysisResult: string, result: AnalysisResult): void => {
   // Process summary section
@@ -167,14 +208,15 @@ const useFallbackParsing = (
     
     if (!line) continue;
     
-    // Try to detect section headers
+    // Try to detect section headers - including the new format headers
     if (line.toUpperCase().includes('RESUMO')) {
       currentSection = 'summary';
       continue;
     } else if (line.toUpperCase().includes('PONTO')) {
       currentSection = 'keyPoints';
       continue;
-    } else if (line.toUpperCase().includes('CONCLUS')) {
+    } else if (line.toUpperCase().includes('CONCLUS') || 
+               line.toUpperCase().includes('PARECER')) {
       currentSection = 'conclusion';
       continue;
     }
@@ -201,11 +243,19 @@ const addContentToSection = (
     result.summary += (result.summary ? '\n' : '') + line;
   } else if (currentSection === 'conclusion') {
     result.conclusion += (result.conclusion ? '\n' : '') + line;
-  } else if (currentSection === 'keyPoints' && line.length > 10) {
-    // Only add substantive lines as key points
-    result.keyPoints.push({
-      title: line.split('.')[0].trim(),
-      description: line
-    });
+  } else if (currentSection === 'keyPoints') {
+    // Check if line is a bullet point
+    const isBulletPoint = line.startsWith('-') || line.startsWith('•');
+    
+    // If it's a bullet point or just a substantive line
+    if (isBulletPoint || line.length > 10) {
+      // For bullet points, remove the prefix
+      const pointText = isBulletPoint ? line.substring(1).trim() : line;
+      
+      result.keyPoints.push({
+        title: pointText.split('.')[0].trim(),
+        description: pointText
+      });
+    }
   }
 };

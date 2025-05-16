@@ -12,9 +12,12 @@ import { extractKeyPointItems } from './sectionExtractor';
  * @returns Object with title and description
  */
 export const parseKeyPoint = (item: string): { title: string; description: string } => {
+  // Remove leading bullet point markers if present
+  const cleanedItem = item.replace(/^[-•*]\s+/, '').trim();
+  
   // Check if the item has a title:description format
-  if (item.includes(':')) {
-    const [title, ...descParts] = item.split(':');
+  if (cleanedItem.includes(':')) {
+    const [title, ...descParts] = cleanedItem.split(':');
     const description = descParts.join(':').trim();
     
     if (title && title.trim()) {
@@ -26,20 +29,28 @@ export const parseKeyPoint = (item: string): { title: string; description: strin
   }
   
   // Try to extract first sentence as title
-  const sentences = item.split(/[.!?]\s+/);
+  const sentences = cleanedItem.split(/[.!?]\s+/);
   if (sentences.length > 1) {
     const title = sentences[0].trim();
-    const description = item.substring(title.length).trim().replace(/^[.!?]\s*/, '');
+    const description = cleanedItem.substring(title.length).trim().replace(/^[.!?]\s*/, '');
     
     return {
       title: title,
-      description: description
+      description: description || cleanedItem // Fall back to full text if description is empty
+    };
+  }
+  
+  // If it's a single sentence with a period at the end
+  if (cleanedItem.endsWith('.') || cleanedItem.endsWith('!') || cleanedItem.endsWith('?')) {
+    return {
+      title: cleanedItem,
+      description: "Sem descrição adicional"
     };
   }
   
   // Just use the whole thing as title if it's a single sentence
   return {
-    title: item.trim(),
+    title: cleanedItem,
     description: "Sem descrição adicional"
   };
 };
@@ -57,11 +68,17 @@ export const processKeyPoints = (keyPointsSection: string): Array<{title: string
   
   const keyPointItems = extractKeyPointItems(keyPointsSection);
   
+  // Log extracted items for debugging
+  console.log("Extracted key point items:", keyPointItems.length);
+  if (keyPointItems.length > 0) {
+    console.log("First key point item sample:", keyPointItems[0].substring(0, 100));
+  }
+  
   const keyPoints = keyPointItems.map(parseKeyPoint);
   
-  // Ensure titles are not too long
+  // Ensure titles are not too long and descriptions are meaningful
   return keyPoints.map(point => ({
     title: point.title.length > 100 ? point.title.substring(0, 100) + '...' : point.title,
-    description: point.description
+    description: point.description === "Sem descrição adicional" && point.title.length < 100 ? point.title : point.description
   }));
 };

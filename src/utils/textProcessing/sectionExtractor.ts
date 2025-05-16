@@ -11,7 +11,8 @@
  * @returns The extracted section text or empty string
  */
 export const extractSection = (text: string, sectionName: string): string => {
-  const pattern = new RegExp(`(?:^|\\n)\\s*(?:\\d+\\.)?\\s*${sectionName}[^\\n]*\\n+([\\s\\S]*?)(?=\\n+\\s*(?:\\d+\\.)?\\s*[A-ZÀ-Ú][^\\n]*:|$)`, 'i');
+  // More flexible pattern that handles bold markdown and various header styles
+  const pattern = new RegExp(`(?:^|\\n)\\s*(?:\\d+\\.)?\\s*${sectionName}[^\\n]*\\n+([\\s\\S]*?)(?=\\n+\\s*(?:\\d+\\.)?\\s*(?:\\*\\*)?[A-ZÀ-Ú][^\\n]*:|$)`, 'i');
   const match = text.match(pattern);
   return match ? match[1].trim() : '';
 };
@@ -25,11 +26,19 @@ export const extractSection = (text: string, sectionName: string): string => {
 export const extractKeyPointItems = (keyPointsSection: string): string[] => {
   let keyPointItems: string[] = [];
   
-  // Try format with bullet points or dashes
+  // First try bullet points format (most common in the new format)
   if (keyPointsSection.includes('- ') || keyPointsSection.includes('• ')) {
     keyPointItems = keyPointsSection
       .split(/\n\s*[-•*]\s+/)
       .filter(item => item.trim().length > 0);
+    
+    // If the first item doesn't start with bullet but contains items that do,
+    // we may need to clean it up
+    if (keyPointItems.length > 0 && !keyPointsSection.trim().startsWith('-') && 
+        !keyPointsSection.trim().startsWith('•')) {
+      keyPointItems.shift(); // Remove the first item which is likely a header
+    }
+    
     console.log(`Extracted ${keyPointItems.length} key points using bullet format`);
   }
   
