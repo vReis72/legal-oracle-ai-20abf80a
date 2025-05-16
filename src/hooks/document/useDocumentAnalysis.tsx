@@ -21,8 +21,20 @@ export const useDocumentAnalysis = (
 
   // Process document through the OpenAI API
   const processDocument = async () => {
+    if (!document || !document.id) {
+      toast.error("Documento inválido");
+      return;
+    }
+    
     if (!document.content) {
       toast.error("Documento sem conteúdo para análise");
+      setAnalysisError("Documento não contém texto para análise. Verifique o arquivo.");
+      return;
+    }
+
+    if (document.content.trim().length < 50) {
+      toast.error("Texto do documento é muito curto para uma análise significativa");
+      setAnalysisError("Conteúdo do documento insuficiente para análise (menos de 50 caracteres).");
       return;
     }
 
@@ -59,6 +71,7 @@ export const useDocumentAnalysis = (
         for (let i = 0; i < chunks.length; i++) {
           try {
             console.log(`Processando parte ${i+1} de ${chunks.length} (${chunks[i].length} caracteres)`);
+            console.log(`Primeiros 100 caracteres do chunk ${i+1}: "${chunks[i].substring(0, 100)}..."`);
             const chunkResult = await analyzeWithOpenAI(chunks[i], apiKey);
             chunkResults.push(chunkResult);
             setProgress(30 + ((i + 1) / chunks.length * 40));
@@ -79,6 +92,7 @@ export const useDocumentAnalysis = (
         // Combine results
         analysisResult = chunkResults.join("\n\n");
         console.log("Análises de partes combinadas com sucesso");
+        console.log(`Resultado combinado tem ${analysisResult.length} caracteres`);
         
         // Final analysis of combined results if needed
         if (chunkResults.length > 1) {
@@ -90,6 +104,7 @@ export const useDocumentAnalysis = (
               analysisResult.substring(0, 7500), 
               apiKey
             );
+            console.log(`Análise final tem ${analysisResult.length} caracteres`);
           } catch (error) {
             console.error("Erro na análise final:", error);
             // Continue with the concatenated results if final analysis fails
@@ -100,8 +115,10 @@ export const useDocumentAnalysis = (
         // Process the entire document at once
         try {
           console.log("Enviando documento completo para análise");
+          console.log(`Texto para análise: ${document.content.substring(0, 200)}...`);
           setProgress(40);
           analysisResult = await analyzeWithOpenAI(document.content, apiKey);
+          console.log(`Análise completa tem ${analysisResult.length} caracteres`);
           setProgress(75);
         } catch (error) {
           console.error("Erro ao analisar documento:", error);

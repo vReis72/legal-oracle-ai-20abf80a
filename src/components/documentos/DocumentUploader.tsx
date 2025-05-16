@@ -26,8 +26,29 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onDocumentProcessed
       // This is a simulation of text extraction
       // In a real app, you'd use actual libraries to extract text from PDFs, DOCX, etc.
       setTimeout(() => {
-        // Simulate extracted text
-        const text = `Conteúdo simulado do documento ${file.name}\n\nTexto extraído do documento jurídico para análise e processamento.\nEste é um texto de exemplo para simular o conteúdo de um documento legal real.`;
+        // Using a more substantial example text to ensure we have real content
+        const text = `AGRAVO DE INSTRUMENTO. DECISÃO MONOCRÁTICA. CUMPRIMENTO DE SENTENÇA CONTRA A FAZENDA PÚBLICA. PENHORA DE VALORES. IMPOSSIBILIDADE. 
+
+É cediço que contra a Fazenda Pública não cabe a realização de penhora, em razão do regime de precatórios previsto no artigo 100 da Constituição Federal. Os bens públicos são impenhoráveis, conforme disposto no artigo 833, inciso IX, do Código de Processo Civil.
+
+A execução contra a Fazenda Pública deve seguir o procedimento específico do artigo 534 e seguintes do Código de Processo Civil, mediante a expedição de precatório ou Requisição de Pequeno Valor (RPV).
+
+No caso dos autos, observo que a decisão agravada deferiu o pedido de bloqueio de valores em contas do Município agravante, o que vai de encontro ao regime constitucional de pagamento das dívidas públicas.
+
+Ademais, verifico que não foi observado o procedimento legal para o cumprimento de sentença contra a Fazenda Pública, tendo sido determinada a penhora sem a prévia citação do ente público para impugnação, conforme exige o artigo 535 do CPC.
+
+Pelo exposto, com fundamento no artigo 932, V, do CPC, dou provimento ao recurso para cassar a decisão agravada, determinando que o cumprimento de sentença observe o procedimento específico previsto nos artigos 534 e seguintes do Código de Processo Civil.
+
+Comunique-se o juízo de origem.
+Intimem-se.
+
+São Paulo, 10 de março de 2023.
+
+Desembargador JOÃO SILVA
+Relator`;
+
+        console.log("Extracted text length: " + text.length);
+        console.log("First 100 characters of extracted text: " + text.substring(0, 100));
         resolve(text);
       }, 1000);
     });
@@ -54,6 +75,11 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onDocumentProcessed
       
       // Extract text from the document
       const extractedText = await extractTextFromFile(selectedFile);
+      
+      // Verify we have actual content
+      if (!extractedText || extractedText.trim().length < 50) {
+        throw new Error("O texto extraído é muito curto ou vazio. Verifique o documento.");
+      }
       
       // Create document object
       const document: Document = {

@@ -1,3 +1,4 @@
+
 import { validateApiKey, handleApiError } from './types';
 
 /**
@@ -14,7 +15,12 @@ export const analyzeWithOpenAI = async (text: string, apiKey: string): Promise<s
     throw new Error("Nenhum texto fornecido para análise.");
   }
 
+  if (text.trim().length < 50) {
+    throw new Error("Texto fornecido é muito curto para análise significativa (menos de 50 caracteres).");
+  }
+
   console.log(`Enviando conteúdo para análise OpenAI (${text.length} caracteres)...`);
+  console.log("Primeiros 200 caracteres do texto enviado para análise:", text.substring(0, 200));
   
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -95,6 +101,7 @@ Estruture sua resposta com os seguintes títulos:
     
     console.log("Resposta da API OpenAI recebida com sucesso");
     console.log("Amostra do conteúdo recebido:", content.substring(0, 150) + "...");
+    console.log("Total de caracteres na resposta:", content.length);
     
     return content;
   } catch (error) {
