@@ -2,7 +2,7 @@
 /**
  * Core functionality for analysis results 
  */
-import { extractSection } from './sectionExtractor';
+import { extractSection } from './sectionCore';
 import { processKeyPoints } from './keyPointParser';
 
 /**

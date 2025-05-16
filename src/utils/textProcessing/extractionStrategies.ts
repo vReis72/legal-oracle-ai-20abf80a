@@ -2,7 +2,7 @@
 /**
  * Strategies for extracting different sections from analysis results
  */
-import { extractSection } from './sectionExtractor';
+import { extractSection } from './sectionCore';
 import { processKeyPoints } from './keyPointParser';
 import { AnalysisResult } from './analysisCore';
 

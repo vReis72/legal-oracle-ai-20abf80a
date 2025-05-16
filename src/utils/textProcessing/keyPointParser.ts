@@ -1,9 +1,8 @@
-
 /**
  * Utilities for parsing key points from text
  */
 
-import { extractKeyPointItems } from './sectionExtractor';
+import { extractKeyPointItems } from './keyPointsExtractor';
 
 /**
  * Interface for a parsed key point
