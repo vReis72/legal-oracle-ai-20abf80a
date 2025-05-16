@@ -4,20 +4,23 @@ import { useApiKey } from '@/context/ApiKeyContext';
 import OpenAIKeyInput from './OpenAIKeyInput';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { hasApiKey } from '@/services/apiKeyService';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from 'lucide-react';
 
 interface ApiKeyCheckProps {
   children: React.ReactNode;
 }
 
 const ApiKeyCheck: React.FC<ApiKeyCheckProps> = ({ children }) => {
-  const { apiKey, setApiKey, isKeyConfigured } = useApiKey();
+  const { apiKey, setApiKey, isKeyConfigured, isPlaceholderKey } = useApiKey();
   const [showDialog, setShowDialog] = useState(false);
   
   useEffect(() => {
     // Verificar se a chave já está configurada no localStorage ou no contexto
     const keyExists = hasApiKey() || isKeyConfigured;
+    const isValidKey = keyExists && !isPlaceholderKey;
     
-    if (!keyExists) {
+    if (!isValidKey) {
       // Aguardar 1 segundo para mostrar o diálogo (para evitar flash durante o carregamento)
       const timer = setTimeout(() => {
         setShowDialog(true);
@@ -27,10 +30,20 @@ const ApiKeyCheck: React.FC<ApiKeyCheckProps> = ({ children }) => {
       // Garantir que o diálogo não seja exibido se a chave já estiver configurada
       setShowDialog(false);
     }
-  }, [isKeyConfigured]);
+  }, [isKeyConfigured, isPlaceholderKey]);
 
   return (
     <>
+      {isPlaceholderKey && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Atenção!</AlertTitle>
+          <AlertDescription>
+            A chave API atual é inválida. É necessário configurar uma chave API OpenAI válida para utilizar o sistema.
+          </AlertDescription>
+        </Alert>
+      )}
+      
       {children}
       
       <Dialog open={showDialog} onOpenChange={(open) => {

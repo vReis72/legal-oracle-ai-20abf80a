@@ -15,7 +15,11 @@ export const getApiKey = (): string | null => {
   try {
     const key = localStorage.getItem(API_KEY_NAME);
     // Verificação adicional para garantir que uma chave vazia não seja considerada válida
-    return key && key.trim() !== '' ? key : null;
+    // E que a chave placeholder também não seja considerada válida
+    if (!key || key.trim() === '' || key === PLACEHOLDER_KEY) {
+      return null;
+    }
+    return key;
   } catch (error) {
     console.error('Erro ao acessar localStorage:', error);
     return null;
@@ -48,7 +52,7 @@ export const saveApiKey = (key: string): void => {
 export const hasApiKey = (): boolean => {
   try {
     const key = getApiKey();
-    return key !== null && key.trim() !== '';
+    return key !== null && key !== PLACEHOLDER_KEY;
   } catch (error) {
     console.error('Erro ao verificar API key:', error);
     return false;
@@ -92,6 +96,11 @@ export const removeApiKey = (): void => {
  * @param defaultKey A chave padrão a ser usada
  */
 export const setDefaultApiKey = (defaultKey: string): boolean => {
+  // Não configurar se for a chave placeholder
+  if (defaultKey === PLACEHOLDER_KEY) {
+    return false;
+  }
+  
   if (!hasApiKey() && defaultKey && defaultKey.trim() !== '') {
     try {
       // Forçar a remoção de qualquer chave antiga primeiro
@@ -113,7 +122,7 @@ export const setDefaultApiKey = (defaultKey: string): boolean => {
 export const refreshApiKey = (): void => {
   try {
     const key = getApiKey();
-    if (key) {
+    if (key && key !== PLACEHOLDER_KEY) {
       // Remove e salva novamente para forçar atualização
       removeApiKey();
       setTimeout(() => saveApiKey(key), 100);

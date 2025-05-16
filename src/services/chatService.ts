@@ -28,7 +28,12 @@ export const sendChatMessage = async (
     const key = apiKey || getApiKey();
     
     if (!key) {
-      throw new Error('API key não fornecida');
+      throw new Error('API key não fornecida. Configure sua chave OpenAI nas configurações.');
+    }
+    
+    // Verificar se a chave é um placeholder
+    if (key === 'sk-adicione-uma-chave-valida-aqui') {
+      throw new Error('A chave API configurada é inválida. Por favor, configure uma chave OpenAI válida.');
     }
 
     // Usar a API mais recente da OpenAI para chaves de projeto
@@ -55,6 +60,12 @@ export const sendChatMessage = async (
     if (!response.ok) {
       const errorData = await response.json();
       console.error('Erro na resposta da API OpenAI:', errorData);
+      
+      // Tratamento específico para erro de chave API inválida
+      if (response.status === 401 && errorData.error?.code === 'invalid_api_key') {
+        throw new Error(`Chave API inválida. Por favor, verifique sua chave OpenAI e configure-a novamente nas configurações.`);
+      }
+      
       throw new Error(`Erro na API: ${response.status} - ${errorData.error?.message || 'Erro desconhecido'}`);
     }
 

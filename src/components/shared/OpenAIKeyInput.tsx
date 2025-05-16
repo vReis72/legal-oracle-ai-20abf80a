@@ -4,9 +4,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Key, Check, RefreshCcw, AlertTriangle } from 'lucide-react';
+import { Key, Check, RefreshCcw, AlertTriangle, AlertCircle } from 'lucide-react';
 import { useApiKey } from '@/context/ApiKeyContext';
 import { hasApiKey } from '@/services/apiKeyService';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface OpenAIKeyInputProps {
   onKeySubmit?: (key: string) => void;
@@ -26,6 +27,7 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
   const [isValidating, setIsValidating] = useState(false);
   const { apiKey, setApiKey, isKeyConfigured, resetApiKey, isPlaceholderKey } = useApiKey();
   const { toast } = useToast();
+  const [showError, setShowError] = useState(false);
 
   // Verificar se já existe uma chave armazenada que NÃO é placeholder
   const keyConfigured = hasApiKey() && isKeyConfigured && !isPlaceholderKey;
@@ -37,6 +39,9 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
     } else {
       setIsOpen(false);
     }
+    
+    // Mostrar mensagem de erro se a chave for placeholder
+    setShowError(isPlaceholderKey);
   }, [forceOpen, keyConfigured, isPlaceholderKey]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -61,21 +66,44 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
       return;
     }
     
-    // Salvar a chave
-    setApiKey(apiKeyInput.trim());
-    
-    // Chamar callback se fornecido
-    if (onKeySubmit) {
-      onKeySubmit(apiKeyInput.trim());
+    // Verificar se é o placeholder
+    if (apiKeyInput.trim() === 'sk-adicione-uma-chave-valida-aqui') {
+      toast({
+        variant: "destructive",
+        title: "Chave inválida",
+        description: "Esta é uma chave de placeholder. Por favor, insira sua chave OpenAI real.",
+      });
+      return;
     }
     
-    setIsOpen(false);
-    setApiKeyInput(''); // Limpar campo após envio
+    setIsValidating(true);
     
-    toast({
-      title: "API Key Salva",
-      description: "Sua chave da API OpenAI foi salva com sucesso.",
-    });
+    try {
+      // Salvar a chave
+      setApiKey(apiKeyInput.trim());
+      
+      // Chamar callback se fornecido
+      if (onKeySubmit) {
+        onKeySubmit(apiKeyInput.trim());
+      }
+      
+      setIsOpen(false);
+      setApiKeyInput(''); // Limpar campo após envio
+      
+      toast({
+        title: "API Key Salva",
+        description: "Sua chave da API OpenAI foi salva com sucesso.",
+      });
+    } catch (error) {
+      console.error("Erro ao salvar chave:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao salvar chave",
+        description: "Não foi possível salvar a chave OpenAI.",
+      });
+    } finally {
+      setIsValidating(false);
+    }
   };
 
   const handleUpdateKey = () => {
@@ -99,6 +127,15 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
 
   return (
     <>
+      {showError && !forceOpen && (
+        <Alert variant="destructive" className="mb-3">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            A chave API atual é inválida. Por favor, configure uma nova chave.
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <Dialog open={isOpen} onOpenChange={(open) => {
         // Permitir fechar o diálogo somente se não estamos forçando ele aberto
         // ou se a chave já estiver configurada
@@ -114,20 +151,36 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-            <Input
-              placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ou sk-proj-xxxxxxxx"
-              value={apiKeyInput}
-              onChange={(e) => setApiKeyInput(e.target.value)}
-              className="w-full"
-              disabled={isValidating}
-            />
-            <div className="flex justify-end">
+            <div className="space-y-2">
+              <Input
+                placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                value={apiKeyInput}
+                onChange={(e) => setApiKeyInput(e.target.value)}
+                className="w-full"
+                disabled={isValidating}
+              />
+              <p className="text-xs text-muted-foreground">
+                A chave deve começar com "sk-" e ser longa o suficiente para ser válida.
+              </p>
+            </div>
+            
+            <div className="flex justify-end gap-2">
+              {!forceOpen && (
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={handleResetToDefault}
+                  disabled={isValidating}
+                >
+                  Remover chave
+                </Button>
+              )}
               <Button 
                 type="submit" 
                 className="bg-eco-primary hover:bg-eco-dark"
                 disabled={isValidating}
               >
-                {isValidating ? 'Validando...' : 'Salvar Chave'}
+                {isValidating ? 'Salvando...' : 'Salvar Chave'}
               </Button>
             </div>
           </form>
