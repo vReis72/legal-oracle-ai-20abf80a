@@ -71,35 +71,47 @@ export const configurePdfWorker = (options: PdfWorkerConfigOptions = {}): PdfWor
     // Define worker source options, starting with most reliable
     let workerSrc: string;
     
-    // Try these options in order:
-    // 1. Use bundled worker (most reliable in production)
-    try {
-      // This works with Vite's import.meta.url
-      if (typeof window === 'object' && 'pdfjsWorker' in window) {
-        // If the app has already registered the worker on the window
-        workerSrc = (window as any).pdfjsWorker;
-        logInfo(`Usando worker registrado no window: ${workerSrc}`);
-      } else {
-        // Try to use webpack/vite-aware URL path
-        const workerUrl = new URL('pdfjs-dist/build/pdf.worker.min.js', import.meta.url);
-        workerSrc = workerUrl.href;
-        logInfo(`Usando worker do bundle: ${workerSrc}`);
+    // ESTRATÉGIA 1: Verificar worker no window
+    if (typeof window === 'object' && 'pdfjsWorker' in window) {
+      // Se a app já registrou o worker no window
+      workerSrc = (window as any).pdfjsWorker;
+      logInfo(`Usando worker registrado no window: ${workerSrc}`);
+    } else {
+      // ESTRATÉGIA 2: Verificar caminhos locais
+      if (typeof window === 'object') {
+        const possiblePaths = [
+          `${window.location.origin}/pdf.worker.min.js`,
+          `${window.location.origin}/assets/pdf.worker.min.js`,
+          `${window.location.origin}/static/pdf.worker.min.js`,
+          // Adicione mais caminhos conforme necessário
+        ];
+        
+        // Testar caminhos locais assincronamente (mas sem bloquear)
+        possiblePaths.forEach(path => {
+          fetch(path, { method: 'HEAD' })
+            .then(response => {
+              if (response.ok && !isPdfWorkerConfigured()) {
+                logInfo(`Worker encontrado em: ${path}`);
+                pdfjsLib.GlobalWorkerOptions.workerSrc = path;
+                // Registra para uso futuro
+                (window as any).pdfjsWorkerSrc = path;
+              }
+            })
+            .catch(() => {
+              // Silenciosamente falha em cada tentativa
+            });
+        });
       }
-    } catch (e) {
-      logInfo("Não foi possível usar o worker local. Tentando CDNs...");
       
-      // 2. Try CDNs in order of reliability
+      // ESTRATÉGIA 3: Usar CDNs
+      // List of CDN options in order of preference
       const cdnOptions = [
-        // Direct path relative to the site root (most reliable in production)
-        `${window.location.origin}/assets/pdf.worker.min.js`,
-        `${window.location.origin}/pdf.worker.min.js`,
-        // CDN options
         `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`,
         `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`,
         `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
       ];
       
-      // Use the custom CDN if provided, otherwise use the first CDN option
+      // Use custom CDN if provided, otherwise use the first CDN option
       workerSrc = customCdnUrl 
         ? customCdnUrl.replace('{{version}}', pdfjsLib.version)
         : cdnOptions[0];
@@ -110,7 +122,34 @@ export const configurePdfWorker = (options: PdfWorkerConfigOptions = {}): PdfWor
     // Configure the worker
     pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
     
+    // Store for future reference
+    if (typeof window === 'object') {
+      (window as any).pdfjsWorkerSrc = workerSrc;
+    }
+    
     logInfo(`Worker do PDF.js configurado com sucesso via ${workerSrc}`);
+    
+    // Testar carregamento do worker (não bloqueia)
+    if (typeof window === 'object') {
+      const testScript = document.createElement('script');
+      testScript.src = workerSrc;
+      testScript.id = 'pdf-worker-test';
+      testScript.onload = () => {
+        logInfo('Worker carregado com sucesso');
+        document.head.removeChild(testScript);
+      };
+      testScript.onerror = () => {
+        logError('Falha ao carregar worker, tentando worker fake');
+        document.head.removeChild(testScript);
+        // Último recurso: worker fake
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+        if (typeof window === 'object') {
+          (window as any).pdfjsWorkerSrc = 'fake-worker';
+        }
+      };
+      document.head.appendChild(testScript);
+    }
+    
     return { 
       success: true, 
       workerSrc 
@@ -148,4 +187,39 @@ export const configurePdfWorker = (options: PdfWorkerConfigOptions = {}): PdfWor
  */
 export const isPdfWorkerConfigured = (): boolean => {
   return !!pdfjsLib.GlobalWorkerOptions.workerSrc;
+};
+
+/**
+ * Pré-carrega o worker do PDF.js para garantir disponibilidade
+ * quando necessário para processamento de PDFs
+ */
+export const preloadPdfWorker = (): void => {
+  // Tentar carregar o worker com múltiplas estratégias
+  setTimeout(() => {
+    console.log("[PDF.js] Pré-carregando worker...");
+    
+    configurePdfWorker({
+      verbose: true,
+      showToasts: false, // Não mostrar toasts durante pré-carregamento
+      useLocalWorker: true
+    });
+    
+    // Verificar configuração após um tempo
+    setTimeout(() => {
+      const isConfigured = isPdfWorkerConfigured();
+      console.log(`[PDF.js] Status do worker após pré-carregamento: ${isConfigured ? 'Configurado' : 'Não configurado'}`);
+      if (isConfigured) {
+        console.log(`[PDF.js] Worker src: ${pdfjsLib.GlobalWorkerOptions.workerSrc}`);
+      }
+      
+      // Se falhar, tentar estratégia alternativa
+      if (!isConfigured) {
+        console.warn("[PDF.js] Tentando estratégia alternativa de carregamento");
+        
+        // Tenta usar worker fake como último recurso
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+        console.log("[PDF.js] Configurado worker fake como fallback");
+      }
+    }, 1000);
+  }, 0);
 };

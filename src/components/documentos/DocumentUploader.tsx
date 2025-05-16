@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Upload } from "lucide-react";
 import { Document } from "@/types/document";
 import { useFileUpload } from "@/hooks/document/useFileUpload";
-import { configurePdfWorker } from "@/utils/pdf/pdfWorkerConfig";
+import { configurePdfWorker, preloadPdfWorker } from "@/utils/pdf/pdfWorkerConfig";
 import DocumentFilePreview from './DocumentFilePreview';
 import { toast } from "sonner";
 
@@ -18,25 +18,65 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onDocumentProcessed
     onDocumentProcessed 
   });
 
-  // Configure PDF.js worker when the component mounts with improved configuration
+  // Pré-carrega o worker do PDF.js para garantir disponibilidade
   useEffect(() => {
-    // Pre-configure worker with multiple CDN options and better fallbacks
-    const workerResult = configurePdfWorker({
-      verbose: true,
-      showToasts: true,
-      useLocalWorker: true // Try to use local worker first for better reliability
-    });
-    
-    if (workerResult.success) {
-      console.log("Worker do PDF.js configurado com sucesso:", workerResult.workerSrc);
-      if (workerResult.workerSrc === 'fake-worker') {
-        console.warn("Usando worker fake. O processamento de PDFs pode ser mais lento.");
-        toast.warning("O processador de PDF está operando em modo limitado. Alguns recursos podem ser mais lentos.");
+    // Executa várias tentativas para configurar o worker com diferentes estratégias
+    const configWorker = async () => {
+      console.log("Iniciando pré-carregamento do worker PDF.js...");
+      
+      // Primeira tentativa com configuração básica
+      const workerResult = configurePdfWorker({
+        verbose: true,
+        showToasts: false, // Evita mostrar toast na primeira tentativa
+        useLocalWorker: true // Tenta usar worker local primeiro
+      });
+      
+      if (workerResult.success) {
+        console.log("Worker do PDF.js configurado com sucesso:", workerResult.workerSrc);
+        if (workerResult.workerSrc === 'fake-worker') {
+          console.warn("Usando worker fake. O processamento de PDFs pode ser mais lento.");
+          toast.warning("O processador de PDF está operando em modo limitado. Alguns recursos podem ser mais lentos.");
+        }
+      } else {
+        console.error("Primeira tentativa falhou:", workerResult.error);
+        
+        // Segunda tentativa com CDNs alternativos
+        const secondAttempt = configurePdfWorker({
+          verbose: true,
+          showToasts: false,
+          customCdnUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${(pdfjsLib as any).version}/build/pdf.worker.min.js`
+        });
+        
+        if (secondAttempt.success) {
+          console.log("Segunda tentativa bem-sucedida:", secondAttempt.workerSrc);
+        } else {
+          console.error("Segunda tentativa falhou:", secondAttempt.error);
+          
+          // Terceira tentativa com worker fake como último recurso
+          const lastAttempt = configurePdfWorker({
+            verbose: true,
+            showToasts: true
+          });
+          
+          if (!lastAttempt.success) {
+            toast.error("Falha ao configurar o processador de PDF. A visualização pode estar comprometida.");
+          }
+        }
       }
-    } else {
-      console.error("Falha ao configurar worker do PDF.js:", workerResult.error);
-      toast.error("Falha ao configurar o processador de PDF. A visualização pode estar comprometida.");
-    }
+    };
+    
+    // Inicia configuração do worker
+    configWorker();
+    
+    // Tenta carregar o worker novamente após 2 segundos se a primeira tentativa falhar
+    const retryTimeout = setTimeout(() => {
+      if (!isPdfWorkerConfigured()) {
+        console.log("Tentando recarregar worker após timeout...");
+        configWorker();
+      }
+    }, 2000);
+    
+    return () => clearTimeout(retryTimeout);
   }, []);
 
   return (

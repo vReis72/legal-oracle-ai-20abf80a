@@ -6,7 +6,7 @@ import PdfPreview from './previews/PdfPreview';
 import GenericFilePreview from './previews/GenericFilePreview';
 import FileDetails from './previews/FileDetails';
 import { generatePdfPreview } from '@/utils/pdf/pdfPreviewGenerator';
-import { configurePdfWorker } from '@/utils/pdf/pdfWorkerConfig';
+import { configurePdfWorker, preloadPdfWorker } from '@/utils/pdf/pdfWorkerConfig';
 import { toast } from "sonner";
 
 interface DocumentFilePreviewProps {
@@ -21,10 +21,11 @@ const DocumentFilePreview: React.FC<DocumentFilePreviewProps> = ({ file }) => {
 
   // Configure PDF.js worker when component mounts with improved configuration
   useEffect(() => {
+    // Configura o worker com múltiplos fallbacks
     const workerResult = configurePdfWorker({ 
       verbose: true,
       showToasts: true,
-      useLocalWorker: true // Try to use local worker first
+      useLocalWorker: true // Tenta usar worker local primeiro
     });
     
     if (!workerResult.success) {
@@ -71,16 +72,20 @@ const DocumentFilePreview: React.FC<DocumentFilePreviewProps> = ({ file }) => {
       const handlePdfPreview = async () => {
         try {
           // Ensure worker is configured before generating preview
+          // Tente múltiplas estratégias para configurar o worker
           const workerConfig = configurePdfWorker({ 
             verbose: true, 
             showToasts: false,
             useLocalWorker: true
           });
           
+          // Se nenhuma estratégia normal funcionar, tenta usar worker fake
           if (!workerConfig.success) {
-            throw new Error("Worker não configurado corretamente");
+            console.warn("Tentando worker fake como alternativa...");
+            // Último recurso: worker fake (dentro da função getDocument)
           }
           
+          // Tenta gerar preview mesmo se worker falhar (pode usar fallback interno)
           const previewImage = await generatePdfPreview(file, {
             verbose: true,
             showToasts: false, // Don't show toasts for preview issues

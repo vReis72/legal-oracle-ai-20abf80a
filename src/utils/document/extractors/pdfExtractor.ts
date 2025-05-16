@@ -6,10 +6,10 @@ import { createLogger } from '../logger';
 import { TextExtractionOptions, TextExtractionResult } from '../types';
 
 /**
- * Extracts text from a PDF file
- * @param file PDF file
- * @param options Text extraction options
- * @returns Text extraction result
+ * Extrai texto de um arquivo PDF
+ * @param file Arquivo PDF
+ * @param options Opções de extração de texto
+ * @returns Resultado da extração de texto
  */
 export const extractTextFromPDF = async (
   file: File, 
@@ -21,33 +21,64 @@ export const extractTextFromPDF = async (
   logger.info(`Iniciando extração de texto do PDF: ${file.name}`);
   
   try {
-    // Ensure PDF worker is configured with more reliable sources
+    // Garantir que o worker do PDF.js esteja configurado com fontes mais confiáveis
     if (!isPdfWorkerConfigured()) {
       logger.info("Worker não configurado, tentando configurar novamente...");
-      const workerResult = configurePdfWorker({
-        verbose: options.verbose,
-        showToasts: options.showToasts,
-        useLocalWorker: true  // Try to use local worker first for better reliability
-      });
       
-      if (!workerResult.success) {
-        throw new Error(`Não foi possível configurar o worker do PDF.js: ${workerResult.error}`);
-      } else {
-        logger.info(`Worker configurado com sucesso: ${workerResult.workerSrc}`);
+      // Tentar várias configurações de worker em sequência até funcionar
+      const workerConfigs = [
+        // Primeiro tenta com worker local
+        { useLocalWorker: true },
+        // Depois tenta com CDNs populares
+        { customCdnUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js` },
+        { customCdnUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js` },
+        // Por último, tenta usar worker fake
+        { useFake: true }
+      ];
+      
+      let workerConfigured = false;
+      
+      // Tenta cada configuração até uma funcionar
+      for (const config of workerConfigs) {
+        if (config.useFake) {
+          // Último recurso - worker fake
+          pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+          logger.warn("Usando worker fake como último recurso (processamento mais lento)");
+          workerConfigured = true;
+          break;
+        }
+        
+        const workerResult = configurePdfWorker({
+          verbose: options.verbose,
+          showToasts: false, // Evita múltiplos toasts durante tentativas
+          ...config
+        });
+        
+        if (workerResult.success) {
+          logger.info(`Worker configurado com sucesso: ${workerResult.workerSrc}`);
+          workerConfigured = true;
+          break;
+        }
       }
+      
+      if (!workerConfigured) {
+        throw new Error("Não foi possível configurar o worker do PDF.js após múltiplas tentativas");
+      }
+    } else {
+      logger.info("Worker PDF.js já configurado");
     }
     
-    // Load file as ArrayBuffer
+    // Carrega arquivo como ArrayBuffer
     logger.info("Carregando arquivo como ArrayBuffer...");
     const arrayBuffer = await file.arrayBuffer();
     logger.info(`ArrayBuffer carregado, tamanho: ${arrayBuffer.byteLength} bytes`);
     
-    // Validate ArrayBuffer
+    // Valida ArrayBuffer
     if (!arrayBuffer || arrayBuffer.byteLength === 0) {
       throw new Error("ArrayBuffer vazio ou inválido");
     }
     
-    // Create PDF loading task with improved configuration
+    // Cria tarefa de carregamento do PDF com configuração aprimorada
     logger.info("Criando tarefa de carregamento do PDF...");
     let loadingTask;
     try {
@@ -65,7 +96,7 @@ export const extractTextFromPDF = async (
       throw new Error("Falha ao iniciar o carregamento do PDF");
     }
     
-    // Wait for PDF to load with timeout
+    // Aguarda carregamento do PDF com timeout
     logger.info("Aguardando carregamento do PDF...");
     const pdfDoc = await Promise.race([
       loadingTask.promise,
@@ -76,32 +107,32 @@ export const extractTextFromPDF = async (
     
     logger.info(`PDF carregado com sucesso. Número de páginas: ${pdfDoc.numPages}`);
     
-    // Check if PDF has pages
+    // Verifica se o PDF tem páginas
     if (pdfDoc.numPages <= 0) {
       throw new Error("O PDF não contém páginas");
     }
     
-    // Extract text from all pages
+    // Extrai texto de todas as páginas
     let fullText = '';
     for (let i = 1; i <= pdfDoc.numPages; i++) {
       logger.info(`Extraindo texto da página ${i}/${pdfDoc.numPages}...`);
       const page = await pdfDoc.getPage(i);
       const textContent = await page.getTextContent();
       
-      // Validate text content
+      // Valida conteúdo de texto
       if (!textContent || !textContent.items || !textContent.items.length) {
         logger.warn(`Página ${i}: Nenhum conteúdo de texto encontrado`);
         continue;
       }
       
-      // Join text items with proper spacing
+      // Une itens de texto com espaçamento adequado
       const pageText = textContent.items
         .map((item: any) => item.str || "")
         .join(' ');
         
       fullText += pageText + '\n\n';
       
-      // Log sample of extracted text
+      // Log de amostra de texto extraído
       if (pageText.length > 0 && options.verbose) {
         logger.info(`Página ${i}: extraídos ${pageText.length} caracteres`);
         logger.info(`Amostra: "${pageText.substring(0, 50)}..."`);
@@ -110,7 +141,7 @@ export const extractTextFromPDF = async (
       }
     }
     
-    // Validate extracted text
+    // Valida texto extraído
     if (!fullText || fullText.trim().length === 0) {
       throw new Error("Não foi possível extrair texto do PDF. O arquivo pode estar protegido ou ser uma imagem digitalizada.");
     }
@@ -129,12 +160,12 @@ export const extractTextFromPDF = async (
   } catch (error) {
     logger.error("Erro na extração de texto do PDF", error);
     
-    // Create error message based on error type
+    // Cria mensagem de erro baseada no tipo de erro
     let errorMessage = "Erro desconhecido";
     if (error instanceof Error) {
       errorMessage = error.message;
       
-      // Add specific messages for common errors
+      // Adiciona mensagens específicas para erros comuns
       if (errorMessage.includes("Timeout")) {
         errorMessage = "O processamento do PDF demorou muito tempo. O arquivo pode ser muito grande ou complexo.";
       } else if (errorMessage.includes("password")) {
