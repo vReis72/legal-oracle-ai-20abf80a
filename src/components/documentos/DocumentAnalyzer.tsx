@@ -31,7 +31,7 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
   } = useDocumentAnalysis(document, onAnalysisComplete, apiKey);
 
   const renderAnalysisResults = () => {
-    if (!document.processed || !document.summary) return null;
+    if (!document.processed && !document.content) return null;
 
     return (
       <div className="mt-6 space-y-6">
@@ -41,9 +41,16 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
           isAnalyzing={isAnalyzing}
           analysisError={null}
         />
-        <DocumentSummary summary={document.summary} />
-        <DocumentKeyPoints keyPoints={document.keyPoints} />
-        <DocumentConclusion conclusion={document.conclusion} />
+        <DocumentSummary 
+          summary={document.summary || ''} 
+          content={document.content} 
+        />
+        {document.processed && document.keyPoints && (
+          <DocumentKeyPoints keyPoints={document.keyPoints} />
+        )}
+        {document.processed && document.conclusion && (
+          <DocumentConclusion conclusion={document.conclusion} />
+        )}
       </div>
     );
   };
