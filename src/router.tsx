@@ -20,25 +20,25 @@ export const router = createBrowserRouter([
         element: <Index />
       },
       {
-        path: '/jurisprudencia',
+        path: 'jurisprudencia',
         element: <Jurisprudencia />
       },
       {
-        path: '/documentos',
+        path: 'documentos',
         element: <Documentos />
       },
       {
-        path: '/alertas',
+        path: 'alertas',
         element: <Alertas />
       },
       {
-        path: '/pecas',
+        path: 'pecas',
         element: <PecasJuridicas />
-      },
-      {
-        path: '*',
-        element: <NotFound />
       }
     ]
+  },
+  {
+    path: '*',
+    element: <NotFound />
   }
 ]);
