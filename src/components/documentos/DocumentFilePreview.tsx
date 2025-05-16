@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { FileText, File, FileImage } from "lucide-react";
 import * as pdfjsLib from 'pdfjs-dist';
 import { configurePdfWorker } from "@/utils/pdf/pdfWorkerConfig";
+import { toast } from "sonner";
 
 interface DocumentFilePreviewProps {
   file: File | null;
@@ -46,39 +47,76 @@ const DocumentFilePreview: React.FC<DocumentFilePreviewProps> = ({ file }) => {
     else if (file.type === 'application/pdf') {
       const generatePdfPreview = async () => {
         try {
-          // Configure PDF.js worker if needed
-          configurePdfWorker();
+          // Configure PDF.js worker
+          const workerConfigured = configurePdfWorker();
+          if (!workerConfigured) {
+            console.error("PDF worker not configured properly");
+            throw new Error("PDF worker configuration failed");
+          }
+          
+          console.log("Generating PDF preview for:", file.name);
           
           // Load the PDF file
           const arrayBuffer = await file.arrayBuffer();
-          const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-          const pdfDoc = await loadingTask.promise;
+          
+          if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+            throw new Error("PDF file is empty or corrupted");
+          }
+          
+          console.log("PDF ArrayBuffer loaded, size:", arrayBuffer.byteLength);
+          
+          // Create a loading task with additional options
+          const loadingTask = pdfjsLib.getDocument({
+            data: arrayBuffer,
+            cMapUrl: 'https://unpkg.com/pdfjs-dist@latest/cmaps/',
+            cMapPacked: true,
+          });
+          
+          // Set a timeout for PDF loading
+          const pdfDoc = await Promise.race([
+            loadingTask.promise,
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error("PDF loading timeout")), 10000)
+            )
+          ]) as pdfjsLib.PDFDocumentProxy;
+          
+          console.log("PDF loaded, pages:", pdfDoc.numPages);
           
           // Get the first page
           if (pdfDoc.numPages > 0) {
             const page = await pdfDoc.getPage(1);
             
-            // Render the page to a canvas
+            // Create a canvas with appropriate size
             const canvas = document.createElement('canvas');
             const viewport = page.getViewport({ scale: 0.5 }); // Scale down for preview
             canvas.width = viewport.width;
             canvas.height = viewport.height;
             
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+              throw new Error("Could not get canvas context");
+            }
+            
             const renderContext = {
-              canvasContext: canvas.getContext('2d')!,
+              canvasContext: ctx,
               viewport: viewport,
             };
             
+            // Render the page
             await page.render(renderContext).promise;
             
             // Convert canvas to data URL
             const dataUrl = canvas.toDataURL('image/png');
             setPdfFirstPage(dataUrl);
+            console.log("PDF preview generated successfully");
           }
           setIsLoading(false);
         } catch (err) {
           console.error('Error generating PDF preview:', err);
-          setError('Could not generate PDF preview');
+          // More descriptive error message
+          const errorMessage = err instanceof Error ? err.message : "Unknown error";
+          setError(`Could not generate PDF preview: ${errorMessage}`);
+          toast.error(`Falha ao gerar visualização do PDF: ${errorMessage}`);
           setIsLoading(false);
         }
       };
@@ -122,7 +160,7 @@ const DocumentFilePreview: React.FC<DocumentFilePreviewProps> = ({ file }) => {
   // Show error state
   if (error) {
     return (
-      <Card className="h-40 flex items-center justify-center">
+      <Card className="h-40 flex items-center justify-center bg-red-50">
         <CardContent className="p-4 text-center text-destructive">
           <p>{error}</p>
         </CardContent>
@@ -158,6 +196,13 @@ const DocumentFilePreview: React.FC<DocumentFilePreviewProps> = ({ file }) => {
                   className="object-contain w-full h-full"
                 />
               </div>
+            </div>
+          )}
+          
+          {/* Show PDF icon if preview failed */}
+          {file.type === 'application/pdf' && !pdfFirstPage && !error && !isLoading && (
+            <div className="flex flex-col items-center">
+              <FileText size={64} className="text-blue-500 mb-2" />
             </div>
           )}
           
