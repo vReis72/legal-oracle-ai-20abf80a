@@ -19,7 +19,7 @@ const DocumentFilePreview: React.FC<DocumentFilePreviewProps> = ({ file }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Configure PDF.js worker when component mounts
+  // Configure PDF.js worker when component mounts with improved configuration
   useEffect(() => {
     const workerResult = configurePdfWorker({ 
       verbose: true,
@@ -70,16 +70,30 @@ const DocumentFilePreview: React.FC<DocumentFilePreviewProps> = ({ file }) => {
     else if (file.type === 'application/pdf') {
       const handlePdfPreview = async () => {
         try {
+          // Ensure worker is configured before generating preview
+          const workerConfig = configurePdfWorker({ 
+            verbose: true, 
+            showToasts: false,
+            useLocalWorker: true
+          });
+          
+          if (!workerConfig.success) {
+            throw new Error("Worker não configurado corretamente");
+          }
+          
           const previewImage = await generatePdfPreview(file, {
             verbose: true,
-            showToasts: true,
+            showToasts: false, // Don't show toasts for preview issues
             scale: 0.5,
-            timeout: 15000 // Increased timeout
+            timeout: 25000 // Increased timeout for larger PDFs
           });
           setPdfFirstPage(previewImage);
         } catch (error) {
           setError(error instanceof Error ? error.message : "Unknown error");
-          toast.error("Falha ao gerar visualização do PDF. Tentando abordagem alternativa...");
+          console.error("Falha ao gerar visualização do PDF:", error);
+          
+          // No toast here - we'll just show the PDF icon instead
+          // Don't need to alert the user about preview issues if they can still upload
           
           // Try an alternative approach - just show the icon
           setPdfFirstPage(null);

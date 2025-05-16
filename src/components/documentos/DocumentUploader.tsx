@@ -18,18 +18,20 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onDocumentProcessed
     onDocumentProcessed 
   });
 
-  // Configure PDF.js worker when the component mounts
+  // Configure PDF.js worker when the component mounts with improved configuration
   useEffect(() => {
+    // Pre-configure worker with multiple CDN options and better fallbacks
     const workerResult = configurePdfWorker({
       verbose: true,
       showToasts: true,
-      useLocalWorker: true // Try to use local worker first
+      useLocalWorker: true // Try to use local worker first for better reliability
     });
     
     if (workerResult.success) {
       console.log("Worker do PDF.js configurado com sucesso:", workerResult.workerSrc);
       if (workerResult.workerSrc === 'fake-worker') {
         console.warn("Usando worker fake. O processamento de PDFs pode ser mais lento.");
+        toast.warning("O processador de PDF está operando em modo limitado. Alguns recursos podem ser mais lentos.");
       }
     } else {
       console.error("Falha ao configurar worker do PDF.js:", workerResult.error);

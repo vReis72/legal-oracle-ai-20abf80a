@@ -68,44 +68,43 @@ export const configurePdfWorker = (options: PdfWorkerConfigOptions = {}): PdfWor
       };
     }
     
-    // Try to use bundled worker first if requested
-    if (useLocalWorker) {
-      try {
-        // In a bundled environment, we can use the bundled worker
-        const workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.js', import.meta.url).href;
-        pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
-        
-        logInfo(`Worker configurado localmente: ${workerSrc}`);
-        return { 
-          success: true, 
-          workerSrc 
-        };
-      } catch (e) {
-        logInfo("Não foi possível usar o worker local. Tentando CDNs...");
-        // Continue with CDN options below
-      }
-    }
-    
-    // Determine which CDN to use
+    // Define worker source options, starting with most reliable
     let workerSrc: string;
     
-    if (customCdnUrl) {
-      // Use custom CDN if provided
-      workerSrc = customCdnUrl.replace('{{version}}', pdfjsLib.version);
-      logInfo(`Usando CDN personalizado: ${workerSrc}`);
-    } else {
-      // Try multiple CDNs in order of reliability
+    // Try these options in order:
+    // 1. Use bundled worker (most reliable in production)
+    try {
+      // This works with Vite's import.meta.url
+      if (typeof window === 'object' && 'pdfjsWorker' in window) {
+        // If the app has already registered the worker on the window
+        workerSrc = (window as any).pdfjsWorker;
+        logInfo(`Usando worker registrado no window: ${workerSrc}`);
+      } else {
+        // Try to use webpack/vite-aware URL path
+        const workerUrl = new URL('pdfjs-dist/build/pdf.worker.min.js', import.meta.url);
+        workerSrc = workerUrl.href;
+        logInfo(`Usando worker do bundle: ${workerSrc}`);
+      }
+    } catch (e) {
+      logInfo("Não foi possível usar o worker local. Tentando CDNs...");
+      
+      // 2. Try CDNs in order of reliability
       const cdnOptions = [
+        // Direct path relative to the site root (most reliable in production)
+        `${window.location.origin}/assets/pdf.worker.min.js`,
+        `${window.location.origin}/pdf.worker.min.js`,
+        // CDN options
         `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`,
         `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`,
-        `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`,
-        // Fallback to archive.org's CDN as last resort
-        `https://archive.org/download/pdfjs-dist-${pdfjsLib.version}/pdf.worker.min.js`
+        `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
       ];
       
-      // Use the first CDN as default
-      workerSrc = cdnOptions[0];
-      logInfo(`Usando CDN primário: ${workerSrc}`);
+      // Use the custom CDN if provided, otherwise use the first CDN option
+      workerSrc = customCdnUrl 
+        ? customCdnUrl.replace('{{version}}', pdfjsLib.version)
+        : cdnOptions[0];
+      
+      logInfo(`Usando CDN para worker: ${workerSrc}`);
     }
     
     // Configure the worker
@@ -126,6 +125,7 @@ export const configurePdfWorker = (options: PdfWorkerConfigOptions = {}): PdfWor
     // As a last resort, try to use a fake worker (will be slow but might work)
     try {
       logInfo("Tentando configurar worker fake como última alternativa");
+      // Set to empty string to use the fake worker
       pdfjsLib.GlobalWorkerOptions.workerSrc = '';
       
       return {
@@ -148,27 +148,4 @@ export const configurePdfWorker = (options: PdfWorkerConfigOptions = {}): PdfWor
  */
 export const isPdfWorkerConfigured = (): boolean => {
   return !!pdfjsLib.GlobalWorkerOptions.workerSrc;
-};
-
-/**
- * Try to ping a URL to check if it's accessible
- * @param url The URL to ping
- * @param timeout Timeout in milliseconds
- * @returns Promise that resolves to true if URL is accessible
- */
-const pingUrl = async (url: string, timeout: number = 3000): Promise<boolean> => {
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
-    
-    const response = await fetch(url, { 
-      method: 'HEAD',
-      signal: controller.signal
-    });
-    
-    clearTimeout(timeoutId);
-    return response.ok;
-  } catch (e) {
-    return false;
-  }
 };

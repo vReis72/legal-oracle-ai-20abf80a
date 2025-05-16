@@ -21,16 +21,19 @@ export const extractTextFromPDF = async (
   logger.info(`Iniciando extração de texto do PDF: ${file.name}`);
   
   try {
-    // Ensure PDF worker is configured
+    // Ensure PDF worker is configured with more reliable sources
     if (!isPdfWorkerConfigured()) {
       logger.info("Worker não configurado, tentando configurar novamente...");
       const workerResult = configurePdfWorker({
         verbose: options.verbose,
-        showToasts: options.showToasts
+        showToasts: options.showToasts,
+        useLocalWorker: true  // Try to use local worker first for better reliability
       });
       
       if (!workerResult.success) {
         throw new Error(`Não foi possível configurar o worker do PDF.js: ${workerResult.error}`);
+      } else {
+        logger.info(`Worker configurado com sucesso: ${workerResult.workerSrc}`);
       }
     }
     
@@ -44,14 +47,17 @@ export const extractTextFromPDF = async (
       throw new Error("ArrayBuffer vazio ou inválido");
     }
     
-    // Create PDF loading task with error handling
+    // Create PDF loading task with improved configuration
     logger.info("Criando tarefa de carregamento do PDF...");
     let loadingTask;
     try {
       loadingTask = pdfjsLib.getDocument({ 
         data: arrayBuffer,
-        cMapUrl: 'https://unpkg.com/pdfjs-dist@latest/cmaps/',
-        cMapPacked: true
+        cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@latest/cmaps/',
+        cMapPacked: true,
+        disableStream: false,
+        disableAutoFetch: true,
+        isEvalSupported: true
       });
       logger.info("Tarefa de carregamento do PDF criada com sucesso");
     } catch (pdfError) {
@@ -133,6 +139,8 @@ export const extractTextFromPDF = async (
         errorMessage = "O processamento do PDF demorou muito tempo. O arquivo pode ser muito grande ou complexo.";
       } else if (errorMessage.includes("password")) {
         errorMessage = "Este PDF está protegido por senha e não pode ser processado.";
+      } else if (errorMessage.includes("Failed to fetch") || errorMessage.includes("worker")) {
+        errorMessage = "Falha ao carregar o processador de PDF. Verifique sua conexão com a internet ou recarregue a página.";
       }
     }
     
