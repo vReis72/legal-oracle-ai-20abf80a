@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { FileText, FilePdf, FileImage, File } from "lucide-react";
+import { FileText, File, FileImage } from "lucide-react";
 import * as pdfjsLib from 'pdfjs-dist';
 import { configurePdfWorker } from "@/utils/pdf/pdfWorkerConfig";
 
