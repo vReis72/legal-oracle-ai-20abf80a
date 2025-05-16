@@ -23,7 +23,8 @@ const DocumentFilePreview: React.FC<DocumentFilePreviewProps> = ({ file }) => {
   useEffect(() => {
     const workerResult = configurePdfWorker({ 
       verbose: true,
-      showToasts: true
+      showToasts: true,
+      useLocalWorker: true // Try to use local worker first
     });
     
     if (!workerResult.success) {
@@ -69,10 +70,19 @@ const DocumentFilePreview: React.FC<DocumentFilePreviewProps> = ({ file }) => {
     else if (file.type === 'application/pdf') {
       const handlePdfPreview = async () => {
         try {
-          const previewImage = await generatePdfPreview(file);
+          const previewImage = await generatePdfPreview(file, {
+            verbose: true,
+            showToasts: true,
+            scale: 0.5,
+            timeout: 15000 // Increased timeout
+          });
           setPdfFirstPage(previewImage);
         } catch (error) {
           setError(error instanceof Error ? error.message : "Unknown error");
+          toast.error("Falha ao gerar visualização do PDF. Tentando abordagem alternativa...");
+          
+          // Try an alternative approach - just show the icon
+          setPdfFirstPage(null);
         } finally {
           setIsLoading(false);
         }
@@ -110,12 +120,18 @@ const DocumentFilePreview: React.FC<DocumentFilePreviewProps> = ({ file }) => {
     );
   }
 
-  // Show error state
-  if (error) {
+  // Show error state but still allow continuing with the upload
+  if (error && file.type === 'application/pdf') {
     return (
-      <Card className="h-40 flex items-center justify-center bg-red-50">
-        <CardContent className="p-4 text-center text-destructive">
-          <p>{error}</p>
+      <Card className="overflow-hidden">
+        <CardContent className="p-4">
+          <div className="flex flex-col items-center">
+            <PdfPreview previewImage={null} fileName={file.name} />
+            <FileDetails name={file.name} size={file.size} />
+            <p className="text-sm text-amber-600 mt-2">
+              Não foi possível gerar visualização, mas você ainda pode fazer upload do arquivo.
+            </p>
+          </div>
         </CardContent>
       </Card>
     );
