@@ -54,5 +54,5 @@ export const extractTextFromFile = async (
   }
 };
 
-// Re-export types for convenience
-export { TextExtractionOptions, TextExtractionResult } from './types';
+// Re-export types with the 'export type' syntax for TypeScript isolatedModules
+export type { TextExtractionOptions, TextExtractionResult } from './types';
