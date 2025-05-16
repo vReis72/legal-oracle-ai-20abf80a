@@ -16,9 +16,9 @@ const DocumentSummary: React.FC<DocumentSummaryProps> = ({ summary, content }) =
     console.log("  Últimos 100 caracteres do conteúdo:", content?.substring((content?.length || 0) - 100) || "");
   }, [summary, content]);
 
-  if (!summary && !content) {
+  if (!content) {
     console.log("DocumentSummary - Sem conteúdo para exibir");
-    return null;
+    return <div className="p-4 bg-slate-100 rounded border">Nenhum conteúdo disponível para este documento.</div>;
   }
   
   return (
@@ -42,7 +42,7 @@ const DocumentSummary: React.FC<DocumentSummaryProps> = ({ summary, content }) =
         
         <TabsContent value="resumo">
           <div className="whitespace-pre-line prose prose-sm max-w-none">
-            {summary || "Nenhum resumo disponível."}
+            {summary || "Nenhum resumo disponível. Clique em 'Analisar' para gerar um resumo do documento."}
           </div>
         </TabsContent>
       </Tabs>

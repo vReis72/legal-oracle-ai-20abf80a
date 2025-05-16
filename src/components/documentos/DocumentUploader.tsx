@@ -6,6 +6,8 @@ import { Upload } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from "sonner";
 import { Document } from "@/types/document";
+import * as pdfjsLib from 'pdfjs-dist';
+import 'pdfjs-dist/build/pdf.worker.entry';
 
 interface DocumentUploaderProps {
   onDocumentProcessed: (document: Document) => void;
@@ -23,15 +25,58 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onDocumentProcessed
     }
   };
 
-  const extractTextFromFile = async (file: File): Promise<string> => {
-    console.log("Iniciando extração de texto do arquivo:", file.name);
+  const extractTextFromPDF = async (file: File): Promise<string> => {
+    console.log("Iniciando extração REAL de texto do PDF:", file.name);
+    
+    try {
+      // Carregar o arquivo como ArrayBuffer
+      const arrayBuffer = await file.arrayBuffer();
+      
+      // Carregar o documento PDF
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      console.log(`PDF carregado com ${pdf.numPages} páginas`);
+      
+      // Extrair texto de todas as páginas
+      let fullText = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        
+        // Unir todos os itens de texto com espaços apropriados
+        const pageText = textContent.items
+          .map((item: any) => item.str)
+          .join(' ');
+          
+        fullText += pageText + '\n\n';
+        console.log(`Página ${i}: extraídos ${pageText.length} caracteres`);
+      }
+      
+      console.log("Extração real concluída. Total:", fullText.length, "caracteres");
+      console.log("Primeiros 200 caracteres do texto real:", fullText.substring(0, 200));
+      
+      return fullText;
+    } catch (error) {
+      console.error("Erro ao extrair texto do PDF:", error);
+      throw new Error(`Falha ao extrair texto do PDF: ${error}`);
+    }
+  };
 
-    // Para arquivos de texto, podemos ler o conteúdo real
+  const extractTextFromDocx = async (file: File): Promise<string> => {
+    // Nota: Extração real de DOCX requereria bibliotecas adicionais
+    // Esta é uma função placeholder que notifica o usuário
+    toast.error("Extração de texto de arquivos DOCX ainda não implementada");
+    throw new Error("Extração de texto de DOCX não implementada");
+  };
+
+  const extractTextFromFile = async (file: File): Promise<string> => {
+    console.log("Iniciando extração REAL de texto do arquivo:", file.name);
+    
+    // Para arquivos de texto, podemos ler o conteúdo diretamente
     if (file.type === 'text/plain') {
       try {
         console.log("Lendo arquivo de texto real");
         const text = await file.text();
-        console.log("Texto real extraído do arquivo, primeiros 100 caracteres:", text.substring(0, 100));
+        console.log("Texto real extraído do arquivo TXT, primeiros 100 caracteres:", text.substring(0, 100));
         return text;
       } catch (error) {
         console.error("Erro ao ler arquivo de texto:", error);
@@ -39,37 +84,18 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onDocumentProcessed
       }
     }
     
-    // Para outros tipos de arquivo, vamos modificar a simulação para ser mais óbvia
-    return new Promise((resolve) => {
-      console.log("Simulando extração de texto para o arquivo:", file.name);
-      // NOTA: Esta é uma simulação. Em um app real, extrairíamos o texto do arquivo real.
-      setTimeout(() => {
-        // Texto fictício para simulação - claramente marcado como simulação
-        const text = `[TEXTO SIMULADO PARA ${file.name}]
-AGRAVO DE INSTRUMENTO. DECISÃO MONOCRÁTICA. CUMPRIMENTO DE SENTENÇA CONTRA A FAZENDA PÚBLICA. PENHORA DE VALORES. IMPOSSIBILIDADE. 
-
-É cediço que contra a Fazenda Pública não cabe a realização de penhora, em razão do regime de precatórios previsto no artigo 100 da Constituição Federal. Os bens públicos são impenhoráveis, conforme disposto no artigo 833, inciso IX, do Código de Processo Civil.
-
-A execução contra a Fazenda Pública deve seguir o procedimento específico do artigo 534 e seguintes do Código de Processo Civil, mediante a expedição de precatório ou Requisição de Pequeno Valor (RPV).
-
-No caso dos autos, observo que a decisão agravada deferiu o pedido de bloqueio de valores em contas do Município agravante, o que vai de encontro ao regime constitucional de pagamento das dívidas públicas.
-
-Ademais, verifico que não foi observado o procedimento legal para o cumprimento de sentença contra a Fazenda Pública, tendo sido determinada a penhora sem a prévia citação do ente público para impugnação, conforme exige o artigo 535 do CPC.
-
-Pelo exposto, com fundamento no artigo 932, V, do CPC, dou provimento ao recurso para cassar a decisão agravada, determinando que o cumprimento de sentença observe o procedimento específico previsto nos artigos 534 e seguintes do Código de Processo Civil.
-
-Comunique-se o juízo de origem.
-Intimem-se.
-
-São Paulo, 10 de março de 2023.
-
-Desembargador JOÃO SILVA
-Relator`;
-
-        console.log("Texto simulado extraído, primeiros 100 caracteres:", text.substring(0, 100));
-        resolve(text);
-      }, 1000);
-    });
+    // Para PDFs, usar nossa função de extração real
+    if (file.type === 'application/pdf') {
+      return extractTextFromPDF(file);
+    }
+    
+    // Para DOCX, usar nossa função para DOCX (ainda não implementada)
+    if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      return extractTextFromDocx(file);
+    }
+    
+    // Se chegou aqui, o tipo de arquivo não é suportado
+    throw new Error(`Formato de arquivo não suportado: ${file.type}`);
   };
 
   const handleUpload = async () => {
@@ -91,13 +117,16 @@ Relator`;
     try {
       toast.info("Processando documento...");
       
-      // Extract text from the document
+      // Extract text from the document - usando nosso método real
       const extractedText = await extractTextFromFile(selectedFile);
       
       // Verify we have actual content
       if (!extractedText || extractedText.trim().length < 50) {
         throw new Error("O texto extraído é muito curto ou vazio. Verifique o documento.");
       }
+      
+      console.log("Texto extraído do documento:", extractedText.substring(0, 300) + "...");
+      console.log("Tamanho total do texto extraído:", extractedText.length, "caracteres");
       
       // Create document object - ensure uploadDate is a proper Date object
       const document: Document = {
@@ -112,7 +141,7 @@ Relator`;
       console.log("Documento criado com sucesso:", document);
       console.log("ID do documento:", document.id);
       console.log("Nome do documento:", document.name);
-      console.log("Conteúdo COMPLETO do documento:", document.content);
+      console.log("Conteúdo COMPLETO do documento:", document.content?.substring(0, 500) + "...");
       
       // Call the callback with the processed document
       onDocumentProcessed(document);
@@ -122,7 +151,7 @@ Relator`;
       setSelectedFile(null);
     } catch (error) {
       console.error("Erro no processamento do documento:", error);
-      toast.error("Erro ao processar o documento. Por favor, tente novamente.");
+      toast.error(`Erro ao processar o documento: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     } finally {
       setIsUploading(false);
     }
