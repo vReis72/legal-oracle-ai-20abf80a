@@ -1,4 +1,3 @@
-
 import { validateApiKey, handleApiError } from './types';
 
 /**
@@ -56,24 +55,22 @@ Documento a ser analisado:
 ${text}
 """
 
-Estruture sua resposta exatamente com os seguintes títulos, mantendo esta formatação precisa:
+Estruture sua resposta com os seguintes títulos:
 
-**RESUMO:**
+**Resumo:**
 
-[Escreva aqui seu resumo técnico e objetivo]
+[escreva aqui]
 
-**PONTOS-CHAVE:**
+**Pontos-chave:**
 
-- [Primeiro ponto importante]
-- [Segundo ponto importante]
-- [Continue listando todos os pontos relevantes em formato de lista]
+[escreva aqui – utilize tópicos/bullets para cada item]
 
-**CONCLUSÃO/PARECER:**
+**Conclusão/Parecer:**
 
-[Escreva aqui sua conclusão técnica]`
+[escreva aqui]`
           }
         ],
-        temperature: 0.1,
+        temperature: 0.0,
         max_tokens: 3000
       }),
     });
