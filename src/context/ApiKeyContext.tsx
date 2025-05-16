@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { getApiKey, saveApiKey, hasApiKey, setDefaultApiKey, removeApiKey } from '@/services/apiKeyService';
 import { useToast } from '@/hooks/use-toast';
@@ -17,8 +16,9 @@ interface ApiKeyProviderProps {
   children: ReactNode;
 }
 
-// Nova chave padrão atualizada
-const DEFAULT_API_KEY = "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";
+// Obter chave da API do ambiente (configurado pelo Railway) ou usar a chave padrão
+const ENV_API_KEY = typeof window !== 'undefined' && window.env?.OPENAI_API_KEY;
+const DEFAULT_API_KEY = ENV_API_KEY || "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";
 
 export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   const [apiKey, setApiKeyState] = useState<string | null>(null);
@@ -42,15 +42,28 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
 
   // Forçar a nova chave no inicialização (remover após testes)
   useEffect(() => {
-    // Definir a nova chave padrão na inicialização
-    if (DEFAULT_API_KEY) {
+    // Verificar se temos uma chave no ambiente primeiro
+    if (ENV_API_KEY) {
+      console.log("Usando chave API do ambiente (Railway)");
       try {
-        console.log("Configurando nova chave padrão...");
+        removeApiKey();
+        if (setDefaultApiKey(ENV_API_KEY)) {
+          console.log("API key do ambiente configurada automaticamente");
+          updateApiKeyFromStorage();
+        }
+      } catch (error) {
+        console.error("Erro ao definir chave do ambiente:", error);
+      }
+    } 
+    // Caso contrário, usar a chave padrão
+    else if (DEFAULT_API_KEY) {
+      try {
+        console.log("Configurando chave padrão...");
         // Remover chave antiga para garantir que a nova será usada
         removeApiKey();
         // Definir a nova chave
         if (setDefaultApiKey(DEFAULT_API_KEY)) {
-          console.log("Nova API key padrão configurada automaticamente");
+          console.log("API key padrão configurada automaticamente");
           updateApiKeyFromStorage();
         }
       } catch (error) {
