@@ -9,7 +9,8 @@ interface ApiKeyContextType {
   isKeyConfigured: boolean;
   checkApiKey: () => boolean;
   resetApiKey: () => void;
-  isPlaceholderKey: boolean; // Nova propriedade para indicar se é chave placeholder
+  isPlaceholderKey: boolean;
+  isEnvironmentKey: boolean;
 }
 
 const ApiKeyContext = createContext<ApiKeyContextType | undefined>(undefined);
@@ -36,6 +37,7 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   const [apiKey, setApiKeyState] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPlaceholderKey, setIsPlaceholderKey] = useState(false);
+  const [isEnvironmentKey, setIsEnvironmentKey] = useState(false);
   const { toast } = useToast();
 
   // Função para atualizar o estado da chave baseado no localStorage
@@ -58,19 +60,25 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
 
   // Verificar se há chave API no ambiente primeiro
   useEffect(() => {
+    // Prioridade 1: Chave do ambiente (Railway)
     if (ENV_API_KEY && isValidApiKey(ENV_API_KEY)) {
       console.log("Usando chave API do ambiente (Railway)");
       try {
-        removeApiKey();
-        if (setDefaultApiKey(ENV_API_KEY)) {
-          console.log("API key do ambiente configurada automaticamente");
-          updateApiKeyFromStorage();
-        }
+        // Atualizar o estado para usar a chave do ambiente
+        setApiKeyState(ENV_API_KEY);
+        setIsEnvironmentKey(true);
+        setIsPlaceholderKey(false);
+        console.log("API key do ambiente configurada automaticamente");
       } catch (error) {
         console.error("Erro ao definir chave do ambiente:", error);
       }
     } 
-    // Caso contrário, usar a chave padrão (se fornecida)
+    // Prioridade 2: Chave do localStorage
+    else if (hasApiKey()) {
+      console.log("Usando chave API do localStorage");
+      updateApiKeyFromStorage();
+    }
+    // Prioridade 3: Chave padrão (se fornecida)
     else if (DEFAULT_API_KEY && DEFAULT_API_KEY !== PLACEHOLDER_TEXT) {
       try {
         console.log("Configurando chave padrão...");
@@ -88,29 +96,17 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
       // Se não tivermos nenhuma chave válida, configuramos o estado para refletir isso
       setIsPlaceholderKey(true);
     }
-  }, []);
-
-  // Carregar API key do localStorage na inicialização
-  useEffect(() => {
-    try {
-      // Tentar carregar a chave existente
-      updateApiKeyFromStorage();
-      
-      // Se não houver chave e o usuário ainda não viu a mensagem de placeholder
-      if (!hasApiKey() && !isPlaceholderKey) {
-        setIsPlaceholderKey(true);
-      }
-    } catch (error) {
-      console.error("Erro ao inicializar API key:", error);
-    } finally {
-      setIsLoading(false);
-    }
+    
+    setIsLoading(false);
   }, []);
 
   // Escutar eventos de atualização da chave
   useEffect(() => {
     const handleApiKeyUpdate = () => {
-      updateApiKeyFromStorage();
+      // Só atualize do localStorage se não estivermos usando uma chave do ambiente
+      if (!isEnvironmentKey) {
+        updateApiKeyFromStorage();
+      }
     };
     
     window.addEventListener('apikey_updated', handleApiKeyUpdate);
@@ -118,9 +114,19 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     return () => {
       window.removeEventListener('apikey_updated', handleApiKeyUpdate);
     };
-  }, []);
+  }, [isEnvironmentKey]);
 
   const setApiKey = (key: string) => {
+    // Não permitir sobrescrever a chave do ambiente
+    if (isEnvironmentKey) {
+      toast({
+        variant: "warning",
+        title: "Operação não permitida",
+        description: "Uma chave API já está configurada através de variáveis de ambiente (Railway).",
+      });
+      return;
+    }
+
     if (key && key.trim()) {
       try {
         // Validação adicional
@@ -154,6 +160,16 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   };
 
   const resetApiKey = () => {
+    // Não permitir remover a chave do ambiente
+    if (isEnvironmentKey) {
+      toast({
+        variant: "warning",
+        title: "Operação não permitida",
+        description: "Não é possível remover uma chave configurada através de variáveis de ambiente (Railway).",
+      });
+      return;
+    }
+
     try {
       // Remover chave atual
       removeApiKey();
@@ -171,6 +187,12 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   };
 
   const checkApiKey = (): boolean => {
+    // Se temos uma chave do ambiente, ela tem prioridade
+    if (isEnvironmentKey && isValidApiKey(apiKey)) {
+      return true;
+    }
+    
+    // Caso contrário, verificar o localStorage
     const storedKey = getApiKey();
     const hasValidKey = hasApiKey() && storedKey !== PLACEHOLDER_TEXT && isValidApiKey(storedKey);
     console.log("Verificação de API key:", hasValidKey ? "Configurada" : "Não configurada");
@@ -182,8 +204,11 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     return null;
   }
 
-  const isKeyConfigured = apiKey !== null && apiKey !== PLACEHOLDER_TEXT && isValidApiKey(apiKey);
+  const isKeyConfigured = (isEnvironmentKey && isValidApiKey(apiKey)) || 
+                          (apiKey !== null && apiKey !== PLACEHOLDER_TEXT && isValidApiKey(apiKey));
+  
   console.log("Estado atual da API key:", isKeyConfigured ? "Configurada" : "Não configurada");
+  console.log("Fonte da API key:", isEnvironmentKey ? "Ambiente (Railway)" : "Local Storage");
 
   return (
     <ApiKeyContext.Provider value={{ 
@@ -192,7 +217,8 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
       isKeyConfigured,
       checkApiKey,
       resetApiKey,
-      isPlaceholderKey
+      isPlaceholderKey,
+      isEnvironmentKey
     }}>
       {children}
     </ApiKeyContext.Provider>

@@ -24,8 +24,8 @@ export const sendChatMessage = async (
   apiKey: string
 ): Promise<string> => {
   try {
-    // Verificar se a chave foi fornecida ou usar a armazenada
-    const key = apiKey || getApiKey();
+    // Verificar se a chave foi fornecida diretamente ou usar a do ambiente
+    const key = apiKey || (typeof window !== 'undefined' && window.env?.OPENAI_API_KEY) || getApiKey();
     
     if (!key) {
       throw new Error('API key não fornecida. Configure sua chave OpenAI nas configurações.');
@@ -40,6 +40,9 @@ export const sendChatMessage = async (
     const baseUrl = 'https://api.openai.com/v1/chat/completions';
     
     console.log('Enviando requisição para OpenAI...');
+    console.log('Usando chave do tipo:', key === apiKey ? 'Fornecida diretamente' : 
+                                         window.env?.OPENAI_API_KEY ? 'Ambiente (Railway)' : 
+                                         'Local Storage');
 
     const response = await fetch(baseUrl, {
       method: 'POST',

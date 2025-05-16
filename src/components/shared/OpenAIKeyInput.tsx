@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Key, Check, RefreshCcw, AlertTriangle, AlertCircle } from 'lucide-react';
+import { Key, Check, RefreshCcw, AlertTriangle, AlertCircle, Cloud } from 'lucide-react';
 import { useApiKey } from '@/context/ApiKeyContext';
 import { hasApiKey } from '@/services/apiKeyService';
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -25,27 +25,39 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [isValidating, setIsValidating] = useState(false);
-  const { apiKey, setApiKey, isKeyConfigured, resetApiKey, isPlaceholderKey } = useApiKey();
+  const { apiKey, setApiKey, isKeyConfigured, resetApiKey, isPlaceholderKey, isEnvironmentKey } = useApiKey();
   const { toast } = useToast();
   const [showError, setShowError] = useState(false);
 
   // Verificar se já existe uma chave armazenada que NÃO é placeholder
-  const keyConfigured = hasApiKey() && isKeyConfigured && !isPlaceholderKey;
+  const keyConfigured = (hasApiKey() && isKeyConfigured && !isPlaceholderKey) || isEnvironmentKey;
 
   useEffect(() => {
     // Só abrir o diálogo se forceOpen for true E não houver chave configurada
-    if (forceOpen && (!keyConfigured || isPlaceholderKey)) {
+    // E não estiver usando uma chave do ambiente
+    if (forceOpen && (!keyConfigured || isPlaceholderKey) && !isEnvironmentKey) {
       setIsOpen(true);
     } else {
       setIsOpen(false);
     }
     
-    // Mostrar mensagem de erro se a chave for placeholder
-    setShowError(isPlaceholderKey);
-  }, [forceOpen, keyConfigured, isPlaceholderKey]);
+    // Mostrar mensagem de erro se a chave for placeholder e não estiver usando chave do ambiente
+    setShowError(isPlaceholderKey && !isEnvironmentKey);
+  }, [forceOpen, keyConfigured, isPlaceholderKey, isEnvironmentKey]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Não permitir configuração se estiver usando chave do ambiente
+    if (isEnvironmentKey) {
+      toast({
+        variant: "warning",
+        title: "Operação não permitida",
+        description: "Uma chave API já está configurada através de variáveis de ambiente (Railway).",
+      });
+      setIsOpen(false);
+      return;
+    }
     
     if (!apiKeyInput.trim()) {
       toast({
@@ -107,10 +119,28 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
   };
 
   const handleUpdateKey = () => {
+    // Não permitir alteração se estiver usando chave do ambiente
+    if (isEnvironmentKey) {
+      toast({
+        variant: "info",
+        title: "API Key do Ambiente",
+        description: "A chave API está configurada através de variáveis de ambiente (Railway).",
+      });
+      return;
+    }
     setIsOpen(true);
   };
 
   const handleResetToDefault = () => {
+    // Não permitir remover se estiver usando chave do ambiente
+    if (isEnvironmentKey) {
+      toast({
+        variant: "warning",
+        title: "Operação não permitida",
+        description: "Não é possível remover uma chave configurada através de variáveis de ambiente (Railway).",
+      });
+      return;
+    }
     resetApiKey();
     setIsOpen(false);
     toast({
@@ -137,6 +167,16 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
       )}
       
       <Dialog open={isOpen} onOpenChange={(open) => {
+        // Não permitir abrir o diálogo se estiver usando chave do ambiente
+        if (isEnvironmentKey && open) {
+          toast({
+            variant: "info",
+            title: "API Key do Ambiente",
+            description: "A chave API está configurada através de variáveis de ambiente (Railway).",
+          });
+          return;
+        }
+        
         // Permitir fechar o diálogo somente se não estamos forçando ele aberto
         // ou se a chave já estiver configurada
         if (forceOpen && !keyConfigured && !open) return;
@@ -157,7 +197,7 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
                 value={apiKeyInput}
                 onChange={(e) => setApiKeyInput(e.target.value)}
                 className="w-full"
-                disabled={isValidating}
+                disabled={isValidating || isEnvironmentKey}
               />
               <p className="text-xs text-muted-foreground">
                 A chave deve começar com "sk-" e ser longa o suficiente para ser válida.
@@ -165,7 +205,7 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
             </div>
             
             <div className="flex justify-end gap-2">
-              {!forceOpen && (
+              {!forceOpen && !isEnvironmentKey && (
                 <Button 
                   type="button" 
                   variant="outline"
@@ -178,11 +218,20 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
               <Button 
                 type="submit" 
                 className="bg-eco-primary hover:bg-eco-dark"
-                disabled={isValidating}
+                disabled={isValidating || isEnvironmentKey}
               >
-                {isValidating ? 'Salvando...' : 'Salvar Chave'}
+                {isValidating ? 'Salvando...' : (isEnvironmentKey ? 'Chave do Ambiente' : 'Salvar Chave')}
               </Button>
             </div>
+            
+            {isEnvironmentKey && (
+              <Alert className="mt-2 bg-blue-50 border-blue-200">
+                <Cloud className="h-4 w-4 text-blue-700" />
+                <AlertDescription className="text-blue-700">
+                  A chave API está configurada através de variáveis de ambiente (Railway).
+                </AlertDescription>
+              </Alert>
+            )}
           </form>
         </DialogContent>
       </Dialog>
@@ -195,11 +244,20 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
             onClick={handleUpdateKey}
             className="flex items-center gap-1 text-xs"
           >
-            {isPlaceholderKey ? 
-              <AlertTriangle className="h-3 w-3" /> : 
-              (keyConfigured ? <Check className="h-3 w-3" /> : <Key className="h-3 w-3" />)
-            }
-            {isPlaceholderKey ? "API Inválida!" : (keyConfigured ? "API Configurada" : "Configurar API")}
+            {isPlaceholderKey ? (
+              <AlertTriangle className="h-3 w-3" />
+            ) : isEnvironmentKey ? (
+              <Cloud className="h-3 w-3 text-blue-600" />
+            ) : (keyConfigured ? (
+              <Check className="h-3 w-3" />
+            ) : (
+              <Key className="h-3 w-3" />
+            ))}
+            {isPlaceholderKey ? "API Inválida!" : (
+              isEnvironmentKey ? "API Railway" : (
+                keyConfigured ? "API Configurada" : "Configurar API"
+              )
+            )}
           </Button>
         </div>
       )}
