@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,33 +14,32 @@ interface DocumentUploaderProps {
 // Configuração global do worker do PDF.js
 const configurePdfWorker = () => {
   try {
-    // Opção 1: Tentar usar o worker empacotado (vite geralmente lida com isso)
-    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-      'pdfjs-dist/build/pdf.worker.mjs',
-      import.meta.url
-    ).toString();
-    console.log(`PDF.js Worker configurado via import.meta.url`);
+    // Opção 1: Usar CDN com versão específica (mais confiável)
+    const pdfWorkerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerSrc;
+    console.log(`PDF.js Worker configurado via CDN unpkg: versão ${pdfjsLib.version}`);
+    return true;
   } catch (error) {
-    console.error("Erro na configuração primária do worker:", error);
-    
-    // Opção 2: Fallback para CDN com versão específica
-    try {
-      const pdfWorkerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
-      pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerSrc;
-      console.log(`PDF.js Worker configurado via CDN unpkg: versão ${pdfjsLib.version}`);
-    } catch (secondError) {
-      console.error("Erro na configuração secundária do worker:", secondError);
-    }
+    console.error("Erro na configuração do worker:", error);
+    return false;
   }
 };
 
 const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onDocumentProcessed }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [workerConfigured, setWorkerConfigured] = useState(false);
 
   // Configurar o worker do PDF.js quando o componente é montado
   useEffect(() => {
-    configurePdfWorker();
+    const success = configurePdfWorker();
+    setWorkerConfigured(success);
+    
+    if (success) {
+      console.log("Worker do PDF.js configurado com sucesso na montagem do componente");
+    } else {
+      console.error("Falha ao configurar worker do PDF.js na montagem do componente");
+    }
   }, []);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,44 +51,108 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onDocumentProcessed
   };
 
   const extractTextFromPDF = async (file: File): Promise<string> => {
-    console.log("Iniciando extração REAL de texto do PDF:", file.name);
+    console.log("Iniciando extração de texto do PDF:", file.name);
     
     try {
-      // Carregar o arquivo como ArrayBuffer
-      const arrayBuffer = await file.arrayBuffer();
-      
-      // Verificar se o worker está configurado
-      if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
-        console.warn("Worker PDF.js não configurado. Tentando configurar novamente...");
-        configurePdfWorker();
+      if (!workerConfigured) {
+        console.log("Worker não configurado, tentando configurar novamente...");
+        const success = configurePdfWorker();
+        if (!success) {
+          throw new Error("Não foi possível configurar o worker do PDF.js");
+        }
       }
       
-      // Carregar o documento PDF
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      console.log(`PDF carregado com ${pdf.numPages} páginas`);
+      // Carregar o arquivo como ArrayBuffer
+      console.log("Carregando arquivo como ArrayBuffer...");
+      const arrayBuffer = await file.arrayBuffer();
+      console.log("ArrayBuffer carregado, tamanho:", arrayBuffer.byteLength, "bytes");
+      
+      // Verificar se temos um ArrayBuffer válido
+      if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+        throw new Error("ArrayBuffer vazio ou inválido");
+      }
+      
+      // Carregar o documento PDF com manipulação de erro mais explícita
+      console.log("Carregando documento PDF...");
+      let loadingTask;
+      try {
+        loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+        console.log("Tarefa de carregamento do PDF criada com sucesso");
+      } catch (pdfError) {
+        console.error("Erro ao criar tarefa de carregamento do PDF:", pdfError);
+        throw new Error("Falha ao iniciar o carregamento do PDF");
+      }
+      
+      // Aguardar promessa ser resolvida com timeout
+      console.log("Aguardando promessa do PDF ser resolvida...");
+      const pdfDoc = await Promise.race([
+        loadingTask.promise,
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error("Timeout ao carregar PDF")), 30000)
+        )
+      ]);
+      
+      console.log(`PDF carregado com sucesso. Número de páginas: ${pdfDoc.numPages}`);
+      
+      // Se o PDF não tem páginas, lançar erro
+      if (pdfDoc.numPages <= 0) {
+        throw new Error("O PDF não contém páginas");
+      }
       
       // Extrair texto de todas as páginas
       let fullText = '';
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
+      for (let i = 1; i <= pdfDoc.numPages; i++) {
+        console.log(`Extraindo texto da página ${i}...`);
+        const page = await pdfDoc.getPage(i);
         const textContent = await page.getTextContent();
+        
+        // Verificar se o conteúdo é válido
+        if (!textContent || !textContent.items || !textContent.items.length) {
+          console.warn(`Página ${i}: Nenhum conteúdo de texto encontrado`);
+          continue;
+        }
         
         // Unir todos os itens de texto com espaços apropriados
         const pageText = textContent.items
-          .map((item: any) => item.str)
+          .map((item: any) => item.str || "")
           .join(' ');
           
         fullText += pageText + '\n\n';
         console.log(`Página ${i}: extraídos ${pageText.length} caracteres`);
+        
+        // Mostrar amostra do texto extraído
+        if (pageText.length > 0) {
+          console.log(`Amostra do texto da página ${i}: "${pageText.substring(0, 50)}..."`);
+        } else {
+          console.warn(`Página ${i}: texto extraído está vazio`);
+        }
       }
       
-      console.log("Extração real concluída. Total:", fullText.length, "caracteres");
-      console.log("Primeiros 200 caracteres do texto real:", fullText.substring(0, 200));
+      // Verificar se conseguimos extrair algum texto
+      if (!fullText || fullText.trim().length === 0) {
+        console.error("Nenhum texto extraído do PDF");
+        throw new Error("Não foi possível extrair texto do PDF. O arquivo pode estar protegido ou ser uma imagem digitalizada.");
+      }
+      
+      console.log("Extração concluída. Total:", fullText.length, "caracteres");
+      console.log("Amostra do texto extraído:", fullText.substring(0, 200));
       
       return fullText;
     } catch (error) {
-      console.error("Erro ao extrair texto do PDF:", error);
-      throw new Error(`Falha ao extrair texto do PDF: ${error}`);
+      console.error("Erro detalhado ao extrair texto do PDF:", error);
+      
+      // Mensagem de erro mais informativa baseada no tipo de erro
+      if (error instanceof Error) {
+        if (error.message.includes("Timeout")) {
+          throw new Error("O processamento do PDF demorou muito tempo. O arquivo pode ser muito grande ou complexo.");
+        }
+        if (error.message.includes("password")) {
+          throw new Error("Este PDF está protegido por senha e não pode ser processado.");
+        }
+        throw new Error(`Falha ao extrair texto do PDF: ${error.message}`);
+      }
+      
+      throw new Error("Erro desconhecido ao processar o PDF");
     }
   };
 
@@ -102,14 +164,15 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onDocumentProcessed
   };
 
   const extractTextFromFile = async (file: File): Promise<string> => {
-    console.log("Iniciando extração REAL de texto do arquivo:", file.name);
+    console.log("Iniciando extração de texto do arquivo:", file.name);
     
     // Para arquivos de texto, podemos ler o conteúdo diretamente
     if (file.type === 'text/plain') {
       try {
-        console.log("Lendo arquivo de texto real");
+        console.log("Lendo arquivo de texto...");
         const text = await file.text();
-        console.log("Texto real extraído do arquivo TXT, primeiros 100 caracteres:", text.substring(0, 100));
+        console.log("Texto extraído do arquivo TXT, tamanho:", text.length, "caracteres");
+        console.log("Amostra:", text.substring(0, 100));
         return text;
       } catch (error) {
         console.error("Erro ao ler arquivo de texto:", error);
@@ -117,7 +180,7 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onDocumentProcessed
       }
     }
     
-    // Para PDFs, usar nossa função de extração real
+    // Para PDFs, usar nossa função de extração melhorada
     if (file.type === 'application/pdf') {
       return extractTextFromPDF(file);
     }
@@ -150,31 +213,39 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onDocumentProcessed
     try {
       toast.info("Processando documento...");
       
-      // Extract text from the document - usando nosso método real
+      // Extract text from the document - usando nosso método melhorado
       const extractedText = await extractTextFromFile(selectedFile);
       
-      // Verify we have actual content
-      if (!extractedText || extractedText.trim().length < 50) {
-        throw new Error("O texto extraído é muito curto ou vazio. Verifique o documento.");
+      // Verify we have actual content with mais flexibilidade
+      if (!extractedText) {
+        throw new Error("Nenhum texto foi extraído do documento. Verifique se o arquivo não está corrompido.");
       }
       
-      console.log("Texto extraído do documento:", extractedText.substring(0, 300) + "...");
-      console.log("Tamanho total do texto extraído:", extractedText.length, "caracteres");
+      const trimmedText = extractedText.trim();
+      console.log("Texto extraído e limpo, tamanho:", trimmedText.length, "caracteres");
       
-      // Create document object - ensure uploadDate is a proper Date object
+      // Ser mais flexível com o limite mínimo de caracteres para PDFs que podem ser digitalizações
+      if (trimmedText.length < 10) { // Reduzido de 50 para 10
+        throw new Error("O texto extraído é muito curto. O documento pode ser uma digitalização ou imagem.");
+      }
+      
+      console.log("Texto extraído do documento:", trimmedText.substring(0, 300) + "...");
+      console.log("Tamanho total do texto extraído:", trimmedText.length, "caracteres");
+      
+      // Create document object
       const document: Document = {
         id: uuidv4(),
         name: selectedFile.name,
         type: fileExtension,
         uploadDate: new Date(),
         processed: false,
-        content: extractedText
+        content: trimmedText
       };
       
       console.log("Documento criado com sucesso:", document);
       console.log("ID do documento:", document.id);
       console.log("Nome do documento:", document.name);
-      console.log("Conteúdo COMPLETO do documento:", document.content?.substring(0, 500) + "...");
+      console.log("Tamanho do conteúdo:", document.content?.length || 0);
       
       // Call the callback with the processed document
       onDocumentProcessed(document);
@@ -184,7 +255,13 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onDocumentProcessed
       setSelectedFile(null);
     } catch (error) {
       console.error("Erro no processamento do documento:", error);
-      toast.error(`Erro ao processar o documento: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      let errorMessage = "Erro desconhecido";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(`Erro ao processar o documento: ${errorMessage}`);
     } finally {
       setIsUploading(false);
     }
