@@ -6,6 +6,7 @@ import { Upload } from "lucide-react";
 import { Document } from "@/types/document";
 import { useFileUpload } from "@/hooks/document/useFileUpload";
 import { configurePdfWorker } from "@/utils/pdf/pdfWorkerConfig";
+import DocumentFilePreview from './DocumentFilePreview';
 
 interface DocumentUploaderProps {
   onDocumentProcessed: (document: Document) => void;
@@ -54,10 +55,11 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onDocumentProcessed
           </Button>
         </div>
         
+        {/* File preview component */}
         {selectedFile && (
-          <p className="text-sm text-muted-foreground">
-            Arquivo selecionado: {selectedFile.name}
-          </p>
+          <div className="mt-4">
+            <DocumentFilePreview file={selectedFile} />
+          </div>
         )}
         
         <div className="text-sm text-muted-foreground">
