@@ -2,7 +2,14 @@
 import { useState } from 'react';
 import { Document } from '@/types/document';
 import { useDocumentAnalysisState } from './useDocumentAnalysisState';
-import { validateDocumentAndApiKey, processLargeDocument, processSmallDocument, handleProcessingError, createAnalyzedDocument } from './useDocumentProcessor';
+import { 
+  validateDocumentAndApiKey, 
+  processLargeDocument, 
+  processSmallDocument, 
+  handleProcessingError, 
+  createAnalyzedDocument,
+  ProcessorState 
+} from './processors';
 
 /**
  * Hook para análise de documentos com OpenAI
@@ -78,14 +85,15 @@ export const useDocumentAnalysis = (
       onAnalysisComplete(updatedDocument);
     } catch (error) {
       // Handle error processing using the dedicated function
-      handleProcessingError(error, {
+      const processorState: ProcessorState = {
         setIsAnalyzing, 
         setProgress, 
         setAnalysisError,
         retryAttempts,
         setRetryAttempts,
         MAX_RETRIES
-      }, processDocument);
+      };
+      handleProcessingError(error, processorState, processDocument);
     }
   };
   
