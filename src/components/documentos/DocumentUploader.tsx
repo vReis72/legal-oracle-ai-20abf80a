@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Upload } from "lucide-react";
 import { Document } from "@/types/document";
 import { useFileUpload } from "@/hooks/document/useFileUpload";
-import { configurePdfWorker, preloadPdfWorker } from "@/utils/pdf/pdfWorkerConfig";
+import * as pdfjsLib from 'pdfjs-dist';
+import { configurePdfWorker, isPdfWorkerConfigured, preloadPdfWorker } from "@/utils/pdf/pdfWorkerConfig";
 import DocumentFilePreview from './DocumentFilePreview';
 import { toast } from "sonner";
 
@@ -44,7 +45,7 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onDocumentProcessed
         const secondAttempt = configurePdfWorker({
           verbose: true,
           showToasts: false,
-          customCdnUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${(pdfjsLib as any).version}/build/pdf.worker.min.js`
+          customCdnUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`
         });
         
         if (secondAttempt.success) {
