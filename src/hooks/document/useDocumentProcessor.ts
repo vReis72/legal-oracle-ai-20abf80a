@@ -1,3 +1,4 @@
+
 import { Document } from '@/types/document';
 import { toast } from "sonner";
 import { v4 as uuidv4 } from 'uuid';
@@ -9,7 +10,7 @@ type ProcessorState = {
   setProgress: (value: number) => void;
   setAnalysisError: (value: string | null) => void;
   retryAttempts: number;
-  setRetryAttempts: (value: number) => void;  // This needs to accept a function
+  setRetryAttempts: (value: number) => void;
   MAX_RETRIES: number;
 };
 
@@ -162,6 +163,8 @@ export const handleProcessingError = (
   } else {
     toast.error(`Erro ao analisar o documento: ${errorMessage}. Por favor, tente novamente.`);
   }
+
+  state.setIsAnalyzing(false);
 };
 
 /**
@@ -192,6 +195,7 @@ export const createAnalyzedDocument = (
       title: "Análise Insuficiente",
       description: "Não foi possível extrair pontos-chave deste documento. O conteúdo pode não conter pontos definidos ou pode ser inadequado para análise."
     }],
-    conclusion: conclusion || "Não é possível extrair uma conclusão definitiva do documento fornecido."
+    conclusion: conclusion || "Não é possível extrair uma conclusão definitiva do documento fornecido.",
+    content: document.content, // Garantir que o conteúdo original seja preservado
   };
 };

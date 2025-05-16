@@ -81,7 +81,7 @@ Relator`;
         throw new Error("O texto extraído é muito curto ou vazio. Verifique o documento.");
       }
       
-      // Create document object
+      // Create document object - ensure uploadDate is a proper Date object
       const document: Document = {
         id: uuidv4(),
         name: selectedFile.name,
@@ -90,6 +90,9 @@ Relator`;
         processed: false,
         content: extractedText
       };
+      
+      console.log("Documento criado com sucesso:", document);
+      console.log("Conteúdo extraído:", extractedText.substring(0, 200) + "...");
       
       // Call the callback with the processed document
       onDocumentProcessed(document);

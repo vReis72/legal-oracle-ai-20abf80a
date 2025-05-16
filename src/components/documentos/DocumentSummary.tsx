@@ -31,7 +31,7 @@ const DocumentSummary: React.FC<DocumentSummaryProps> = ({ summary, content }) =
         
         <TabsContent value="resumo">
           <div className="whitespace-pre-line prose prose-sm max-w-none">
-            {summary.trim()}
+            {summary || "Nenhum resumo disponível."}
           </div>
         </TabsContent>
       </Tabs>

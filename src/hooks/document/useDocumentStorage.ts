@@ -1,48 +1,90 @@
-
-import { useLocalStorage } from './useLocalStorage';
+import { useState, useEffect } from 'react';
 import { Document } from '@/types/document';
 
+const STORAGE_KEY = 'eco_documents';
+
 /**
- * Custom hook for managing document storage in localStorage
+ * Hook para gerenciar o armazenamento de documentos no localStorage
  */
 export const useDocumentStorage = () => {
-  const [documents, setDocuments] = useLocalStorage<Document[]>('eco-documentos', []);
-  const [selectedDocumentId, setSelectedDocumentId] = useLocalStorage<string | null>('eco-selected-document', null);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
 
-  // Save or update a document in the storage
-  const saveDocument = (document: Document) => {
-    setDocuments(prev => {
-      // Check if document already exists
-      const exists = prev.some(doc => doc.id === document.id);
-      
-      if (exists) {
-        // Update existing document
-        return prev.map(doc => doc.id === document.id ? document : doc);
-      } else {
-        // Add new document
-        return [document, ...prev];
+  useEffect(() => {
+    loadDocuments();
+  }, []);
+
+  useEffect(() => {
+    saveDocuments();
+  }, [documents]);
+
+  const loadDocuments = () => {
+    try {
+      const storedDocuments = localStorage.getItem(STORAGE_KEY);
+      if (storedDocuments) {
+        let parsedDocuments = JSON.parse(storedDocuments) as Document[];
+        // Normalize dates after parsing
+        parsedDocuments = normalizeDocumentDates(parsedDocuments);
+        setDocuments(parsedDocuments);
       }
+    } catch (error) {
+      console.error("Erro ao carregar documentos do localStorage:", error);
+    }
+  };
+
+  const saveDocuments = () => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(documents));
+    } catch (error) {
+      console.error("Erro ao salvar documentos no localStorage:", error);
+    }
+  };
+
+  const saveDocument = (document: Document) => {
+    const existingDocumentIndex = documents.findIndex(doc => doc.id === document.id);
+
+    if (existingDocumentIndex > -1) {
+      // Update existing document
+      const updatedDocuments = [...documents];
+      updatedDocuments[existingDocumentIndex] = document;
+      setDocuments(updatedDocuments);
+    } else {
+      // Add new document
+      setDocuments([...documents, document]);
+    }
+  };
+
+  const deleteDocument = (documentId: string) => {
+    const updatedDocuments = documents.filter(doc => doc.id !== documentId);
+    setDocuments(updatedDocuments);
+    setSelectedDocumentId(null); // Clear selected document if it was the deleted one
+  };
+
+  const getSelectedDocument = (): Document | undefined => {
+    return documents.find(doc => doc.id === selectedDocumentId);
+  };
+
+  // Adicionar função para garantir que os tipos dos campos estejam corretos
+  // Especialmente para transformar strings de data em objetos Date
+  function normalizeDocumentDates(documents: Document[]): Document[] {
+    return documents.map(doc => {
+      // Se uploadDate for uma string, converta para Date
+      if (doc.uploadDate && typeof doc.uploadDate === 'string') {
+        return {
+          ...doc,
+          uploadDate: new Date(doc.uploadDate)
+        };
+      }
+      return doc;
     });
-  };
-
-  // Get a document by its ID
-  const getDocument = (id: string): Document | undefined => {
-    return documents.find(doc => doc.id === id);
-  };
-
-  // Get the selected document
-  const getSelectedDocument = (): Document | null => {
-    if (!selectedDocumentId) return null;
-    return documents.find(doc => doc.id === selectedDocumentId) || null;
-  };
+  }
 
   return {
     documents,
-    setDocuments,
+    saveDocument,
+    deleteDocument,
     selectedDocumentId,
     setSelectedDocumentId,
-    saveDocument,
-    getDocument,
     getSelectedDocument
   };
 };

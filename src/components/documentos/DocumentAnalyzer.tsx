@@ -30,6 +30,9 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
     processDocument
   } = useDocumentAnalysis(document, onAnalysisComplete, apiKey);
 
+  // Adicionar log para depuração do conteúdo do documento
+  console.log("Document content in DocumentAnalyzer:", document.content?.substring(0, 100));
+
   const renderAnalysisResults = () => {
     if (!document.processed && !document.content) return null;
 
