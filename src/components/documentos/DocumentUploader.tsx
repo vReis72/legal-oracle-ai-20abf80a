@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,9 +14,25 @@ interface DocumentUploaderProps {
 
 // Configuração global do worker do PDF.js
 const configurePdfWorker = () => {
-  const pdfWorkerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerSrc;
-  console.log(`PDF.js Worker configurado: versão ${pdfjsLib.version}`);
+  try {
+    // Opção 1: Tentar usar o worker empacotado (vite geralmente lida com isso)
+    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+      'pdfjs-dist/build/pdf.worker.mjs',
+      import.meta.url
+    ).toString();
+    console.log(`PDF.js Worker configurado via import.meta.url`);
+  } catch (error) {
+    console.error("Erro na configuração primária do worker:", error);
+    
+    // Opção 2: Fallback para CDN com versão específica
+    try {
+      const pdfWorkerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
+      pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerSrc;
+      console.log(`PDF.js Worker configurado via CDN unpkg: versão ${pdfjsLib.version}`);
+    } catch (secondError) {
+      console.error("Erro na configuração secundária do worker:", secondError);
+    }
+  }
 };
 
 const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onDocumentProcessed }) => {
@@ -41,6 +58,12 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onDocumentProcessed
     try {
       // Carregar o arquivo como ArrayBuffer
       const arrayBuffer = await file.arrayBuffer();
+      
+      // Verificar se o worker está configurado
+      if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+        console.warn("Worker PDF.js não configurado. Tentando configurar novamente...");
+        configurePdfWorker();
+      }
       
       // Carregar o documento PDF
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
