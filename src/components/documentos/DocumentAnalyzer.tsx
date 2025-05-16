@@ -5,7 +5,6 @@ import DocumentProgressBar from './DocumentProgressBar';
 import DocumentMetadata from './DocumentMetadata';
 import DocumentStatus from './DocumentStatus';
 import DocumentSummary from './DocumentSummary';
-import DocumentHighlights from './DocumentHighlights';
 import DocumentKeyPoints from './DocumentKeyPoints';
 import DocumentConclusion from './DocumentConclusion';
 import { useDocumentAnalysis } from '@/hooks/document/useDocumentAnalysis';
@@ -43,7 +42,7 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
           analysisError={null}
         />
         <DocumentSummary summary={document.summary} />
-        <DocumentHighlights highlights={document.highlights} />
+        {/* DocumentHighlights component removed from here */}
         <DocumentKeyPoints keyPoints={document.keyPoints} />
         <DocumentConclusion conclusion={document.conclusion} />
       </div>
