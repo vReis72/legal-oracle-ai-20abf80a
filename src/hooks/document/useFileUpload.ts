@@ -40,10 +40,14 @@ export const useFileUpload = ({ onDocumentProcessed }: UseFileUploadProps) => {
     try {
       toast.info("Processando documento...");
       
-      // Extract text from the document
-      const extractedText = await extractTextFromFile(selectedFile);
+      // Extract text from the document using the refactored utility
+      // with options for verbose logging and toast notifications
+      const extractedText = await extractTextFromFile(selectedFile, {
+        verbose: true,
+        showToasts: true
+      });
       
-      // Verify we have actual content with mais flexibilidade
+      // Verify we have actual content
       if (!extractedText) {
         throw new Error("Nenhum texto foi extraído do documento. Verifique se o arquivo não está corrompido.");
       }
