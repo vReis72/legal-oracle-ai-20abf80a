@@ -10,7 +10,7 @@ const DocumentSummary: React.FC<DocumentSummaryProps> = ({ summary }) => {
   
   return (
     <div className="border rounded-lg p-4">
-      <h3 className="text-lg font-medium mb-2">Resumo do Documento</h3>
+      <h3 className="text-lg font-medium mb-3">Resumo do Documento</h3>
       <div className="whitespace-pre-line prose prose-sm max-w-none">
         {summary}
       </div>

@@ -6,12 +6,20 @@
 import { extractKeyPointItems } from './sectionExtractor';
 
 /**
+ * Interface for a parsed key point
+ */
+interface KeyPoint {
+  title: string;
+  description: string;
+}
+
+/**
  * Parses a key point text into title and description
  * 
  * @param item The key point text
  * @returns Object with title and description
  */
-export const parseKeyPoint = (item: string): { title: string; description: string } => {
+export const parseKeyPoint = (item: string): KeyPoint => {
   // Remove leading bullet point markers if present
   const cleanedItem = item.replace(/^[-•*]\s+/, '').trim();
   
@@ -35,7 +43,7 @@ export const parseKeyPoint = (item: string): { title: string; description: strin
     const description = cleanedItem.substring(title.length).trim().replace(/^[.!?]\s*/, '');
     
     return {
-      title: title,
+      title: title.endsWith('.') ? title : `${title}.`,
       description: description || cleanedItem // Fall back to full text if description is empty
     };
   }
@@ -61,10 +69,13 @@ export const parseKeyPoint = (item: string): { title: string; description: strin
  * @param keyPointsSection Text section containing key points
  * @returns Array of objects with title and description
  */
-export const processKeyPoints = (keyPointsSection: string): Array<{title: string; description: string}> => {
+export const processKeyPoints = (keyPointsSection: string): Array<KeyPoint> => {
   if (!keyPointsSection) {
+    console.log("No key points section provided for processing");
     return [];
   }
+  
+  console.log("Processing key points from section:", keyPointsSection.substring(0, 100) + "...");
   
   const keyPointItems = extractKeyPointItems(keyPointsSection);
   

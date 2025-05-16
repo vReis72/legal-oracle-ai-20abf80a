@@ -43,9 +43,7 @@ const createEmptyResult = (): AnalysisResult => ({
  * @returns Structured analysis data
  */
 export const parseAnalysisResult = (analysisResult: string): AnalysisResult => {
-  // Log the raw response for debugging
-  console.log("Raw analysis result to parse:", analysisResult);
-  
+  // Check for valid input
   if (!analysisResult || typeof analysisResult !== 'string') {
     console.error("Invalid analysis result provided:", analysisResult);
     return {
@@ -55,207 +53,157 @@ export const parseAnalysisResult = (analysisResult: string): AnalysisResult => {
     };
   }
 
+  // Log the raw response for debugging - log only a portion to avoid console clutter
+  console.log("Raw analysis result to parse (sample):", 
+             analysisResult.substring(0, 300) + 
+             (analysisResult.length > 300 ? '...' : ''));
+  console.log("Full analysis result length:", analysisResult.length);
+  
+  // Create the result structure
   const result = createEmptyResult();
 
   try {
-    // Extract and process each section using the new formatted titles
-    extractAndProcessNewFormatSections(analysisResult, result);
+    // Extract and process each section using the exact format specified in the prompt
+    console.log("Attempting to extract sections from the formatted response");
+    const summarySection = extractSection(analysisResult, '\\*\\*RESUMO:\\*\\*');
     
-    // Fallback if no sections were successfully extracted
-    if (isMissingAllSections(result)) {
-      console.warn("Failed to parse new format sections, trying alternative approach...");
-      // Try the original format as fallback
-      extractAndProcessSections(analysisResult, result);
-      
-      // If still missing all sections, try ultimate fallback
-      if (isMissingAllSections(result)) {
-        console.warn("Failed to parse any sections using section headers, trying fallback parsing...");
-        useFallbackParsing(analysisResult, result);
+    if (summarySection) {
+      result.summary = summarySection;
+      console.log("Summary extracted successfully:", 
+                 result.summary.substring(0, 100) + 
+                 (result.summary.length > 100 ? '...' : ''));
+    } else {
+      console.warn("Failed to extract RESUMO section using exact format");
+      // Try alternative format
+      const altSummarySection = extractSection(analysisResult, 'RESUMO');
+      if (altSummarySection) {
+        result.summary = altSummarySection;
+        console.log("Summary extracted using alternative format");
+      } else {
+        console.error("Could not extract summary with any pattern");
       }
     }
+    
+    // Process key points - using exact format from prompt
+    const keyPointsSection = extractSection(analysisResult, '\\*\\*PONTOS-CHAVE:\\*\\*');
+    
+    if (keyPointsSection) {
+      console.log("Key points section found in expected format");
+      result.keyPoints = processKeyPoints(keyPointsSection);
+      console.log(`Successfully parsed ${result.keyPoints.length} key points`);
+    } else {
+      console.warn("Failed to extract PONTOS-CHAVE section using exact format");
+      // Try alternative format
+      const altKeyPointsSection = extractSection(analysisResult, 'PONTOS-CHAVE') || 
+                                  extractSection(analysisResult, 'PONTOS CHAVE');
+      
+      if (altKeyPointsSection) {
+        result.keyPoints = processKeyPoints(altKeyPointsSection);
+        console.log(`Parsed ${result.keyPoints.length} key points using alternative format`);
+      } else {
+        console.error("Could not extract key points with any pattern");
+      }
+    }
+    
+    // Process conclusion section - exact format from prompt
+    const conclusionSection = extractSection(analysisResult, '\\*\\*CONCLUS[ÃA]O\\/PARECER:\\*\\*');
+    
+    if (conclusionSection) {
+      result.conclusion = conclusionSection;
+      console.log("Conclusion extracted successfully in expected format");
+    } else {
+      console.warn("Failed to extract CONCLUSÃO/PARECER section using exact format");
+      // Try alternatives
+      const altConclusionSection = extractSection(analysisResult, 'CONCLUS[ÃA]O') || 
+                                  extractSection(analysisResult, 'PARECER');
+      
+      if (altConclusionSection) {
+        result.conclusion = altConclusionSection;
+        console.log("Conclusion extracted using alternative format");
+      } else {
+        console.error("Could not extract conclusion with any pattern");
+      }
+    }
+    
+    // If we're missing all sections, try a raw text extraction approach
+    if (!result.summary && !result.conclusion && result.keyPoints.length === 0) {
+      console.warn("Failed to extract any sections. Trying raw text extraction fallback...");
+      extractRawSections(analysisResult, result);
+    }
   } catch (error) {
-    handleParsingError(error, result);
+    console.error("Error during analysis result parsing:", error instanceof Error ? error.message : 'Unknown error');
   }
 
-  // Ensure all sections have at least default values
-  ensureCompleteness(result);
+  // Always ensure we have values in each section
+  ensureCompleteSections(result);
   
   return result;
 };
 
 /**
- * Extracts and processes the new format sections from the analysis text
+ * Ensures all sections have values, using defaults if needed
  */
-const extractAndProcessNewFormatSections = (analysisResult: string, result: AnalysisResult): void => {
-  // Process summary section - new format is "**RESUMO:**"
-  const summarySection = extractSection(analysisResult, '\\*\\*RESUMO:\\*\\*');
-  if (summarySection) {
-    result.summary = summarySection;
-    console.log("Summary extracted successfully from new format:", result.summary.substring(0, 100) + (result.summary.length > 100 ? '...' : ''));
-  } else {
-    console.log("Failed to extract summary section from new format");
-  }
-  
-  // Process key points section - new format is "**PONTOS-CHAVE:**"
-  const keyPointsSection = extractSection(analysisResult, '\\*\\*PONTOS-CHAVE:\\*\\*');
-  
-  if (keyPointsSection) {
-    console.log("Key points section found from new format:", keyPointsSection.substring(0, 100) + (keyPointsSection.length > 100 ? '...' : ''));
-    result.keyPoints = processKeyPoints(keyPointsSection);
-    console.log(`Successfully parsed ${result.keyPoints.length} key points from new format`);
-  } else {
-    console.log("Failed to extract key points section from new format");
-  }
-  
-  // Process conclusion section - new format is "**CONCLUSÃO/PARECER:**"
-  const conclusionSection = extractSection(analysisResult, '\\*\\*CONCLUS[ÃA]O\\/PARECER:\\*\\*');
-  if (conclusionSection) {
-    result.conclusion = conclusionSection;
-    console.log("Conclusion extracted successfully from new format:", result.conclusion.substring(0, 100) + (result.conclusion.length > 100 ? '...' : ''));
-  } else {
-    console.log("Failed to extract conclusion section from new format");
-  }
-};
-
-/**
- * Extracts and processes all main sections from the analysis text (original format as fallback)
- */
-const extractAndProcessSections = (analysisResult: string, result: AnalysisResult): void => {
-  // Process summary section
-  const summarySection = extractSection(analysisResult, 'RESUMO DO DOCUMENTO');
-  if (summarySection) {
-    result.summary = summarySection;
-    console.log("Summary extracted successfully:", result.summary.substring(0, 100) + (result.summary.length > 100 ? '...' : ''));
-  } else {
-    console.log("Failed to extract summary section");
-  }
-  
-  // Process key points section
-  const keyPointsSection = extractSection(analysisResult, 'PONTOS-CHAVE') || 
-                          extractSection(analysisResult, 'PONTOS CHAVE');
-  
-  if (keyPointsSection) {
-    console.log("Key points section found:", keyPointsSection.substring(0, 100) + (keyPointsSection.length > 100 ? '...' : ''));
-    result.keyPoints = processKeyPoints(keyPointsSection);
-    console.log(`Successfully parsed ${result.keyPoints.length} key points`);
-  } else {
-    console.log("Failed to extract key points section");
-  }
-  
-  // Process conclusion section
-  const conclusionSection = extractSection(analysisResult, 'CONCLUS[ÃA]O');
-  if (conclusionSection) {
-    result.conclusion = conclusionSection;
-    console.log("Conclusion extracted successfully:", result.conclusion.substring(0, 100) + (result.conclusion.length > 100 ? '...' : ''));
-  } else {
-    console.log("Failed to extract conclusion section");
-  }
-};
-
-/**
- * Checks if all sections are missing
- */
-const isMissingAllSections = (result: AnalysisResult): boolean => {
-  return !result.summary && !result.conclusion && result.keyPoints.length === 0;
-};
-
-/**
- * Handles parsing errors gracefully
- */
-const handleParsingError = (error: unknown, result: AnalysisResult): void => {
-  const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-  console.error("Error parsing analysis result:", errorMessage);
-  
-  // Set a default error message for summary
+function ensureCompleteSections(result: AnalysisResult): void {
   if (!result.summary) {
-    result.summary = "Falha ao analisar o documento. O formato da resposta é inesperado.";
-  }
-};
-
-/**
- * Ensures the result contains values for all required sections
- */
-const ensureCompleteness = (result: AnalysisResult): void => {
-  if (!result.summary) {
+    console.warn("Using default summary value");
     result.summary = DEFAULT_VALUES.summary;
   }
   
   if (result.keyPoints.length === 0) {
+    console.warn("Using default key points");
     result.keyPoints = [...DEFAULT_VALUES.keyPoints];
   }
   
   if (!result.conclusion) {
+    console.warn("Using default conclusion value");
     result.conclusion = DEFAULT_VALUES.conclusion;
   }
-};
+}
 
 /**
- * Fallback parser when structured sections can't be found
- * 
- * @param analysisResult The full text to parse
- * @param result The result object to populate
+ * Last-resort extraction method that tries to find sections by looking at text structure
  */
-const useFallbackParsing = (
-  analysisResult: string, 
-  result: AnalysisResult
-): void => {
-  // Try to extract sections based on content patterns
-  const lines = analysisResult.split('\n');
-  let currentSection = '';
+function extractRawSections(text: string, result: AnalysisResult): void {
+  // Split the text into paragraphs
+  const paragraphs = text.split(/\n\n+/).map(p => p.trim()).filter(p => p.length > 0);
   
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    
-    if (!line) continue;
-    
-    // Try to detect section headers - including the new format headers
-    if (line.toUpperCase().includes('RESUMO')) {
-      currentSection = 'summary';
-      continue;
-    } else if (line.toUpperCase().includes('PONTO')) {
-      currentSection = 'keyPoints';
-      continue;
-    } else if (line.toUpperCase().includes('CONCLUS') || 
-               line.toUpperCase().includes('PARECER')) {
-      currentSection = 'conclusion';
-      continue;
+  console.log(`Attempting raw extraction from ${paragraphs.length} paragraphs`);
+  
+  // If we have at least 3 paragraphs, we might have summary, keypoints, conclusion
+  if (paragraphs.length >= 3) {
+    // First paragraph might be summary
+    if (!result.summary) {
+      result.summary = paragraphs[0];
+      console.log("Extracted summary from first paragraph");
     }
     
-    // Add content to the appropriate section
-    addContentToSection(line, currentSection, result);
-  }
-  
-  console.log("After fallback parsing:", 
-             `Summary: ${result.summary.length} chars, `,
-             `Key points: ${result.keyPoints.length}, `,
-             `Conclusion: ${result.conclusion.length} chars`);
-};
-
-/**
- * Adds a line of content to the appropriate section during fallback parsing
- */
-const addContentToSection = (
-  line: string, 
-  currentSection: string, 
-  result: AnalysisResult
-): void => {
-  if (currentSection === 'summary') {
-    result.summary += (result.summary ? '\n' : '') + line;
-  } else if (currentSection === 'conclusion') {
-    result.conclusion += (result.conclusion ? '\n' : '') + line;
-  } else if (currentSection === 'keyPoints') {
-    // Check if line is a bullet point
-    const isBulletPoint = line.startsWith('-') || line.startsWith('•');
-    
-    // If it's a bullet point or just a substantive line
-    if (isBulletPoint || line.length > 10) {
-      // For bullet points, remove the prefix
-      const pointText = isBulletPoint ? line.substring(1).trim() : line;
+    // Middle paragraphs might contain key points
+    if (result.keyPoints.length === 0) {
+      // Find paragraphs with bullet points or numbered items
+      const potentialKeyPointsParagraph = paragraphs.find(p => 
+        p.includes('- ') || p.includes('• ') || /\d+\.\s/.test(p));
       
-      result.keyPoints.push({
-        title: pointText.split('.')[0].trim(),
-        description: pointText
-      });
+      if (potentialKeyPointsParagraph) {
+        result.keyPoints = processKeyPoints(potentialKeyPointsParagraph);
+        console.log(`Extracted ${result.keyPoints.length} key points from middle paragraphs`);
+      } else if (paragraphs.length > 2) {
+        // Just use the middle paragraphs
+        const middleParagraphs = paragraphs.slice(1, -1).join('\n\n');
+        result.keyPoints = processKeyPoints(middleParagraphs);
+        console.log(`Extracted ${result.keyPoints.length} key points from middle content`);
+      }
+    }
+    
+    // Last paragraph might be conclusion
+    if (!result.conclusion && paragraphs.length >= 3) {
+      result.conclusion = paragraphs[paragraphs.length - 1];
+      console.log("Extracted conclusion from last paragraph");
+    }
+  } else if (paragraphs.length > 0) {
+    // If we have just one or two paragraphs, just use them as summary
+    if (!result.summary) {
+      result.summary = paragraphs.join('\n\n');
+      console.log("Used all content as summary due to limited paragraphs");
     }
   }
-};
+}
