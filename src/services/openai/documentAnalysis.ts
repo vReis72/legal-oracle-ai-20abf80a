@@ -30,48 +30,28 @@ export const analyzeWithOpenAI = async (text: string, apiKey: string): Promise<s
         messages: [
           {
             role: 'system',
-            content: 'Você é um especialista em análise de documentos jurídicos brasileiros com anos de experiência. Seu trabalho é fornecer análises profundas, bem estruturadas e altamente relevantes, com enfoque nos aspectos mais importantes do documento.'
+            content: 'Você é um especialista em análise de documentos jurídicos brasileiros que deve sempre analisar diretamente o conteúdo fornecido, sem invenções ou suposições.'
           },
           {
             role: 'user',
-            content: `Analise o seguinte documento jurídico e forneça uma análise completa, detalhada e bem fundamentada com a seguinte estrutura:
+            content: `Analise o seguinte documento jurídico e forneça uma análise completa e estruturada com as seguintes seções:
 
 1. RESUMO DO DOCUMENTO:
-Forneça um resumo abrangente e detalhado do documento jurídico, que capture toda a essência do texto, destacando o contexto, as principais alegações, argumentos e fundamentações jurídicas. O resumo deve ser completo e ter pelo menos 3 parágrafos.
+Forneça um resumo claro e conciso que capture os principais aspectos do documento, incluindo seu contexto, propósito e conteúdo essencial.
 
-2. DESTAQUES:
-Identifique no mínimo 5 pontos cruciais do documento, organizados por ordem de importância (alta, média, baixa). Cada destaque deve incluir:
-- O texto exato ou paráfrase precisa do trecho importante
-- Explicação detalhada de por que este ponto é relevante
-- Implicações jurídicas deste destaque
-- Conexão com jurisprudência ou legislação relevante, quando aplicável
+2. PONTOS-CHAVE:
+Identifique pelo menos 5 pontos-chave do documento em formato de tópicos. Para cada ponto:
+- Título: Uma breve descrição
+- Descrição: Explicação detalhada sobre o ponto e sua relevância
 
-3. PONTOS-CHAVE:
-Apresente no mínimo 5 pontos-chave organizados por temas distintos do documento. Cada ponto deve ter:
-- Título claro e informativo
-- Descrição detalhada do ponto (mínimo de 3 linhas)
-- Fundamentação jurídica relacionada
-- Possíveis consequências ou desdobramentos deste ponto
-
-4. CONCLUSÃO:
-Forneça uma conclusão jurídica bem fundamentada sobre o documento, considerando:
-- Mérito jurídico dos argumentos apresentados
-- Prognóstico com base na jurisprudência atual
-- Pontos fortes e fracos da argumentação
-- Recomendações específicas baseadas no contexto do documento
-
-IMPORTANTE:
-- Mantenha uma análise objetiva, imparcial e tecnicamente precisa
-- Cite artigos, precedentes e princípios jurídicos relevantes
-- Evite generalizações e análises superficiais
-- Não omita informações importantes, mesmo que controversas
-- Este é um documento real que precisa de análise profissional criteriosa
+3. CONCLUSÃO:
+Apresente uma conclusão objetiva sobre o documento analisado.
 
 DOCUMENTO PARA ANÁLISE:
 ${text}`
           }
         ],
-        temperature: 0.1,
+        temperature: 0.3,
         max_tokens: 3000
       }),
     });
@@ -81,11 +61,8 @@ ${text}`
       await handleApiError(response);
     }
 
-    const data = await response.json().catch(() => {
-      throw new Error("Falha ao processar resposta da API. Formato inesperado.");
-    });
+    const data = await response.json();
     
-    // Validate response structure
     if (!data || !data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
       console.error("Estrutura de resposta inválida:", data);
       throw new Error("Resposta da API com estrutura inválida");
@@ -98,6 +75,8 @@ ${text}`
     }
     
     console.log("Resposta da API OpenAI recebida com sucesso");
+    console.log("Amostra do conteúdo recebido:", content.substring(0, 150) + "...");
+    
     return content;
   } catch (error) {
     console.error("Falha na chamada da API OpenAI:", error);

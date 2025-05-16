@@ -38,6 +38,7 @@ export const useDocumentAnalysis = (
 
     try {
       console.log(`Iniciando análise do documento (${document.content.length} caracteres)`);
+      console.log(`Amostra do conteúdo: "${document.content.substring(0, 150)}..."`);
       
       let analysisResult = "";
       
@@ -77,11 +78,14 @@ export const useDocumentAnalysis = (
         analysisResult = chunkResults.join("\n\n");
         
         // Final analysis of combined results if needed
-        if (analysisResult.length > 8000) {
+        if (chunkResults.length > 1) {
           try {
             console.log("Realizando análise final dos resultados combinados");
-            analysisResult = await analyzeWithOpenAI(analysisResult.substring(0, 8000) + 
-              "\n\n[Nota: Este é um resumo de múltiplas partes do documento. Forneça uma análise consolidada.]", apiKey);
+            analysisResult = await analyzeWithOpenAI(
+              "Este é um resumo de múltiplas partes de um documento. Por favor forneça uma análise consolidada:\n\n" +
+              analysisResult.substring(0, 7500), 
+              apiKey
+            );
           } catch (error) {
             console.error("Erro na análise final:", error);
             // Continue with the concatenated results if final analysis fails
@@ -107,6 +111,8 @@ export const useDocumentAnalysis = (
       }
       
       console.log("Processando resposta da análise...");
+      console.log("Amostra da resposta:", analysisResult.substring(0, 200));
+      
       const { summary, keyPoints, conclusion } = parseAnalysisResult(analysisResult);
       
       if (!summary) {
@@ -114,16 +120,12 @@ export const useDocumentAnalysis = (
         toast.warning("O resumo gerado pode não ser ideal. Verifique os resultados.");
       }
       
-      // Log the analysis results for debugging
-      console.log(`Análise processada: ${summary?.length} caracteres de resumo, ${keyPoints.length} pontos-chave, ${conclusion?.length} caracteres de conclusão`);
-      
       // Update document with analysis results
       const analyzedDocument: Document = {
         ...document,
         id: document.id || uuidv4(),
         processed: true,
         summary: summary || "Não foi possível gerar um resumo adequado para este documento.",
-        // Remove highlights from the document structure completely
         keyPoints: keyPoints.length > 0 ? keyPoints : [{
           title: "Análise Incompleta",
           description: "Não foi possível extrair pontos-chave deste documento."
