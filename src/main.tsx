@@ -17,7 +17,7 @@ preloadPdfWorker();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <ThemeProvider>
+    <ThemeProvider defaultTheme="light">
       <QueryClientProvider client={queryClient}>
         <RouterProvider router={router} />
         <Toaster richColors position="top-center" />
