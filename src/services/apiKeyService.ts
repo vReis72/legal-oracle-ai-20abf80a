@@ -4,6 +4,9 @@
 // Nome da chave no localStorage
 const API_KEY_NAME = 'openai_api_key';
 
+// Chave de placeholder para identificação
+const PLACEHOLDER_KEY = 'sk-adicione-uma-chave-valida-aqui';
+
 /**
  * Obtém a chave API armazenada
  * @returns A chave da API ou null se não estiver definida
@@ -48,6 +51,23 @@ export const hasApiKey = (): boolean => {
     return key !== null && key.trim() !== '';
   } catch (error) {
     console.error('Erro ao verificar API key:', error);
+    return false;
+  }
+};
+
+/**
+ * Verifica se a chave API é válida (não é placeholder)
+ * @returns true se a chave é válida, false caso contrário
+ */
+export const isValidKey = (): boolean => {
+  try {
+    const key = getApiKey();
+    if (!key) return false;
+    if (key === PLACEHOLDER_KEY) return false;
+    if (!key.startsWith('sk-')) return false;
+    return true;
+  } catch (error) {
+    console.error('Erro ao validar API key:', error);
     return false;
   }
 };

@@ -9,6 +9,7 @@ interface ApiKeyContextType {
   isKeyConfigured: boolean;
   checkApiKey: () => boolean;
   resetApiKey: () => void;
+  isPlaceholderKey: boolean; // Nova propriedade para indicar se é chave placeholder
 }
 
 const ApiKeyContext = createContext<ApiKeyContextType | undefined>(undefined);
@@ -19,11 +20,22 @@ interface ApiKeyProviderProps {
 
 // Obter chave da API do ambiente (configurado pelo Railway) ou usar a chave padrão
 const ENV_API_KEY = typeof window !== 'undefined' && window.env?.OPENAI_API_KEY;
-const DEFAULT_API_KEY = ENV_API_KEY || "sk-adicione-uma-chave-valida-aqui";
+const DEFAULT_API_KEY = ENV_API_KEY || "";
+const PLACEHOLDER_TEXT = "sk-adicione-uma-chave-valida-aqui";
+
+// Função para verificar se a chave é um placeholder ou está vazia
+const isValidApiKey = (key: string | null): boolean => {
+  if (!key) return false;
+  if (key === PLACEHOLDER_TEXT) return false;
+  if (!key.startsWith('sk-')) return false;
+  if (key.length < 20) return false; // Chaves reais OpenAI são longas
+  return true;
+};
 
 export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   const [apiKey, setApiKeyState] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPlaceholderKey, setIsPlaceholderKey] = useState(false);
   const { toast } = useToast();
 
   // Função para atualizar o estado da chave baseado no localStorage
@@ -32,19 +44,21 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
       const storedKey = getApiKey();
       if (storedKey) {
         setApiKeyState(storedKey);
+        setIsPlaceholderKey(storedKey === PLACEHOLDER_TEXT);
         console.log("API key carregada do localStorage");
       } else {
         console.log("Nenhuma API key encontrada no localStorage");
+        setIsPlaceholderKey(false);
       }
     } catch (error) {
       console.error("Erro ao carregar API key:", error);
+      setIsPlaceholderKey(false);
     }
   };
 
-  // Forçar a nova chave no inicialização (remover após testes)
+  // Verificar se há chave API no ambiente primeiro
   useEffect(() => {
-    // Verificar se temos uma chave no ambiente primeiro
-    if (ENV_API_KEY) {
+    if (ENV_API_KEY && isValidApiKey(ENV_API_KEY)) {
       console.log("Usando chave API do ambiente (Railway)");
       try {
         removeApiKey();
@@ -56,8 +70,8 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
         console.error("Erro ao definir chave do ambiente:", error);
       }
     } 
-    // Caso contrário, usar a chave padrão
-    else if (DEFAULT_API_KEY) {
+    // Caso contrário, usar a chave padrão (se fornecida)
+    else if (DEFAULT_API_KEY && DEFAULT_API_KEY !== PLACEHOLDER_TEXT) {
       try {
         console.log("Configurando chave padrão...");
         // Remover chave antiga para garantir que a nova será usada
@@ -70,6 +84,9 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
       } catch (error) {
         console.error("Erro ao definir chave padrão:", error);
       }
+    } else {
+      // Se não tivermos nenhuma chave válida, configuramos o estado para refletir isso
+      setIsPlaceholderKey(true);
     }
   }, []);
 
@@ -79,12 +96,9 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
       // Tentar carregar a chave existente
       updateApiKeyFromStorage();
       
-      // Se não houver chave, definir a padrão
-      if (!hasApiKey() && DEFAULT_API_KEY) {
-        if (setDefaultApiKey(DEFAULT_API_KEY)) {
-          console.log("Nova API key padrão configurada automaticamente");
-          updateApiKeyFromStorage();
-        }
+      // Se não houver chave e o usuário ainda não viu a mensagem de placeholder
+      if (!hasApiKey() && !isPlaceholderKey) {
+        setIsPlaceholderKey(true);
       }
     } catch (error) {
       console.error("Erro ao inicializar API key:", error);
@@ -109,8 +123,20 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   const setApiKey = (key: string) => {
     if (key && key.trim()) {
       try {
+        // Validação adicional
+        if (!key.startsWith('sk-')) {
+          toast({
+            variant: "destructive",
+            title: "Formato inválido",
+            description: "A chave API da OpenAI deve começar com 'sk-'.",
+          });
+          return;
+        }
+        
         saveApiKey(key);
         setApiKeyState(key);
+        setIsPlaceholderKey(key === PLACEHOLDER_TEXT);
+        
         toast({
           title: "API Key Configurada",
           description: "Sua chave da API OpenAI foi salva e configurada com sucesso.",
@@ -131,23 +157,24 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     try {
       // Remover chave atual
       removeApiKey();
-      // Definir a chave padrão novamente
-      if (DEFAULT_API_KEY && setDefaultApiKey(DEFAULT_API_KEY)) {
-        toast({
-          title: "Chave Padrão Restaurada",
-          description: "A chave API padrão foi restaurada com sucesso.",
-        });
-        updateApiKeyFromStorage();
-      }
+      // Limpar estados
+      setApiKeyState(null);
+      setIsPlaceholderKey(true);
+      
+      toast({
+        title: "Chave API Removida",
+        description: "A chave API foi removida com sucesso.",
+      });
     } catch (error) {
       console.error("Erro ao resetar API key:", error);
     }
   };
 
   const checkApiKey = (): boolean => {
-    const hasKey = hasApiKey();
-    console.log("Verificação de API key:", hasKey ? "Configurada" : "Não configurada");
-    return hasKey;
+    const storedKey = getApiKey();
+    const hasValidKey = hasApiKey() && storedKey !== PLACEHOLDER_TEXT && isValidApiKey(storedKey);
+    console.log("Verificação de API key:", hasValidKey ? "Configurada" : "Não configurada");
+    return hasValidKey;
   };
 
   // Se ainda estamos carregando, não renderiza nada
@@ -155,16 +182,17 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     return null;
   }
 
-  const isKeyConfigured = !!apiKey || hasApiKey();
+  const isKeyConfigured = apiKey !== null && apiKey !== PLACEHOLDER_TEXT && isValidApiKey(apiKey);
   console.log("Estado atual da API key:", isKeyConfigured ? "Configurada" : "Não configurada");
 
   return (
     <ApiKeyContext.Provider value={{ 
       apiKey, 
       setApiKey, 
-      isKeyConfigured: isKeyConfigured,
+      isKeyConfigured,
       checkApiKey,
-      resetApiKey
+      resetApiKey,
+      isPlaceholderKey
     }}>
       {children}
     </ApiKeyContext.Provider>

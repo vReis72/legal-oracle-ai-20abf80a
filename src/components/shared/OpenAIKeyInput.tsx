@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Key, Check, RefreshCcw } from 'lucide-react';
+import { Key, Check, RefreshCcw, AlertTriangle } from 'lucide-react';
 import { useApiKey } from '@/context/ApiKeyContext';
 import { hasApiKey } from '@/services/apiKeyService';
 
@@ -24,20 +24,20 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [isValidating, setIsValidating] = useState(false);
-  const { apiKey, setApiKey, isKeyConfigured, resetApiKey } = useApiKey();
+  const { apiKey, setApiKey, isKeyConfigured, resetApiKey, isPlaceholderKey } = useApiKey();
   const { toast } = useToast();
 
-  // Verificar se já existe uma chave armazenada
-  const keyConfigured = hasApiKey() || isKeyConfigured;
+  // Verificar se já existe uma chave armazenada que NÃO é placeholder
+  const keyConfigured = hasApiKey() && isKeyConfigured && !isPlaceholderKey;
 
   useEffect(() => {
     // Só abrir o diálogo se forceOpen for true E não houver chave configurada
-    if (forceOpen && !keyConfigured) {
+    if (forceOpen && (!keyConfigured || isPlaceholderKey)) {
       setIsOpen(true);
     } else {
       setIsOpen(false);
     }
-  }, [forceOpen, keyConfigured]);
+  }, [forceOpen, keyConfigured, isPlaceholderKey]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,6 +85,11 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
   const handleResetToDefault = () => {
     resetApiKey();
     setIsOpen(false);
+    toast({
+      variant: "destructive",
+      title: "Chave API removida",
+      description: "É necessário configurar uma chave API válida para utilizar o sistema.",
+    });
   };
 
   // Se forceOpen for true mas a chave já estiver configurada, não mostramos nada
@@ -116,17 +121,7 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
               className="w-full"
               disabled={isValidating}
             />
-            <div className="flex justify-between">
-              <Button 
-                type="button"
-                variant="outline"
-                onClick={handleResetToDefault}
-                className="flex items-center gap-1"
-                disabled={isValidating}
-              >
-                <RefreshCcw className="h-4 w-4" />
-                Restaurar Padrão
-              </Button>
+            <div className="flex justify-end">
               <Button 
                 type="submit" 
                 className="bg-eco-primary hover:bg-eco-dark"
@@ -142,13 +137,16 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
       {!forceOpen && (
         <div className="flex justify-end mb-4">
           <Button 
-            variant={buttonVariant} 
+            variant={isPlaceholderKey ? "destructive" : (keyConfigured ? "outline" : "default")} 
             size={buttonSize} 
             onClick={handleUpdateKey}
             className="flex items-center gap-1 text-xs"
           >
-            {keyConfigured ? <Check className="h-3 w-3" /> : <Key className="h-3 w-3" />}
-            {keyConfigured ? "API Configurada" : "Configurar API"}
+            {isPlaceholderKey ? 
+              <AlertTriangle className="h-3 w-3" /> : 
+              (keyConfigured ? <Check className="h-3 w-3" /> : <Key className="h-3 w-3" />)
+            }
+            {isPlaceholderKey ? "API Inválida!" : (keyConfigured ? "API Configurada" : "Configurar API")}
           </Button>
         </div>
       )}
