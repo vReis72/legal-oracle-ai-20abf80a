@@ -33,6 +33,7 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onDocumentProcessed
       }
     } else {
       console.error("Falha ao configurar worker do PDF.js:", workerResult.error);
+      toast.error("Falha ao configurar o processador de PDF. A visualização pode estar comprometida.");
     }
   }, []);
 

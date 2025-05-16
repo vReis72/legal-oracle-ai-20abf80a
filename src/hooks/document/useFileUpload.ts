@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { toast } from "sonner";
 import { Document } from '@/types/document';
 import { extractTextFromFile } from '@/utils/document/textExtractor';
+import { validateExtractedContent } from '@/utils/document/validation';
 
 interface UseFileUploadProps {
   onDocumentProcessed: (document: Document) => void;
@@ -41,27 +42,21 @@ export const useFileUpload = ({ onDocumentProcessed }: UseFileUploadProps) => {
       toast.info("Processando documento...");
       
       // Extract text from the document using the refactored utility
-      // with options for verbose logging and toast notifications
       const extractedText = await extractTextFromFile(selectedFile, {
         verbose: true,
-        showToasts: true
+        showToasts: true,
+        timeout: 60000 // Increased timeout for large documents
       });
       
-      // Verify we have actual content
-      if (!extractedText) {
-        throw new Error("Nenhum texto foi extraído do documento. Verifique se o arquivo não está corrompido.");
+      // Validate extracted content
+      const validation = validateExtractedContent(extractedText, selectedFile.type);
+      if (!validation.valid) {
+        throw new Error(validation.errorMessage);
       }
       
       const trimmedText = extractedText.trim();
       console.log("Texto extraído e limpo, tamanho:", trimmedText.length, "caracteres");
-      
-      // Ser mais flexível com o limite mínimo de caracteres para PDFs que podem ser digitalizações
-      if (trimmedText.length < 10) { // Reduzido de 50 para 10
-        throw new Error("O texto extraído é muito curto. O documento pode ser uma digitalização ou imagem.");
-      }
-      
       console.log("Texto extraído do documento:", trimmedText.substring(0, 300) + "...");
-      console.log("Tamanho total do texto extraído:", trimmedText.length, "caracteres");
       
       // Create document object
       const document: Document = {
