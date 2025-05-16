@@ -1,4 +1,3 @@
-
 import { Document } from '@/types/document';
 import { toast } from "sonner";
 import { v4 as uuidv4 } from 'uuid';
@@ -10,7 +9,7 @@ type ProcessorState = {
   setProgress: (value: number) => void;
   setAnalysisError: (value: string | null) => void;
   retryAttempts: number;
-  setRetryAttempts: (value: number) => void;
+  setRetryAttempts: (value: number) => void;  // This needs to accept a function
   MAX_RETRIES: number;
 };
 
@@ -152,8 +151,8 @@ export const handleProcessingError = (
             (errorMessage.includes("conexão") || 
               errorMessage.includes("Network") || 
               errorMessage.includes("500"))) {
-    // Auto-retry for connection issues
-    state.setRetryAttempts(prev => prev + 1);
+    // Auto-retry for connection issues - FIX for type error: use a numeric value instead of a function
+    state.setRetryAttempts(state.retryAttempts + 1);
     toast.warning(`Erro de conexão. Tentando novamente (${state.retryAttempts + 1}/${state.MAX_RETRIES})...`);
     
     // Wait a moment before retrying
