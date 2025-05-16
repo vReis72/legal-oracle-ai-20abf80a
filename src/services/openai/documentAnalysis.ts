@@ -30,28 +30,37 @@ export const analyzeWithOpenAI = async (text: string, apiKey: string): Promise<s
         messages: [
           {
             role: 'system',
-            content: 'Você é um especialista em análise de documentos jurídicos brasileiros que deve sempre analisar diretamente o conteúdo fornecido, sem invenções ou suposições.'
+            content: `Você é um especialista em análise de documentos jurídicos brasileiros.
+            
+Sua tarefa é analisar APENAS o conteúdo do documento fornecido, sem adicionar informações externas, sem fazer suposições e sem inventar ou inferir conteúdos que não estejam explicitamente presentes no documento. 
+
+IMPORTANTE:
+- Baseie-se EXCLUSIVAMENTE no texto fornecido.
+- NÃO utilize conhecimentos externos que não estejam presentes no documento.
+- Se o documento não fornecer informação suficiente para uma análise completa, indique isso claramente em vez de criar conteúdo fictício.
+- Seja conciso e objetivo, focando nos fatos presentes no documento.
+- Se o documento não for um documento jurídico ou não tiver conteúdo analisável, indique isso claramente.`
           },
           {
             role: 'user',
-            content: `Analise o seguinte documento jurídico e forneça uma análise completa e estruturada com as seguintes seções:
+            content: `Analise o seguinte documento e forneça uma análise estruturada com as seguintes seções:
 
 1. RESUMO DO DOCUMENTO:
-Forneça um resumo claro e conciso que capture os principais aspectos do documento, incluindo seu contexto, propósito e conteúdo essencial.
+Forneça um resumo factual e conciso que capture APENAS os principais aspectos presentes no documento, sem adicionar interpretações ou conteúdos externos.
 
 2. PONTOS-CHAVE:
-Identifique pelo menos 5 pontos-chave do documento em formato de tópicos. Para cada ponto:
-- Título: Uma breve descrição
-- Descrição: Explicação detalhada sobre o ponto e sua relevância
+Liste de 3 a 5 pontos-chave que estejam EXPLICITAMENTE presentes no documento em formato de tópicos. Se não houver pontos claros suficientes, indique apenas os que existirem. Para cada ponto:
+- Título: Uma breve descrição literal do ponto
+- Descrição: Explicação baseada EXCLUSIVAMENTE no texto, com referências diretas ao conteúdo
 
 3. CONCLUSÃO:
-Apresente uma conclusão objetiva sobre o documento analisado.
+Apresente uma conclusão objetiva sobre o documento analisado, baseada APENAS no seu conteúdo explícito. Se o documento não permitir uma conclusão clara, indique: "Não é possível extrair uma conclusão definitiva do documento fornecido".
 
 DOCUMENTO PARA ANÁLISE:
 ${text}`
           }
         ],
-        temperature: 0.3,
+        temperature: 0.1, // Reduzindo para obter respostas mais determinísticas
         max_tokens: 3000
       }),
     });

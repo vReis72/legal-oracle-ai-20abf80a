@@ -57,160 +57,177 @@ export const parseAnalysisResult = (analysisResult: string) => {
   };
 
   // Log the raw response for debugging
-  console.log("Raw analysis result to parse:", analysisResult.substring(0, 200) + "...");
+  console.log("Raw analysis result to parse:", analysisResult);
 
   try {
-    // First check if there are numbered sections
-    if (analysisResult.match(/\d+\.\s+[A-Z]/)) {
-      // Assuming the analysis result follows the expected structure (sections with headers)
-      const sections = analysisResult.split(/\d+\.\s+/);
-      
-      // Process each section
-      sections.forEach(section => {
-        // Summary (look for "RESUMO" section)
-        if (section.toUpperCase().startsWith('RESUMO DO DOCUMENTO') || 
-            section.toUpperCase().includes('RESUMO:') || 
-            section.toUpperCase().includes('RESUMO DO DOCUMENTO:')) {
-          // Extract everything after the header
-          const content = section
-            .replace(/^.*?RESUMO.*?:?\s*/i, '')
-            .trim()
-            .split(/\n\n\d+\./)[0] // Stop at the next numbered section if present
-            .trim();
-          
-          if (content) result.summary = content;
-        }
-        
-        // Skip the highlights section as we removed this functionality
-        
-        // Key Points
-        else if (section.toUpperCase().startsWith('PONTOS-CHAVE') || 
-                section.toUpperCase().includes('PONTOS-CHAVE:') ||
-                section.toUpperCase().includes('PONTOS CHAVE:')) {
-          const content = section
-            .replace(/^.*?PONTOS[-\s]CHAVE.*?:?\s*/i, '') // Replace header
-            .trim();
-          
-          console.log("Found pontos-chave section:", content.substring(0, 150) + "...");
-          
-          // Try to extract key points
-          // First try: Split by bullet points or dashes
-          let keyPointItems = content.split(/(?:\n|^)[-•*]\s+/).filter(item => item.trim().length > 0);
-          
-          // If that didn't work, try splitting by lines that start with uppercase letters
-          if (keyPointItems.length <= 1) {
-            keyPointItems = content.split(/\n(?=[A-Z])/).filter(item => item.trim().length > 0);
-          }
-          
-          // Process each key point
-          keyPointItems.forEach(item => {
-            const lines = item.split('\n');
-            const title = lines[0].trim();
-            const description = lines.slice(1).join('\n').trim();
-            
-            if (title) {
-              result.keyPoints.push({
-                title: title,
-                description: description || title // Use title as description if none provided
-              });
-            }
-          });
-          
-          // If we still don't have key points, use a simpler approach
-          if (result.keyPoints.length === 0) {
-            const paragraphs = content.split(/\n\n+/);
-            paragraphs.forEach(paragraph => {
-              if (paragraph.trim()) {
-                const title = paragraph.split('.')[0].trim();
-                result.keyPoints.push({
-                  title: title.length > 50 ? title.substring(0, 50) + '...' : title,
-                  description: paragraph.trim()
-                });
-              }
-            });
-          }
-        }
-        
-        // Conclusion
-        else if (section.toUpperCase().startsWith('CONCLUSÃO') || 
-                section.toUpperCase().includes('CONCLUSÃO:') ||
-                section.toUpperCase().includes('CONCLUSAO:')) {
-          const content = section
-            .replace(/^.*?CONCLUS[ÃA]O.*?:?\s*/i, '')
-            .trim();
-          
-          if (content) result.conclusion = content;
-        }
-      });
+    // Extract each section using regex patterns
+    const extractSection = (text: string, sectionName: string) => {
+      const pattern = new RegExp(`(?:^|\\n)\\s*(?:\\d+\\.)?\\s*${sectionName}[^\\n]*\\n+([\\s\\S]*?)(?=\\n+\\s*(?:\\d+\\.)?\\s*[A-ZÀ-Ú][^\\n]*:|$)`, 'i');
+      const match = text.match(pattern);
+      return match ? match[1].trim() : '';
+    };
+    
+    // Extract summary section
+    const summarySection = extractSection(analysisResult, 'RESUMO DO DOCUMENTO');
+    if (summarySection) {
+      result.summary = summarySection;
+      console.log("Summary extracted successfully:", result.summary.substring(0, 100) + '...');
     } else {
-      // Alternative parsing if the response doesn't have numbered sections
-      // Try to find sections by their headings
-      
-      const findSection = (text: string, sectionName: string) => {
-        const pattern = new RegExp(`${sectionName}[^\\n]*\\n+([\\s\\S]*?)(?=\\n+[A-Z][^\\n]*:|$)`, 'i');
-        const match = text.match(pattern);
-        return match ? match[1].trim() : '';
-      };
-      
-      // Extract summary
-      result.summary = findSection(analysisResult, 'RESUMO');
-      
-      // Extract key points
-      const keyPointsSection = findSection(analysisResult, 'PONTOS-CHAVE') || 
-                              findSection(analysisResult, 'PONTOS CHAVE');
-      
-      if (keyPointsSection) {
-        // Try to extract points by bullet points or dashes
-        const points = keyPointsSection.split(/(?:\n|^)[-•*]\s+/).filter(item => item.trim().length > 0);
-        
-        points.forEach(point => {
-          const lines = point.split('\n');
-          const title = lines[0].trim();
-          const description = lines.slice(1).join('\n').trim();
-          
-          if (title) {
-            result.keyPoints.push({
-              title: title,
-              description: description || title
-            });
-          }
-        });
-      }
-      
-      // Extract conclusion
-      result.conclusion = findSection(analysisResult, 'CONCLUS[ÃA]O');
+      console.log("Failed to extract summary section");
     }
     
-    console.log(`Parsing results: Found summary (${result.summary.length} chars), ${result.keyPoints.length} key points, conclusion (${result.conclusion.length} chars)`);
+    // Extract key points section
+    const keyPointsSection = extractSection(analysisResult, 'PONTOS-CHAVE') || 
+                             extractSection(analysisResult, 'PONTOS CHAVE');
     
-    // If we didn't extract any content successfully, provide a simple fallback
-    if (!result.summary && !result.conclusion && result.keyPoints.length === 0) {
-      // Just use the first and last paragraphs as summary and conclusion
-      const paragraphs = analysisResult.split(/\n\n+/).filter(p => p.trim().length > 0);
+    if (keyPointsSection) {
+      console.log("Key points section found:", keyPointsSection.substring(0, 100) + '...');
       
-      if (paragraphs.length > 0) {
-        result.summary = paragraphs[0];
-        
-        if (paragraphs.length > 2) {
-          result.conclusion = paragraphs[paragraphs.length - 1];
+      // Try to parse key points in different formats
+      let keyPointItems: string[] = [];
+      
+      // Try format with bullet points or dashes
+      if (keyPointsSection.includes('- ') || keyPointsSection.includes('• ')) {
+        keyPointItems = keyPointsSection
+          .split(/\n\s*[-•*]\s+/)
+          .filter(item => item.trim().length > 0);
+        console.log(`Extracted ${keyPointItems.length} key points using bullet format`);
+      }
+      
+      // If that didn't work, try numbered items
+      if (keyPointItems.length <= 1 && /\d+\.\s/.test(keyPointsSection)) {
+        keyPointItems = keyPointsSection
+          .split(/\n\s*\d+\.\s+/)
+          .filter(item => item.trim().length > 0);
+        console.log(`Extracted ${keyPointItems.length} key points using numbered format`);
+      }
+      
+      // If still doesn't work, try paragraphs
+      if (keyPointItems.length <= 1) {
+        keyPointItems = keyPointsSection
+          .split(/\n\n+/)
+          .filter(item => item.trim().length > 0);
+        console.log(`Extracted ${keyPointItems.length} key points using paragraph format`);
+      }
+      
+      // Process each key point
+      keyPointItems.forEach(item => {
+        // Check if the item has a title:description format
+        if (item.includes(':')) {
+          const [title, ...descParts] = item.split(':');
+          const description = descParts.join(':').trim();
           
-          // Use middle paragraphs as key points
-          for (let i = 1; i < paragraphs.length - 1; i++) {
-            const para = paragraphs[i].trim();
-            if (para) {
-              result.keyPoints.push({
-                title: para.split('.')[0].trim(),
-                description: para
-              });
-            }
+          if (title && title.trim()) {
+            result.keyPoints.push({
+              title: title.trim(),
+              description: description || "Sem descrição adicional"
+            });
+          }
+        } else {
+          // Try to extract first sentence as title
+          const sentences = item.split(/[.!?]\s+/);
+          if (sentences.length > 1) {
+            const title = sentences[0].trim();
+            const description = item.substring(title.length).trim().replace(/^[.!?]\s*/, '');
+            
+            result.keyPoints.push({
+              title: title,
+              description: description
+            });
+          } else {
+            // Just use the whole thing as title if it's a single sentence
+            result.keyPoints.push({
+              title: item.trim(),
+              description: "Sem descrição adicional"
+            });
           }
         }
+      });
+      
+      // Ensure titles are not too long
+      result.keyPoints = result.keyPoints.map(point => ({
+        title: point.title.length > 100 ? point.title.substring(0, 100) + '...' : point.title,
+        description: point.description
+      }));
+      
+      console.log(`Successfully parsed ${result.keyPoints.length} key points`);
+    } else {
+      console.log("Failed to extract key points section");
+    }
+    
+    // Extract conclusion
+    const conclusionSection = extractSection(analysisResult, 'CONCLUS[ÃA]O');
+    if (conclusionSection) {
+      result.conclusion = conclusionSection;
+      console.log("Conclusion extracted successfully:", result.conclusion.substring(0, 100) + '...');
+    } else {
+      console.log("Failed to extract conclusion section");
+    }
+    
+    // Fallback if sections aren't properly identified
+    if (!result.summary && !result.conclusion && result.keyPoints.length === 0) {
+      console.warn("Failed to parse any sections using section headers, trying alternative approach...");
+      
+      // Try to extract sections based on content patterns
+      const lines = analysisResult.split('\n');
+      let currentSection = '';
+      
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        
+        if (!line) continue;
+        
+        // Try to detect section headers
+        if (line.toUpperCase().includes('RESUMO')) {
+          currentSection = 'summary';
+          continue;
+        } else if (line.toUpperCase().includes('PONTO')) {
+          currentSection = 'keyPoints';
+          continue;
+        } else if (line.toUpperCase().includes('CONCLUS')) {
+          currentSection = 'conclusion';
+          continue;
+        }
+        
+        // Add content to the appropriate section
+        if (currentSection === 'summary') {
+          result.summary += (result.summary ? '\n' : '') + line;
+        } else if (currentSection === 'conclusion') {
+          result.conclusion += (result.conclusion ? '\n' : '') + line;
+        } else if (currentSection === 'keyPoints' && line.length > 10) {
+          // Only add substantive lines as key points
+          result.keyPoints.push({
+            title: line.split('.')[0].trim(),
+            description: line
+          });
+        }
       }
+      
+      console.log("After fallback parsing:", 
+                 `Summary: ${result.summary.length} chars, `,
+                 `Key points: ${result.keyPoints.length}, `,
+                 `Conclusion: ${result.conclusion.length} chars`);
     }
   } catch (error) {
     console.error("Error parsing analysis result:", error);
     // Provide minimal results even if parsing fails
     if (!result.summary) result.summary = "Falha ao analisar o documento. O formato da resposta é inesperado.";
+  }
+
+  // Final check for missing sections
+  if (!result.summary) {
+    result.summary = "Não foi possível extrair um resumo do documento.";
+  }
+  
+  if (result.keyPoints.length === 0) {
+    result.keyPoints.push({
+      title: "Análise Insuficiente",
+      description: "Não foi possível identificar pontos-chave específicos neste documento."
+    });
+  }
+  
+  if (!result.conclusion) {
+    result.conclusion = "Não é possível extrair uma conclusão definitiva do documento fornecido.";
   }
 
   return result;

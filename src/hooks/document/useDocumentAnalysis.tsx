@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Document } from '@/types/document';
 import { toast } from "sonner";
 import { v4 as uuidv4 } from 'uuid';
-import { analyzeWithOpenAI } from '@/services/openaiService';
+import { analyzeWithOpenAI } from '@/services/openai/documentAnalysis';
 import { splitTextIntoChunks, parseAnalysisResult } from '@/utils/textProcessing';
 
 export const useDocumentAnalysis = (
@@ -32,6 +32,7 @@ export const useDocumentAnalysis = (
       return;
     }
 
+    // Reset states
     setIsAnalyzing(true);
     setProgress(10);
     setAnalysisError(null);
@@ -46,7 +47,8 @@ export const useDocumentAnalysis = (
       if (document.content.length > 8000) {
         // Split text into manageable chunks
         const chunks = splitTextIntoChunks(document.content);
-        setProgress(30);
+        console.log(`Documento dividido em ${chunks.length} partes para processamento`);
+        setProgress(20);
         
         if (chunks.length === 0) {
           throw new Error("Erro ao dividir o documento em partes menores");
@@ -56,12 +58,12 @@ export const useDocumentAnalysis = (
         const chunkResults: string[] = [];
         for (let i = 0; i < chunks.length; i++) {
           try {
-            console.log(`Processando chunk ${i+1} de ${chunks.length} (${chunks[i].length} caracteres)`);
+            console.log(`Processando parte ${i+1} de ${chunks.length} (${chunks[i].length} caracteres)`);
             const chunkResult = await analyzeWithOpenAI(chunks[i], apiKey);
             chunkResults.push(chunkResult);
             setProgress(30 + ((i + 1) / chunks.length * 40));
           } catch (error) {
-            console.error(`Erro ao processar chunk ${i+1}:`, error);
+            console.error(`Erro ao processar parte ${i+1}:`, error);
             
             // If we've already got some results, continue with what we have
             if (chunkResults.length > 0) {
@@ -76,11 +78,13 @@ export const useDocumentAnalysis = (
         
         // Combine results
         analysisResult = chunkResults.join("\n\n");
+        console.log("Análises de partes combinadas com sucesso");
         
         // Final analysis of combined results if needed
         if (chunkResults.length > 1) {
           try {
             console.log("Realizando análise final dos resultados combinados");
+            setProgress(75);
             analysisResult = await analyzeWithOpenAI(
               "Este é um resumo de múltiplas partes de um documento. Por favor forneça uma análise consolidada:\n\n" +
               analysisResult.substring(0, 7500), 
@@ -95,12 +99,14 @@ export const useDocumentAnalysis = (
       } else {
         // Process the entire document at once
         try {
+          console.log("Enviando documento completo para análise");
+          setProgress(40);
           analysisResult = await analyzeWithOpenAI(document.content, apiKey);
+          setProgress(75);
         } catch (error) {
           console.error("Erro ao analisar documento:", error);
           throw error;
         }
-        setProgress(70);
       }
 
       // Parse the OpenAI response
@@ -111,9 +117,14 @@ export const useDocumentAnalysis = (
       }
       
       console.log("Processando resposta da análise...");
-      console.log("Amostra da resposta:", analysisResult.substring(0, 200));
+      console.log("Resposta completa recebida:", analysisResult);
       
       const { summary, keyPoints, conclusion } = parseAnalysisResult(analysisResult);
+      
+      // Log the parsed results for debugging
+      console.log("Resumo extraído:", summary);
+      console.log("Pontos-chave extraídos:", JSON.stringify(keyPoints, null, 2));
+      console.log("Conclusão extraída:", conclusion);
       
       if (!summary) {
         console.warn("Processamento não gerou resumo adequado");
@@ -125,12 +136,12 @@ export const useDocumentAnalysis = (
         ...document,
         id: document.id || uuidv4(),
         processed: true,
-        summary: summary || "Não foi possível gerar um resumo adequado para este documento.",
+        summary: summary || "Não foi possível gerar um resumo para este documento. O conteúdo pode não ser adequado para análise.",
         keyPoints: keyPoints.length > 0 ? keyPoints : [{
-          title: "Análise Incompleta",
-          description: "Não foi possível extrair pontos-chave deste documento."
+          title: "Análise Insuficiente",
+          description: "Não foi possível extrair pontos-chave deste documento. O conteúdo pode não conter pontos definidos ou pode ser inadequado para análise."
         }],
-        conclusion: conclusion || "Não foi possível gerar uma conclusão para este documento."
+        conclusion: conclusion || "Não é possível extrair uma conclusão definitiva do documento fornecido."
       };
       
       // Complete
@@ -162,7 +173,7 @@ export const useDocumentAnalysis = (
           return; // Exit early since we're retrying
         }, 3000);
       } else {
-        toast.error("Erro ao analisar o documento. Por favor, tente novamente.");
+        toast.error(`Erro ao analisar o documento: ${errorMessage}. Por favor, tente novamente.`);
       }
     } finally {
       if (retryAttempts >= MAX_RETRIES) {
