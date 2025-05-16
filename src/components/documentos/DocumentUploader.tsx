@@ -1,21 +1,31 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Upload } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from "sonner";
-import { Document } from "@/types/document";
 import * as pdfjsLib from 'pdfjs-dist';
-import 'pdfjs-dist/build/pdf.worker.entry';
+import { Document } from "@/types/document";
 
 interface DocumentUploaderProps {
   onDocumentProcessed: (document: Document) => void;
 }
 
+// Configuração global do worker do PDF.js
+const configurePdfWorker = () => {
+  const pdfWorkerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerSrc;
+  console.log(`PDF.js Worker configurado: versão ${pdfjsLib.version}`);
+};
+
 const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onDocumentProcessed }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  // Configurar o worker do PDF.js quando o componente é montado
+  useEffect(() => {
+    configurePdfWorker();
+  }, []);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
