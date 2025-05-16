@@ -8,7 +8,7 @@ import { extractKeyPointItems } from './sectionExtractor';
 /**
  * Interface for a parsed key point
  */
-interface KeyPoint {
+export interface KeyPoint {
   title: string;
   description: string;
 }
