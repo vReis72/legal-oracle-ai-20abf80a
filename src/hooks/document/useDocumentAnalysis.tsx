@@ -106,12 +106,16 @@ export const useDocumentAnalysis = (
         throw new Error("Análise gerou resultado vazio");
       }
       
-      const { summary, highlights, keyPoints, conclusion } = parseAnalysisResult(analysisResult);
+      console.log("Processando resposta da análise...");
+      const { summary, keyPoints, conclusion } = parseAnalysisResult(analysisResult);
       
       if (!summary) {
         console.warn("Processamento não gerou resumo adequado");
         toast.warning("O resumo gerado pode não ser ideal. Verifique os resultados.");
       }
+      
+      // Log the analysis results for debugging
+      console.log(`Análise processada: ${summary?.length} caracteres de resumo, ${keyPoints.length} pontos-chave, ${conclusion?.length} caracteres de conclusão`);
       
       // Update document with analysis results
       const analyzedDocument: Document = {
@@ -119,11 +123,7 @@ export const useDocumentAnalysis = (
         id: document.id || uuidv4(),
         processed: true,
         summary: summary || "Não foi possível gerar um resumo adequado para este documento.",
-        highlights: highlights.length > 0 ? highlights : [{
-          text: "Não foi possível extrair destaques relevantes.",
-          page: 1,
-          importance: "média"
-        }],
+        // Remove highlights from the document structure completely
         keyPoints: keyPoints.length > 0 ? keyPoints : [{
           title: "Análise Incompleta",
           description: "Não foi possível extrair pontos-chave deste documento."

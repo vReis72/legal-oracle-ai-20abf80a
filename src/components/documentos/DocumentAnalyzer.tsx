@@ -42,7 +42,7 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
           analysisError={null}
         />
         <DocumentSummary summary={document.summary} />
-        {/* DocumentHighlights component removed from here */}
+        {/* Highlights component completely removed */}
         <DocumentKeyPoints keyPoints={document.keyPoints} />
         <DocumentConclusion conclusion={document.conclusion} />
       </div>
