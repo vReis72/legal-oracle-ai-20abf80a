@@ -6,17 +6,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Outlet } from "react-router-dom";
 import Layout from "./components/layout/Layout";
 import { ApiKeyProvider } from "./context/ApiKeyContext";
-import ApiKeyCheck from "./components/shared/ApiKeyCheck";
 
 const App = () => {
   return (
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
       <ApiKeyProvider>
-        <ApiKeyCheck>
-          <Layout />
-        </ApiKeyCheck>
+        <Toaster />
+        <Sonner />
+        <Layout />
       </ApiKeyProvider>
     </TooltipProvider>
   );

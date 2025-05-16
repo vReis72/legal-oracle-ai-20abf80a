@@ -36,9 +36,5 @@ export const router = createBrowserRouter([
         element: <PecasJuridicas />
       }
     ]
-  },
-  {
-    path: '*',
-    element: <NotFound />
   }
 ]);
