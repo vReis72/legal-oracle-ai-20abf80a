@@ -2,16 +2,8 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { getApiKey, saveApiKey, hasApiKey, setDefaultApiKey, removeApiKey } from '@/services/apiKeyService';
 import { useToast } from '@/hooks/use-toast';
-
-interface ApiKeyContextType {
-  apiKey: string | null;
-  setApiKey: (key: string) => void;
-  isKeyConfigured: boolean;
-  checkApiKey: () => boolean;
-  resetApiKey: () => void;
-  isPlaceholderKey: boolean;
-  isEnvironmentKey: boolean;
-}
+import { ApiKeyContextType } from './types/apiKeyTypes';
+import { isValidApiKey, getEnvironmentApiKey, PLACEHOLDER_TEXT } from './utils/apiKeyUtils';
 
 const ApiKeyContext = createContext<ApiKeyContextType | undefined>(undefined);
 
@@ -20,18 +12,7 @@ interface ApiKeyProviderProps {
 }
 
 // Obter chave da API do ambiente (configurado pelo Railway) ou usar a chave padrão
-const ENV_API_KEY = typeof window !== 'undefined' && window.env?.OPENAI_API_KEY;
-const DEFAULT_API_KEY = ENV_API_KEY || "";
-const PLACEHOLDER_TEXT = "sk-adicione-uma-chave-valida-aqui";
-
-// Função para verificar se a chave é um placeholder ou está vazia
-const isValidApiKey = (key: string | null): boolean => {
-  if (!key) return false;
-  if (key === PLACEHOLDER_TEXT) return false;
-  if (!key.startsWith('sk-')) return false;
-  if (key.length < 20) return false; // Chaves reais OpenAI são longas
-  return true;
-};
+const DEFAULT_API_KEY = getEnvironmentApiKey() || "";
 
 export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   const [apiKey, setApiKeyState] = useState<string | null>(null);
@@ -61,6 +42,7 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   // Verificar se há chave API no ambiente primeiro
   useEffect(() => {
     // Prioridade 1: Chave do ambiente (Railway)
+    const ENV_API_KEY = getEnvironmentApiKey();
     if (ENV_API_KEY && isValidApiKey(ENV_API_KEY)) {
       console.log("Usando chave API do ambiente (Railway)");
       try {
