@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, FileText, MessageSquare, Scale, Settings } from "lucide-react";
+import { FileText, MessageSquare, Scale, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -21,17 +21,11 @@ const Header = () => {
         
         <div className="flex items-center gap-4">
           <Tabs value={currentPath} className="w-full md:w-auto">
-            <TabsList className="bg-eco-dark/30 w-full md:w-auto grid grid-cols-4 md:grid-cols-4">
+            <TabsList className="bg-eco-dark/30 w-full md:w-auto grid grid-cols-3 md:grid-cols-3">
               <TabsTrigger value="/" asChild>
                 <Link to="/" className={cn("flex items-center justify-center", currentPath === "/" && "bg-white/10")}>
                   <MessageSquare className="h-4 w-4 mr-2" />
                   <span className="hidden sm:inline">Assistente</span>
-                </Link>
-              </TabsTrigger>
-              <TabsTrigger value="/jurisprudencia" asChild>
-                <Link to="/jurisprudencia" className={cn("flex items-center justify-center", currentPath === "/jurisprudencia" && "bg-white/10")}>
-                  <BookOpen className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Jurisprudência</span>
                 </Link>
               </TabsTrigger>
               <TabsTrigger value="/documentos" asChild>

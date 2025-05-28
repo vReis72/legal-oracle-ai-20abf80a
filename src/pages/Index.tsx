@@ -2,7 +2,7 @@
 import React from 'react';
 import ChatInterface from '@/components/ai/ChatInterface';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Scale, BookOpen, FileText, MessageSquare, FileCode } from "lucide-react";
+import { Scale, FileText, MessageSquare, FileCode } from "lucide-react";
 import { Link } from 'react-router-dom';
 
 const Index = () => {
@@ -31,30 +31,16 @@ const Index = () => {
         </p>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <Link to="/" className="block">
           <Card className="h-full hover:shadow-md transition-all">
             <CardHeader className="pb-2">
               <MessageSquare className="h-6 w-6 text-eco-primary mb-2" />
-              <CardTitle>Assistente</CardTitle>
+              <CardTitle>Assistente Jurídico</CardTitle>
             </CardHeader>
             <CardContent>
               <CardDescription>
-                Tire suas dúvidas, receba orientações, dicas e sugestões na área do Direito, conversando em linguagem natural com seu assistente jurídico pessoal
-              </CardDescription>
-            </CardContent>
-          </Card>
-        </Link>
-        
-        <Link to="/jurisprudencia" className="block">
-          <Card className="h-full hover:shadow-md transition-all">
-            <CardHeader className="pb-2">
-              <BookOpen className="h-6 w-6 text-eco-primary mb-2" />
-              <CardTitle>Jurisprudência</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CardDescription>
-                Peça para seu assistente jurídico pessoal pesquisar e encontrar precedentes judiciais relevantes. Tudo muito simples e rápido
+                Tire suas dúvidas, receba orientações, pesquise jurisprudência e obtenha sugestões na área do Direito, conversando em linguagem natural com seu assistente jurídico pessoal
               </CardDescription>
             </CardContent>
           </Card>
@@ -64,7 +50,7 @@ const Index = () => {
           <Card className="h-full hover:shadow-md transition-all">
             <CardHeader className="pb-2">
               <FileText className="h-6 w-6 text-eco-primary mb-2" />
-              <CardTitle>Documentos</CardTitle>
+              <CardTitle>Análise de Documentos</CardTitle>
             </CardHeader>
             <CardContent>
               <CardDescription>

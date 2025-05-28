@@ -2,7 +2,6 @@
 import { createBrowserRouter } from 'react-router-dom';
 import App from './App';
 import Index from './pages/Index';
-import Jurisprudencia from './pages/Jurisprudencia';
 import Documentos from './pages/Documentos';
 import PecasJuridicas from './pages/PecasJuridicas';
 import Settings from './pages/Settings';
@@ -16,10 +15,6 @@ export const router = createBrowserRouter([
       {
         index: true,
         element: <Index />,
-      },
-      {
-        path: 'jurisprudencia',
-        element: <Jurisprudencia />,
       },
       {
         path: 'documentos',
