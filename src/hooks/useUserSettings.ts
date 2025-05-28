@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { UserSettingsService } from '@/services/userSettingsService';
+import { LocalUserSettingsService } from '@/services/localUserSettingsService';
 import { UserSettings, UserSettingsUpdate } from '@/types/userSettings';
 import { useToast } from '@/hooks/use-toast';
 
@@ -16,7 +17,14 @@ export const useUserSettings = () => {
   const loadSettings = async () => {
     setIsLoading(true);
     try {
-      const userSettings = await UserSettingsService.getUserSettings(TEMP_USER_ID);
+      // Tenta carregar do Supabase primeiro
+      let userSettings = await UserSettingsService.getUserSettings(TEMP_USER_ID);
+      
+      // Se não conseguir do Supabase, tenta do localStorage
+      if (!userSettings) {
+        userSettings = LocalUserSettingsService.getUserSettings(TEMP_USER_ID);
+      }
+      
       setSettings(userSettings);
     } catch (error) {
       console.error('Erro ao carregar configurações:', error);
@@ -36,13 +44,27 @@ export const useUserSettings = () => {
 
   const saveSettings = async (newSettings: Partial<UserSettingsUpdate>): Promise<boolean> => {
     try {
-      const success = await UserSettingsService.saveSettings(TEMP_USER_ID, newSettings);
-      if (success) {
-        await loadSettings(); // Recarrega as configurações
+      // Tenta salvar no Supabase primeiro
+      let success = await UserSettingsService.saveSettings(TEMP_USER_ID, newSettings);
+      
+      // Se falhar no Supabase, salva no localStorage
+      if (!success) {
+        success = LocalUserSettingsService.saveSettings(TEMP_USER_ID, newSettings);
+        if (success) {
+          toast({
+            title: "Configurações Salvas (Local)",
+            description: "Suas configurações foram salvas localmente. Para sincronizar com o banco, execute a migration do Supabase.",
+          });
+        }
+      } else {
         toast({
           title: "Sucesso",
           description: "Configurações salvas com sucesso!",
         });
+      }
+      
+      if (success) {
+        await loadSettings(); // Recarrega as configurações
         return true;
       } else {
         toast({

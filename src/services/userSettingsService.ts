@@ -12,8 +12,17 @@ export class UserSettingsService {
         .eq('user_id', userId)
         .single();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-        console.error('Erro ao buscar configurações do usuário:', error);
+      if (error) {
+        // Se a tabela não existir (código 42P01), retorna null silenciosamente
+        if (error.code === '42P01') {
+          console.log('Tabela user_settings não existe no Supabase, usando localStorage');
+          return null;
+        }
+        
+        // Para outros erros, apenas loga
+        if (error.code !== 'PGRST116') { // PGRST116 = no rows returned
+          console.error('Erro ao buscar configurações do usuário:', error);
+        }
         return null;
       }
 
@@ -40,6 +49,11 @@ export class UserSettingsService {
           .eq('user_id', userId);
 
         if (error) {
+          // Se a tabela não existir, falha silenciosamente
+          if (error.code === '42P01') {
+            console.log('Tabela user_settings não existe, salvando apenas no localStorage');
+            return false;
+          }
           console.error('Erro ao atualizar configurações:', error);
           return false;
         }
@@ -53,6 +67,11 @@ export class UserSettingsService {
           });
 
         if (error) {
+          // Se a tabela não existir, falha silenciosamente
+          if (error.code === '42P01') {
+            console.log('Tabela user_settings não existe, salvando apenas no localStorage');
+            return false;
+          }
           console.error('Erro ao criar configuração:', error);
           return false;
         }
