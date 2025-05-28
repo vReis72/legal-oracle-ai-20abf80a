@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bell, BookOpen, FileText, MessageSquare, Scale } from "lucide-react";
+import { BookOpen, FileText, MessageSquare, Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -20,7 +20,7 @@ const Header = () => {
         </div>
         
         <Tabs value={currentPath} className="w-full md:w-auto">
-          <TabsList className="bg-eco-dark/30 w-full md:w-auto grid grid-cols-5 md:grid-cols-5">
+          <TabsList className="bg-eco-dark/30 w-full md:w-auto grid grid-cols-4 md:grid-cols-4">
             <TabsTrigger value="/" asChild>
               <Link to="/" className={cn("flex items-center justify-center", currentPath === "/" && "bg-white/10")}>
                 <MessageSquare className="h-4 w-4 mr-2" />
@@ -37,12 +37,6 @@ const Header = () => {
               <Link to="/documentos" className={cn("flex items-center justify-center", currentPath === "/documentos" && "bg-white/10")}>
                 <FileText className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">Documentos</span>
-              </Link>
-            </TabsTrigger>
-            <TabsTrigger value="/alertas" asChild>
-              <Link to="/alertas" className={cn("flex items-center justify-center", currentPath === "/alertas" && "bg-white/10")}>
-                <Bell className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Alertas</span>
               </Link>
             </TabsTrigger>
             <TabsTrigger value="/pecas" asChild>
