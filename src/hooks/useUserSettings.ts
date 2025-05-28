@@ -1,9 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import { UserSettingsService } from '@/services/userSettingsService';
 import { LocalUserSettingsService } from '@/services/localUserSettingsService';
 import { UserSettings, UserSettingsUpdate } from '@/types/userSettings';
 import { useToast } from '@/hooks/use-toast';
+import { useTheme } from '@/providers/ThemeProvider';
 
 // Por enquanto vamos usar um ID fixo para o usuário
 // Quando implementarmos autenticação, isso virá do contexto de auth
@@ -13,6 +13,7 @@ export const useUserSettings = () => {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { setTheme } = useTheme();
 
   const loadSettings = async () => {
     setIsLoading(true);
@@ -26,6 +27,11 @@ export const useUserSettings = () => {
       }
       
       setSettings(userSettings);
+
+      // Aplica o tema salvo
+      if (userSettings?.theme) {
+        setTheme(userSettings.theme);
+      }
     } catch (error) {
       console.error('Erro ao carregar configurações:', error);
       toast({

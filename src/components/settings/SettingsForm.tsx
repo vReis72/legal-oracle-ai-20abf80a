@@ -47,14 +47,20 @@ const SettingsForm: React.FC = () => {
         userOab: settings.user_oab || '',
         contactEmail: settings.contact_email || '',
         apiKey: settings.openai_api_key || '',
-        theme: settings.theme || 'light',
+        theme: settings.theme || currentTheme || 'light',
       });
     }
-  }, [settings, form]);
+  }, [settings, form, currentTheme]);
 
   const onSubmit = async (data: SettingsFormData) => {
     setIsSubmitting(true);
     try {
+      // Primeiro aplica o tema imediatamente
+      if (data.theme !== currentTheme) {
+        setTheme(data.theme);
+      }
+
+      // Depois salva as configurações
       const success = await saveSettings({
         company_name: data.companyName,
         user_name: data.userName,
@@ -64,8 +70,11 @@ const SettingsForm: React.FC = () => {
         theme: data.theme,
       });
 
-      if (success && data.theme !== currentTheme) {
-        setTheme(data.theme);
+      if (!success) {
+        // Se falhou ao salvar, reverte o tema
+        if (data.theme !== currentTheme) {
+          setTheme(currentTheme);
+        }
       }
     } finally {
       setIsSubmitting(false);
@@ -183,7 +192,7 @@ const SettingsForm: React.FC = () => {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Tema</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o tema" />
