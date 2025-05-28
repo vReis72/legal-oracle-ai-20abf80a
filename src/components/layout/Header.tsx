@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, FileText, MessageSquare, Scale } from "lucide-react";
+import { BookOpen, FileText, MessageSquare, Scale, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -19,34 +19,49 @@ const Header = () => {
           <Link to="/" className="text-2xl font-serif font-bold">Legal Oracle AI</Link>
         </div>
         
-        <Tabs value={currentPath} className="w-full md:w-auto">
-          <TabsList className="bg-eco-dark/30 w-full md:w-auto grid grid-cols-4 md:grid-cols-4">
-            <TabsTrigger value="/" asChild>
-              <Link to="/" className={cn("flex items-center justify-center", currentPath === "/" && "bg-white/10")}>
-                <MessageSquare className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Assistente</span>
-              </Link>
-            </TabsTrigger>
-            <TabsTrigger value="/jurisprudencia" asChild>
-              <Link to="/jurisprudencia" className={cn("flex items-center justify-center", currentPath === "/jurisprudencia" && "bg-white/10")}>
-                <BookOpen className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Jurisprudência</span>
-              </Link>
-            </TabsTrigger>
-            <TabsTrigger value="/documentos" asChild>
-              <Link to="/documentos" className={cn("flex items-center justify-center", currentPath === "/documentos" && "bg-white/10")}>
-                <FileText className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Documentos</span>
-              </Link>
-            </TabsTrigger>
-            <TabsTrigger value="/pecas" asChild>
-              <Link to="/pecas" className={cn("flex items-center justify-center", currentPath === "/pecas" && "bg-white/10")}>
-                <Scale className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Peças Jurídicas</span>
-              </Link>
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="flex items-center gap-4">
+          <Tabs value={currentPath} className="w-full md:w-auto">
+            <TabsList className="bg-eco-dark/30 w-full md:w-auto grid grid-cols-4 md:grid-cols-4">
+              <TabsTrigger value="/" asChild>
+                <Link to="/" className={cn("flex items-center justify-center", currentPath === "/" && "bg-white/10")}>
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Assistente</span>
+                </Link>
+              </TabsTrigger>
+              <TabsTrigger value="/jurisprudencia" asChild>
+                <Link to="/jurisprudencia" className={cn("flex items-center justify-center", currentPath === "/jurisprudencia" && "bg-white/10")}>
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Jurisprudência</span>
+                </Link>
+              </TabsTrigger>
+              <TabsTrigger value="/documentos" asChild>
+                <Link to="/documentos" className={cn("flex items-center justify-center", currentPath === "/documentos" && "bg-white/10")}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Documentos</span>
+                </Link>
+              </TabsTrigger>
+              <TabsTrigger value="/pecas" asChild>
+                <Link to="/pecas" className={cn("flex items-center justify-center", currentPath === "/pecas" && "bg-white/10")}>
+                  <Scale className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Peças Jurídicas</span>
+                </Link>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          
+          <Link to="/settings">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              className={cn(
+                "text-white hover:bg-white/10",
+                currentPath === "/settings" && "bg-white/10"
+              )}
+            >
+              <Settings className="h-5 w-5" />
+            </Button>
+          </Link>
+        </div>
       </div>
     </header>
   );

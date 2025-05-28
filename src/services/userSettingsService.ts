@@ -24,7 +24,7 @@ export class UserSettingsService {
     }
   }
 
-  static async saveApiKey(userId: string, apiKey: string): Promise<boolean> {
+  static async saveSettings(userId: string, settings: Partial<UserSettingsUpdate>): Promise<boolean> {
     try {
       // Primeiro verifica se já existe configuração para este usuário
       const existing = await this.getUserSettings(userId);
@@ -34,13 +34,13 @@ export class UserSettingsService {
         const { error } = await (supabase as any)
           .from('user_settings')
           .update({ 
-            openai_api_key: apiKey,
+            ...settings,
             updated_at: new Date().toISOString()
           })
           .eq('user_id', userId);
 
         if (error) {
-          console.error('Erro ao atualizar chave API:', error);
+          console.error('Erro ao atualizar configurações:', error);
           return false;
         }
       } else {
@@ -49,7 +49,7 @@ export class UserSettingsService {
           .from('user_settings')
           .insert({
             user_id: userId,
-            openai_api_key: apiKey
+            ...settings
           });
 
         if (error) {
@@ -60,30 +60,28 @@ export class UserSettingsService {
 
       return true;
     } catch (error) {
-      console.error('Erro inesperado ao salvar chave API:', error);
+      console.error('Erro inesperado ao salvar configurações:', error);
       return false;
     }
   }
 
+  static async saveApiKey(userId: string, apiKey: string): Promise<boolean> {
+    return this.saveSettings(userId, { openai_api_key: apiKey });
+  }
+
   static async removeApiKey(userId: string): Promise<boolean> {
-    try {
-      const { error } = await (supabase as any)
-        .from('user_settings')
-        .update({ 
-          openai_api_key: null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', userId);
+    return this.saveSettings(userId, { openai_api_key: null });
+  }
 
-      if (error) {
-        console.error('Erro ao remover chave API:', error);
-        return false;
-      }
+  static async updateTheme(userId: string, theme: 'light' | 'dark' | 'system'): Promise<boolean> {
+    return this.saveSettings(userId, { theme });
+  }
 
-      return true;
-    } catch (error) {
-      console.error('Erro inesperado ao remover chave API:', error);
-      return false;
-    }
+  static async updateCompanyInfo(userId: string, companyName: string, contactEmail?: string): Promise<boolean> {
+    return this.saveSettings(userId, { company_name: companyName, contact_email: contactEmail });
+  }
+
+  static async updateUserInfo(userId: string, userName: string, userOab?: string): Promise<boolean> {
+    return this.saveSettings(userId, { user_name: userName, user_oab: userOab });
   }
 }

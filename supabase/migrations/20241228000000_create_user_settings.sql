@@ -3,7 +3,12 @@
 CREATE TABLE IF NOT EXISTS public.user_settings (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id TEXT NOT NULL,
+    company_name TEXT,
+    user_name TEXT,
+    user_oab TEXT,
+    contact_email TEXT,
     openai_api_key TEXT,
+    theme TEXT DEFAULT 'light' CHECK (theme IN ('light', 'dark', 'system')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
