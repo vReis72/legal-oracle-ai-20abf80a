@@ -6,7 +6,7 @@ export class UserSettingsService {
   
   static async getUserSettings(userId: string): Promise<UserSettings | null> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('user_settings')
         .select('*')
         .eq('user_id', userId)
@@ -31,12 +31,12 @@ export class UserSettingsService {
       
       if (existing) {
         // Atualiza a configuração existente
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('user_settings')
           .update({ 
             openai_api_key: apiKey,
             updated_at: new Date().toISOString()
-          } as any)
+          })
           .eq('user_id', userId);
 
         if (error) {
@@ -45,12 +45,12 @@ export class UserSettingsService {
         }
       } else {
         // Cria nova configuração
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('user_settings')
           .insert({
             user_id: userId,
             openai_api_key: apiKey
-          } as any);
+          });
 
         if (error) {
           console.error('Erro ao criar configuração:', error);
@@ -67,12 +67,12 @@ export class UserSettingsService {
 
   static async removeApiKey(userId: string): Promise<boolean> {
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('user_settings')
         .update({ 
           openai_api_key: null,
           updated_at: new Date().toISOString()
-        } as any)
+        })
         .eq('user_id', userId);
 
       if (error) {
