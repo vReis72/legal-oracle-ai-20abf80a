@@ -17,7 +17,7 @@ export class UserSettingsService {
         return null;
       }
 
-      return data;
+      return data as UserSettings;
     } catch (error) {
       console.error('Erro inesperado ao buscar configurações:', error);
       return null;
@@ -36,7 +36,7 @@ export class UserSettingsService {
           .update({ 
             openai_api_key: apiKey,
             updated_at: new Date().toISOString()
-          })
+          } as any)
           .eq('user_id', userId);
 
         if (error) {
@@ -50,7 +50,7 @@ export class UserSettingsService {
           .insert({
             user_id: userId,
             openai_api_key: apiKey
-          });
+          } as any);
 
         if (error) {
           console.error('Erro ao criar configuração:', error);
@@ -72,7 +72,7 @@ export class UserSettingsService {
         .update({ 
           openai_api_key: null,
           updated_at: new Date().toISOString()
-        })
+        } as any)
         .eq('user_id', userId);
 
       if (error) {
