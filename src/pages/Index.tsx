@@ -1,7 +1,8 @@
+
 import React from 'react';
 import ChatInterface from '@/components/ai/ChatInterface';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Scale, BookOpen, FileText, Bell, MessageSquare, FileCode } from "lucide-react";
+import { Scale, BookOpen, FileText, MessageSquare, FileCode } from "lucide-react";
 import { Link } from 'react-router-dom';
 
 const Index = () => {
@@ -68,20 +69,6 @@ const Index = () => {
             <CardContent>
               <CardDescription>
                 Deixe a IA trabalhar para você. Suba seus arquivos e peça para que o seu assistente jurídico leia, analise e gere resumos a partir dos seus documentos
-              </CardDescription>
-            </CardContent>
-          </Card>
-        </Link>
-        
-        <Link to="/alertas" className="block">
-          <Card className="h-full hover:shadow-md transition-all">
-            <CardHeader className="pb-2">
-              <Bell className="h-6 w-6 text-eco-primary mb-2" />
-              <CardTitle>Alertas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CardDescription>
-                Receba notificações sobre novas normas e resoluções legais
               </CardDescription>
             </CardContent>
           </Card>
