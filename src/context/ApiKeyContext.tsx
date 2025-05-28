@@ -4,6 +4,7 @@ import { getApiKey, saveApiKey, hasApiKey, setDefaultApiKey, removeApiKey } from
 import { useToast } from '@/hooks/use-toast';
 import { ApiKeyContextType } from './types/apiKeyTypes';
 import { isValidApiKey, getEnvironmentApiKey, PLACEHOLDER_TEXT } from './utils/apiKeyUtils';
+import { useUserSettings } from '@/hooks/useUserSettings';
 
 const ApiKeyContext = createContext<ApiKeyContextType | undefined>(undefined);
 
@@ -20,6 +21,15 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   const [isPlaceholderKey, setIsPlaceholderKey] = useState(false);
   const [isEnvironmentKey, setIsEnvironmentKey] = useState(false);
   const { toast } = useToast();
+  
+  // Hook para gerenciar configurações do usuário no Supabase
+  const { 
+    apiKey: supabaseApiKey, 
+    saveApiKey: saveToSupabase, 
+    removeApiKey: removeFromSupabase,
+    hasValidApiKey: hasValidSupabaseKey,
+    isLoading: isLoadingSupabase 
+  } = useUserSettings();
 
   // Função para atualizar o estado da chave baseado no localStorage
   const updateApiKeyFromStorage = () => {
@@ -39,34 +49,44 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     }
   };
 
-  // Verificar se há chave API no ambiente primeiro
+  // Verificar se há chave API e definir prioridades
   useEffect(() => {
+    if (isLoadingSupabase) return; // Aguarda o Supabase carregar
+
     // Prioridade 1: Chave do ambiente (Railway)
     const ENV_API_KEY = getEnvironmentApiKey();
     if (ENV_API_KEY && isValidApiKey(ENV_API_KEY)) {
       console.log("Usando chave API do ambiente (Railway)");
-      try {
-        // Atualizar o estado para usar a chave do ambiente
-        setApiKeyState(ENV_API_KEY);
-        setIsEnvironmentKey(true);
-        setIsPlaceholderKey(false);
-        console.log("API key do ambiente configurada automaticamente");
-      } catch (error) {
-        console.error("Erro ao definir chave do ambiente:", error);
-      }
-    } 
-    // Prioridade 2: Chave do localStorage
-    else if (hasApiKey()) {
+      setApiKeyState(ENV_API_KEY);
+      setIsEnvironmentKey(true);
+      setIsPlaceholderKey(false);
+      setIsLoading(false);
+      return;
+    }
+    
+    // Prioridade 2: Chave do Supabase (banco de dados)
+    if (supabaseApiKey && hasValidSupabaseKey()) {
+      console.log("Usando chave API do Supabase");
+      setApiKeyState(supabaseApiKey);
+      setIsEnvironmentKey(false);
+      setIsPlaceholderKey(false);
+      setIsLoading(false);
+      return;
+    }
+    
+    // Prioridade 3: Chave do localStorage (compatibilidade)
+    if (hasApiKey()) {
       console.log("Usando chave API do localStorage");
       updateApiKeyFromStorage();
+      setIsLoading(false);
+      return;
     }
-    // Prioridade 3: Chave padrão (se fornecida)
-    else if (DEFAULT_API_KEY && DEFAULT_API_KEY !== PLACEHOLDER_TEXT) {
+    
+    // Prioridade 4: Chave padrão (se fornecida)
+    if (DEFAULT_API_KEY && DEFAULT_API_KEY !== PLACEHOLDER_TEXT) {
       try {
         console.log("Configurando chave padrão...");
-        // Remover chave antiga para garantir que a nova será usada
         removeApiKey();
-        // Definir a nova chave
         if (setDefaultApiKey(DEFAULT_API_KEY)) {
           console.log("API key padrão configurada automaticamente");
           updateApiKeyFromStorage();
@@ -75,18 +95,17 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
         console.error("Erro ao definir chave padrão:", error);
       }
     } else {
-      // Se não tivermos nenhuma chave válida, configuramos o estado para refletir isso
+      // Se não tivermos nenhuma chave válida
       setIsPlaceholderKey(true);
     }
     
     setIsLoading(false);
-  }, []);
+  }, [isLoadingSupabase, supabaseApiKey, hasValidSupabaseKey]);
 
   // Escutar eventos de atualização da chave
   useEffect(() => {
     const handleApiKeyUpdate = () => {
-      // Só atualize do localStorage se não estivermos usando uma chave do ambiente
-      if (!isEnvironmentKey) {
+      if (!isEnvironmentKey && !hasValidSupabaseKey()) {
         updateApiKeyFromStorage();
       }
     };
@@ -96,9 +115,9 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     return () => {
       window.removeEventListener('apikey_updated', handleApiKeyUpdate);
     };
-  }, [isEnvironmentKey]);
+  }, [isEnvironmentKey, hasValidSupabaseKey]);
 
-  const setApiKey = (key: string) => {
+  const setApiKey = async (key: string) => {
     // Não permitir sobrescrever a chave do ambiente
     if (isEnvironmentKey) {
       toast({
@@ -121,14 +140,28 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
           return;
         }
         
-        saveApiKey(key);
-        setApiKeyState(key);
-        setIsPlaceholderKey(key === PLACEHOLDER_TEXT);
+        // Tentar salvar no Supabase primeiro
+        const savedToSupabase = await saveToSupabase(key);
         
-        toast({
-          title: "API Key Configurada",
-          description: "Sua chave da API OpenAI foi salva e configurada com sucesso.",
-        });
+        if (savedToSupabase) {
+          // Se salvou no Supabase, atualizar o estado
+          setApiKeyState(key);
+          setIsPlaceholderKey(key === PLACEHOLDER_TEXT);
+          
+          // Também salvar no localStorage para compatibilidade
+          saveApiKey(key);
+        } else {
+          // Se falhou no Supabase, salvar apenas no localStorage
+          saveApiKey(key);
+          setApiKeyState(key);
+          setIsPlaceholderKey(key === PLACEHOLDER_TEXT);
+          
+          toast({
+            title: "API Key Configurada (Local)",
+            description: "Sua chave foi salva localmente. Recomendamos usar o banco de dados.",
+          });
+        }
+        
         console.log("API key configurada com sucesso");
       } catch (error) {
         console.error("Erro ao salvar API key:", error);
@@ -141,7 +174,7 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     }
   };
 
-  const resetApiKey = () => {
+  const resetApiKey = async () => {
     // Não permitir remover a chave do ambiente
     if (isEnvironmentKey) {
       toast({
@@ -153,16 +186,27 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     }
 
     try {
-      // Remover chave atual
+      // Tentar remover do Supabase primeiro
+      const removedFromSupabase = await removeFromSupabase();
+      
+      // Sempre remover do localStorage também
       removeApiKey();
+      
       // Limpar estados
       setApiKeyState(null);
       setIsPlaceholderKey(true);
       
-      toast({
-        title: "Chave API Removida",
-        description: "A chave API foi removida com sucesso.",
-      });
+      if (removedFromSupabase) {
+        toast({
+          title: "Chave API Removida",
+          description: "A chave API foi removida do banco de dados com sucesso.",
+        });
+      } else {
+        toast({
+          title: "Chave API Removida (Local)",
+          description: "A chave API foi removida localmente.",
+        });
+      }
     } catch (error) {
       console.error("Erro ao resetar API key:", error);
     }
@@ -171,6 +215,11 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   const checkApiKey = (): boolean => {
     // Se temos uma chave do ambiente, ela tem prioridade
     if (isEnvironmentKey && isValidApiKey(apiKey)) {
+      return true;
+    }
+    
+    // Se temos uma chave válida do Supabase
+    if (hasValidSupabaseKey() && isValidApiKey(supabaseApiKey)) {
       return true;
     }
     
@@ -187,14 +236,19 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   }
 
   const isKeyConfigured = (isEnvironmentKey && isValidApiKey(apiKey)) || 
+                          (hasValidSupabaseKey() && isValidApiKey(supabaseApiKey)) ||
                           (apiKey !== null && apiKey !== PLACEHOLDER_TEXT && isValidApiKey(apiKey));
   
   console.log("Estado atual da API key:", isKeyConfigured ? "Configurada" : "Não configurada");
-  console.log("Fonte da API key:", isEnvironmentKey ? "Ambiente (Railway)" : "Local Storage");
+  console.log("Fonte da API key:", 
+    isEnvironmentKey ? "Ambiente (Railway)" : 
+    hasValidSupabaseKey() ? "Supabase (Banco)" : 
+    "Local Storage"
+  );
 
   return (
     <ApiKeyContext.Provider value={{ 
-      apiKey, 
+      apiKey: apiKey || supabaseApiKey, 
       setApiKey, 
       isKeyConfigured,
       checkApiKey,
