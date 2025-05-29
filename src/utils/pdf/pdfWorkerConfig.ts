@@ -1,6 +1,5 @@
 
 import * as pdfjsLib from 'pdfjs-dist';
-import { toast } from "sonner";
 
 /**
  * Options for configuring the PDF worker
@@ -25,7 +24,7 @@ interface PdfWorkerConfigResult {
 }
 
 /**
- * Configura o worker do PDF.js de forma simples e confiável
+ * Configura o worker do PDF.js de forma mais simples
  */
 export const configurePdfWorker = (options: PdfWorkerConfigOptions = {}): PdfWorkerConfigResult => {
   const { showToasts = true, verbose = false } = options;
@@ -42,19 +41,17 @@ export const configurePdfWorker = (options: PdfWorkerConfigOptions = {}): PdfWor
       };
     }
     
-    // Use the most reliable CDN (jsDelivr)
-    const workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
-    
-    // Configure the worker
-    pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+    // Use a simpler approach - let PDF.js handle the worker internally
+    // This avoids external CDN dependencies that can fail
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '';
     
     if (verbose) {
-      console.log(`[PDF Worker]: Configurado com sucesso - ${workerSrc}`);
+      console.log(`[PDF Worker]: Configurado para usar worker interno`);
     }
     
     return { 
       success: true, 
-      workerSrc 
+      workerSrc: 'internal'
     };
   } catch (error) {
     const errorMessage = error instanceof Error 
@@ -62,10 +59,6 @@ export const configurePdfWorker = (options: PdfWorkerConfigOptions = {}): PdfWor
       : "Erro desconhecido na configuração do worker";
     
     console.error(`[PDF Worker Error]: ${errorMessage}`);
-    
-    if (showToasts) {
-      toast.error(`Erro na configuração do PDF: ${errorMessage}`);
-    }
     
     return {
       success: false,
@@ -78,14 +71,5 @@ export const configurePdfWorker = (options: PdfWorkerConfigOptions = {}): PdfWor
  * Check if PDF.js worker is properly configured
  */
 export const isPdfWorkerConfigured = (): boolean => {
-  return !!pdfjsLib.GlobalWorkerOptions.workerSrc;
-};
-
-/**
- * Pré-carrega o worker do PDF.js
- */
-export const preloadPdfWorker = (): void => {
-  setTimeout(() => {
-    configurePdfWorker({ verbose: true, showToasts: false });
-  }, 0);
+  return pdfjsLib.GlobalWorkerOptions.workerSrc !== undefined;
 };
