@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { ChatMessage, sendChatMessage } from '@/services/chatService';
-import { hasGlobalApiKey } from '@/constants/apiKeys';
+import { useApiKey } from '@/hooks/useApiKey';
 
 export const useChat = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -27,9 +27,8 @@ Como posso ajudar você hoje?`,
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-
-  // Verificar se a chave está configurada usando apenas a função global
-  const isKeyConfigured = hasGlobalApiKey();
+  
+  const { isConfigured } = useApiKey();
 
   useEffect(() => {
     scrollToBottom();
@@ -43,7 +42,6 @@ Como posso ajudar você hoje?`,
     e.preventDefault();
     if (!input.trim()) return;
     
-    // Add user message
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
@@ -59,7 +57,6 @@ Como posso ajudar você hoje?`,
     try {
       console.log('🚀 Iniciando envio...');
       
-      // Create array with system message and conversation history
       const conversationHistory: ChatMessage[] = [
         {
           id: 'system',
@@ -67,7 +64,7 @@ Como posso ajudar você hoje?`,
           content: 'Você é um assistente especializado em direito brasileiro. Forneça respostas precisas e concisas sobre legislação, jurisprudência e consultas relacionadas ao direito. Cite leis, decisões judiciais e documentos pertinentes quando possível.',
           timestamp: new Date()
         },
-        ...messages.slice(-6), // Include last 6 messages for context
+        ...messages.slice(-6),
         userMessage
       ];
       
@@ -108,7 +105,6 @@ Como posso ajudar você hoje?`,
     messagesEndRef,
     handleSendMessage,
     handleRetry,
-    isKeyConfigured,
-    setApiKey: () => console.log('setApiKey - usando apenas constante global')
+    isKeyConfigured: isConfigured
   };
 };

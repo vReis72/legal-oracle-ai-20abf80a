@@ -9,8 +9,6 @@ interface ChatInputFormProps {
   setInput: (value: string) => void;
   handleSendMessage: (e: React.FormEvent) => Promise<void>;
   isLoading: boolean;
-  isKeyConfigured: boolean;
-  setApiKey: (key: string) => void;
 }
 
 const ChatInputForm: React.FC<ChatInputFormProps> = ({

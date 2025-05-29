@@ -2,17 +2,18 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserSettingsService } from '@/services/userSettingsService';
-import { getGlobalApiKey, hasGlobalApiKey } from '@/constants/apiKeys';
+import { useApiKey } from '@/hooks/useApiKey';
 import { useToast } from '@/hooks/use-toast';
 import { UserSettings, UserSettingsUpdate } from '@/types/userSettings';
 
 export const useUserSettings = () => {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  
+  const { apiKey, hasValidKey } = useApiKey();
 
-  // Carrega configurações do usuário
   const loadUserSettings = async () => {
     if (!user) {
       setIsLoading(false);
@@ -35,26 +36,6 @@ export const useUserSettings = () => {
     loadUserSettings();
   }, [user]);
 
-  // Função para obter a chave API - SEMPRE a chave global do sistema
-  const getApiKey = (): string | null => {
-    const globalKey = getGlobalApiKey();
-    if (globalKey) {
-      console.log('🌐 Usando chave API global do sistema');
-      return globalKey;
-    }
-
-    console.log('❌ Nenhuma chave API configurada pelo administrador');
-    return null;
-  };
-
-  // Verifica se tem uma chave válida
-  const hasValidApiKey = (): boolean => {
-    const isValid = hasGlobalApiKey();
-    console.log('🔍 hasValidApiKey:', isValid);
-    return isValid;
-  };
-
-  // Salva configurações gerais do usuário (sem API key)
   const saveSettings = async (settings: UserSettingsUpdate): Promise<boolean> => {
     if (!user) return false;
 
@@ -81,15 +62,12 @@ export const useUserSettings = () => {
     }
   };
 
-  const currentApiKey = getApiKey();
-  const isValidKey = hasValidApiKey();
-
   return {
     userSettings,
-    settings: userSettings, // Alias for backward compatibility
-    isLoading: false, // Removendo dependência de isLoadingSystem
-    apiKey: currentApiKey,
-    hasValidApiKey: isValidKey,
+    settings: userSettings,
+    isLoading,
+    apiKey,
+    hasValidApiKey: hasValidKey,
     saveSettings,
     reloadSettings: loadUserSettings,
   };
