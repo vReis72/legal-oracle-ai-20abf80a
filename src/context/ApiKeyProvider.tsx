@@ -12,6 +12,8 @@ interface ApiKeyProviderProps {
 }
 
 export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
+  console.log('🚀 ApiKeyProvider: Inicializando...');
+  
   const [apiKey, setApiKeyState] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isPlaceholderKey, setIsPlaceholderKey] = useState(true);
@@ -132,16 +134,20 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   console.log("🌍 É do ambiente?", isEnvironmentKey);
   console.log("🔄 Carregando Sistema?", isLoadingSystem);
 
+  const contextValue = { 
+    apiKey: currentKey, 
+    setApiKey, 
+    isKeyConfigured, 
+    checkApiKey,
+    resetApiKey,
+    isPlaceholderKey: isPlaceholderKey && !isKeyConfigured,
+    isEnvironmentKey: isEnvironmentKey || false
+  };
+
+  console.log('✅ ApiKeyProvider: Fornecendo contexto:', contextValue);
+
   return (
-    <ApiKeyContext.Provider value={{ 
-      apiKey: currentKey, 
-      setApiKey, 
-      isKeyConfigured, 
-      checkApiKey,
-      resetApiKey,
-      isPlaceholderKey: isPlaceholderKey && !isKeyConfigured,
-      isEnvironmentKey: isEnvironmentKey || false
-    }}>
+    <ApiKeyContext.Provider value={contextValue}>
       {children}
     </ApiKeyContext.Provider>
   );

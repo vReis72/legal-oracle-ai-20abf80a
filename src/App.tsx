@@ -13,13 +13,13 @@ const App = () => {
   return (
     <ThemeProvider defaultTheme="light">
       <AuthProvider>
-        <ApiKeyProvider>
-          <TooltipProvider>
+        <TooltipProvider>
+          <ApiKeyProvider>
             <Toaster />
             <Sonner />
             <RouterProvider router={router} />
-          </TooltipProvider>
-        </ApiKeyProvider>
+          </ApiKeyProvider>
+        </TooltipProvider>
       </AuthProvider>
     </ThemeProvider>
   );
