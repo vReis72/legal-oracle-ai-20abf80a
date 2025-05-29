@@ -16,7 +16,7 @@ export const useChat = () => {
 📝 **Como obter uma chave**:
 1. Acesse: https://platform.openai.com/api-keys
 2. Crie uma nova chave API
-3. Configure nas configurações ou me informe aqui
+3. Configure no arquivo src/constants/apiKeys.ts
 
 Como posso ajudar você hoje?`,
       timestamp: new Date()
@@ -27,7 +27,7 @@ Como posso ajudar você hoje?`,
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const { apiKey, setApiKey, isKeyConfigured } = useApiKey();
+  const { isKeyConfigured, setApiKey } = useApiKey();
 
   useEffect(() => {
     scrollToBottom();
@@ -69,8 +69,8 @@ Como posso ajudar você hoje?`,
         userMessage
       ];
       
-      // Usar a chave do contexto
-      const assistantResponse = await sendChatMessage(conversationHistory, apiKey || undefined);
+      // Usar apenas a chave global - sem parâmetro adicional
+      const assistantResponse = await sendChatMessage(conversationHistory);
       
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
