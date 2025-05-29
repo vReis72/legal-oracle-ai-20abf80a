@@ -24,23 +24,24 @@ interface PdfWorkerConfigResult {
 }
 
 /**
- * Configura o worker do PDF.js para usar processamento interno
+ * Configura o worker do PDF.js para usar o arquivo local
  */
 export const configurePdfWorker = (options: PdfWorkerConfigOptions = {}): PdfWorkerConfigResult => {
   const { showToasts = true, verbose = false } = options;
   
   try {
-    // Definir explicitamente para usar processamento interno
-    // Usar 'false' desabilita o worker completamente
-    pdfjsLib.GlobalWorkerOptions.workerSrc = false as any;
+    // Usar o worker local do pacote pdfjs-dist
+    // O Vite automaticamente resolve este caminho
+    const workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.js', import.meta.url).toString();
+    pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
     
     if (verbose) {
-      console.log('[PDF Worker]: Configurado para processamento interno (worker desabilitado)');
+      console.log('[PDF Worker]: Configurado com worker local:', workerSrc);
     }
     
     return { 
       success: true, 
-      workerSrc: 'disabled'
+      workerSrc: workerSrc
     };
   } catch (error) {
     const errorMessage = error instanceof Error 
