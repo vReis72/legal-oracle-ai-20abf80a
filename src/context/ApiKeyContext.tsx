@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { getApiKey, saveApiKey, hasApiKey, setDefaultApiKey, removeApiKey } from '@/services/apiKeyService';
 import { useToast } from '@/hooks/use-toast';
@@ -13,7 +12,7 @@ interface ApiKeyProviderProps {
 }
 
 // CHAVE FIXA PARA DESENVOLVIMENTO - REMOVER EM PRODUÇÃO
-const DEVELOPMENT_API_KEY = "sk-proj-GJmI8dqzZjD0__TtbvGzONwFCCnm9JtKxBQJZAJKiOV6xm88dUV2LxYlMYYT3BlbKcCWz4_VGPET3BlbkFJkEhv3xJOvZa-2hv-d-VHZX15qIhXVIRlAGP8k9bYc9H9uIJbKaJjUJJjkJJ-dKJkJjKJjKJ";
+const DEVELOPMENT_API_KEY = "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";
 
 // Função especial para validar chave de desenvolvimento
 const isValidDevelopmentKey = (key: string | null): boolean => {
