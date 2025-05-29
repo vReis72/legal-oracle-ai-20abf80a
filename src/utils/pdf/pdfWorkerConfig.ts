@@ -24,63 +24,34 @@ interface PdfWorkerConfigResult {
 }
 
 /**
- * Configura o worker do PDF.js usando o worker local
+ * Configura o worker do PDF.js sem worker externo
  */
 export const configurePdfWorker = (options: PdfWorkerConfigOptions = {}): PdfWorkerConfigResult => {
   const { showToasts = true, verbose = false } = options;
   
   try {
-    // Verificar se já está configurado
-    if (pdfjsLib.GlobalWorkerOptions.workerSrc) {
-      if (verbose) {
-        console.log(`[PDF Worker]: Já configurado - ${pdfjsLib.GlobalWorkerOptions.workerSrc}`);
-      }
-      return { 
-        success: true, 
-        workerSrc: pdfjsLib.GlobalWorkerOptions.workerSrc 
-      };
-    }
-    
-    // Usar o worker local do pacote pdfjs-dist
-    // Isso evita problemas com CDNs externas
-    const workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.js', import.meta.url).href;
-    pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+    // Forçar reset da configuração anterior
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '';
     
     if (verbose) {
-      console.log(`[PDF Worker]: Configurado com worker local - ${workerSrc}`);
+      console.log('[PDF Worker]: Configurado para processamento interno (sem worker externo)');
     }
     
     return { 
       success: true, 
-      workerSrc: workerSrc
+      workerSrc: 'internal'
     };
   } catch (error) {
-    if (verbose) {
-      console.warn('[PDF Worker]: Tentativa com worker local falhou, usando fallback');
-    }
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : "Erro desconhecido na configuração do worker";
     
-    // Fallback: deixar vazio para usar processamento interno
-    try {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = '';
-      if (verbose) {
-        console.log(`[PDF Worker]: Fallback - usando processamento interno`);
-      }
-      return { 
-        success: true, 
-        workerSrc: 'internal'
-      };
-    } catch (fallbackError) {
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : "Erro desconhecido na configuração do worker";
-      
-      console.error(`[PDF Worker Error]: ${errorMessage}`);
-      
-      return {
-        success: false,
-        error: errorMessage
-      };
-    }
+    console.error(`[PDF Worker Error]: ${errorMessage}`);
+    
+    return {
+      success: false,
+      error: errorMessage
+    };
   }
 };
 

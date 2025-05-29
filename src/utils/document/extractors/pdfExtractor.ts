@@ -5,7 +5,7 @@ import { createLogger } from '../logger';
 import { TextExtractionOptions, TextExtractionResult } from '../types';
 
 /**
- * Extrai texto de um arquivo PDF com configuração mais robusta
+ * Extrai texto de um arquivo PDF sem worker externo
  */
 export const extractTextFromPDF = async (
   file: File, 
@@ -17,8 +17,8 @@ export const extractTextFromPDF = async (
   logger.info(`Iniciando extração de texto do PDF: ${file.name}`);
   
   try {
-    // Configurar worker antes de qualquer operação PDF
-    logger.info("Configurando PDF worker...");
+    // Configurar para processamento interno
+    logger.info("Configurando PDF para processamento interno...");
     const workerResult = configurePdfWorker({
       verbose: options.verbose,
       showToasts: false
@@ -27,7 +27,7 @@ export const extractTextFromPDF = async (
     if (!workerResult.success) {
       logger.warn(`Worker configuration failed: ${workerResult.error}, mas continuando...`);
     } else {
-      logger.info(`Worker configurado: ${workerResult.workerSrc}`);
+      logger.info(`Configuração: ${workerResult.workerSrc}`);
     }
     
     // Carregar arquivo
@@ -40,7 +40,7 @@ export const extractTextFromPDF = async (
     
     logger.info(`ArrayBuffer carregado: ${arrayBuffer.byteLength} bytes`);
     
-    // Configuração mais permissiva para o PDF
+    // Configuração sem worker externo
     const loadingTask = pdfjsLib.getDocument({
       data: arrayBuffer,
       verbosity: 0,
@@ -48,7 +48,8 @@ export const extractTextFromPDF = async (
       disableStream: true,
       useWorkerFetch: false,
       isEvalSupported: false,
-      disableFontFace: true
+      disableFontFace: true,
+      useSystemFonts: true
     });
     
     logger.info("Carregando documento PDF...");
