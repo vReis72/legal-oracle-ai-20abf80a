@@ -27,9 +27,10 @@ export const validateDocumentAndApiKey = (
     return false;
   }
 
-  // Em desenvolvimento, sempre considerar a API como válida
   if (!apiKey) {
-    console.log("API Key não encontrada, mas permitindo em desenvolvimento");
+    setAnalysisError("Chave da API OpenAI não configurada. Configure nas configurações.");
+    toast.error("Chave da API OpenAI não configurada");
+    return false;
   }
 
   return true;

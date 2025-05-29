@@ -1,24 +1,15 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { useApiKey } from '@/context/ApiKeyContext';
 import { ChatMessage, sendChatMessage } from '@/services/chatService';
-import { useApiKey } from '@/hooks/useApiKey';
 
 export const useChat = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
       role: 'assistant',
-      content: `Olá! Sou o Legal Oracle IA, assistente especializado em direito. 
-
-🔑 **IMPORTANTE**: Para usar o chat, você precisa configurar uma chave OpenAI válida.
-
-📝 **Como obter uma chave**:
-1. Acesse: https://platform.openai.com/api-keys
-2. Crie uma nova chave API
-3. Configure no arquivo src/constants/apiKeys.ts
-
-Como posso ajudar você hoje?`,
+      content: 'Olá! Sou o Legal Oracle IA, assistente especializado em direito. Como posso ajudar você hoje?',
       timestamp: new Date()
     }
   ]);
@@ -27,8 +18,7 @@ Como posso ajudar você hoje?`,
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  
-  const { isConfigured } = useApiKey();
+  const { apiKey, setApiKey, isKeyConfigured, isPlaceholderKey } = useApiKey();
 
   useEffect(() => {
     scrollToBottom();
@@ -42,6 +32,17 @@ Como posso ajudar você hoje?`,
     e.preventDefault();
     if (!input.trim()) return;
     
+    // Verificar se a API key é válida
+    if (isPlaceholderKey) {
+      toast({
+        variant: "destructive",
+        title: "API Key Inválida",
+        description: "A chave API atual é um placeholder. Por favor, configure uma chave OpenAI válida.",
+      });
+      return;
+    }
+    
+    // Add user message
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
@@ -55,8 +56,11 @@ Como posso ajudar você hoje?`,
     setError(null);
     
     try {
-      console.log('🚀 Iniciando envio...');
+      if (!apiKey) {
+        throw new Error('API Key não configurada. Por favor, configure sua chave OpenAI.');
+      }
       
+      // Create array with system message and conversation history
       const conversationHistory: ChatMessage[] = [
         {
           id: 'system',
@@ -64,11 +68,11 @@ Como posso ajudar você hoje?`,
           content: 'Você é um assistente especializado em direito brasileiro. Forneça respostas precisas e concisas sobre legislação, jurisprudência e consultas relacionadas ao direito. Cite leis, decisões judiciais e documentos pertinentes quando possível.',
           timestamp: new Date()
         },
-        ...messages.slice(-6),
+        ...messages.slice(-6), // Include last 6 messages for context
         userMessage
       ];
       
-      const assistantResponse = await sendChatMessage(conversationHistory);
+      const assistantResponse = await sendChatMessage(conversationHistory, apiKey);
       
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
@@ -105,6 +109,7 @@ Como posso ajudar você hoje?`,
     messagesEndRef,
     handleSendMessage,
     handleRetry,
-    isKeyConfigured: isConfigured
+    isKeyConfigured: isKeyConfigured && !isPlaceholderKey,
+    setApiKey
   };
 };

@@ -1,6 +1,6 @@
 
 import * as pdfjsLib from 'pdfjs-dist';
-import { configurePdfWorker } from './pdfWorkerConfig';
+import { configurePdfWorker, isPdfWorkerConfigured } from './pdfWorkerConfig';
 
 interface PdfPreviewOptions {
   scale?: number;
@@ -10,7 +10,7 @@ interface PdfPreviewOptions {
 }
 
 /**
- * Gera preview da primeira página de um PDF de forma mais simples
+ * Gera preview da primeira página de um PDF de forma simplificada
  */
 export const generatePdfPreview = async (
   file: File,
@@ -18,25 +18,32 @@ export const generatePdfPreview = async (
 ): Promise<string | null> => {
   const {
     scale = 0.5,
-    timeout = 10000, // Timeout menor para preview
-    verbose = false
+    timeout = 15000, // Timeout menor para preview
+    verbose = false,
+    showToasts = false
   } = options;
   
   try {
-    // Configurar worker de forma simples
-    configurePdfWorker({ verbose, showToasts: false });
+    // Configurar worker se necessário
+    if (!isPdfWorkerConfigured()) {
+      const workerResult = configurePdfWorker({ verbose, showToasts });
+      if (!workerResult.success) {
+        throw new Error("Falha ao configurar worker PDF");
+      }
+    }
     
     if (verbose) console.log("Gerando preview para:", file.name);
     
     // Carregar PDF
     const arrayBuffer = await file.arrayBuffer();
     if (!arrayBuffer || arrayBuffer.byteLength === 0) {
-      return null;
+      throw new Error("Arquivo PDF vazio");
     }
     
     const loadingTask = pdfjsLib.getDocument({
       data: arrayBuffer,
-      verbosity: 0
+      disableRange: true,
+      disableStream: true
     });
     
     const pdfDoc = await Promise.race([
@@ -44,7 +51,7 @@ export const generatePdfPreview = async (
       new Promise<never>((_, reject) => 
         setTimeout(() => reject(new Error("Timeout")), timeout)
       )
-    ]);
+    ]) as pdfjsLib.PDFDocumentProxy;
     
     if (pdfDoc.numPages <= 0) {
       return null;
@@ -60,7 +67,7 @@ export const generatePdfPreview = async (
     
     const ctx = canvas.getContext('2d');
     if (!ctx) {
-      return null;
+      throw new Error("Falha ao obter contexto do canvas");
     }
     
     await page.render({
@@ -73,8 +80,10 @@ export const generatePdfPreview = async (
     return canvas.toDataURL('image/png');
   } catch (error) {
     if (verbose) {
-      console.warn('Preview falhou, mas continuando:', error);
+      console.error('Erro ao gerar preview:', error);
     }
+    
+    // Não mostrar toast para falhas de preview - apenas retornar null
     return null;
   }
 };

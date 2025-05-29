@@ -84,6 +84,14 @@ export class UserSettingsService {
     }
   }
 
+  static async saveApiKey(userId: string, apiKey: string): Promise<boolean> {
+    return this.saveSettings(userId, { openai_api_key: apiKey });
+  }
+
+  static async removeApiKey(userId: string): Promise<boolean> {
+    return this.saveSettings(userId, { openai_api_key: null });
+  }
+
   static async updateTheme(userId: string, theme: 'light' | 'dark' | 'system'): Promise<boolean> {
     return this.saveSettings(userId, { theme });
   }

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Upload } from "lucide-react";
 import { Document } from "@/types/document";
 import { useFileUpload } from "@/hooks/document/useFileUpload";
-import { configurePdfWorker } from "@/utils/pdf/pdfWorkerConfig";
+import { configurePdfWorker, preloadPdfWorker } from "@/utils/pdf/pdfWorkerConfig";
 import DocumentFilePreview from './DocumentFilePreview';
 
 interface DocumentUploaderProps {

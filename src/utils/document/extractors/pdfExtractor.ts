@@ -1,36 +1,37 @@
 
 import * as pdfjsLib from 'pdfjs-dist';
-import { configurePdfWorker } from '../../pdf/pdfWorkerConfig';
+import { toast } from "sonner";
+import { isPdfWorkerConfigured, configurePdfWorker } from '../../pdf/pdfWorkerConfig';
 import { createLogger } from '../logger';
 import { TextExtractionOptions, TextExtractionResult } from '../types';
 
 /**
- * Extrai texto de um arquivo PDF usando fallback interno
+ * Extrai texto de um arquivo PDF de forma simplificada e confiável
  */
 export const extractTextFromPDF = async (
   file: File, 
   options: TextExtractionOptions = {}
 ): Promise<TextExtractionResult> => {
-  const { timeout = 45000 } = options;
+  const { timeout = 60000 } = options; // Aumentado para 60 segundos
   const logger = createLogger(options);
   
   logger.info(`Iniciando extração de texto do PDF: ${file.name}`);
   
   try {
-    // Configurar para usar fallback interno
-    logger.info("Configurando PDF para fallback interno...");
-    const workerResult = configurePdfWorker({
-      verbose: options.verbose,
-      showToasts: false
-    });
-    
-    if (!workerResult.success) {
-      logger.warn(`Worker configuration failed: ${workerResult.error}, mas continuando...`);
-    } else {
-      logger.info(`Configuração: ${workerResult.workerSrc}`);
+    // Garantir que o worker esteja configurado
+    if (!isPdfWorkerConfigured()) {
+      logger.info("Configurando worker do PDF.js...");
+      const workerResult = configurePdfWorker({
+        verbose: options.verbose,
+        showToasts: options.showToasts
+      });
+      
+      if (!workerResult.success) {
+        throw new Error(`Falha ao configurar worker: ${workerResult.error}`);
+      }
     }
     
-    // Carregar arquivo
+    // Carregar arquivo como ArrayBuffer
     logger.info("Carregando arquivo...");
     const arrayBuffer = await file.arrayBuffer();
     
@@ -40,17 +41,15 @@ export const extractTextFromPDF = async (
     
     logger.info(`ArrayBuffer carregado: ${arrayBuffer.byteLength} bytes`);
     
-    // Configuração simplificada para fallback interno
-    const loadingTask = pdfjsLib.getDocument({
+    // Carregar PDF com configuração simplificada
+    logger.info("Carregando documento PDF...");
+    const loadingTask = pdfjsLib.getDocument({ 
       data: arrayBuffer,
-      verbosity: 0,
-      // Configurações para forçar processamento síncrono
       disableAutoFetch: true,
-      disableStream: true,
-      stopAtErrors: false
+      disableStream: true
     });
     
-    logger.info("Carregando documento PDF...");
+    // Aguardar carregamento com timeout
     const pdfDoc = await Promise.race([
       loadingTask.promise,
       new Promise<never>((_, reject) => 
@@ -69,24 +68,19 @@ export const extractTextFromPDF = async (
     for (let i = 1; i <= pdfDoc.numPages; i++) {
       logger.info(`Processando página ${i}/${pdfDoc.numPages}...`);
       
-      try {
-        const page = await pdfDoc.getPage(i);
-        const textContent = await page.getTextContent();
-        
-        if (textContent?.items?.length) {
-          const pageText = textContent.items
-            .map((item: any) => item.str || "")
-            .filter(str => str.trim().length > 0)
-            .join(' ');
-            
-          if (pageText.trim().length > 0) {
-            fullText += pageText + '\n\n';
-            logger.info(`Página ${i}: ${pageText.length} caracteres extraídos`);
-          }
+      const page = await pdfDoc.getPage(i);
+      const textContent = await page.getTextContent();
+      
+      if (textContent?.items?.length) {
+        const pageText = textContent.items
+          .map((item: any) => item.str || "")
+          .filter(str => str.trim().length > 0)
+          .join(' ');
+          
+        if (pageText.trim().length > 0) {
+          fullText += pageText + '\n\n';
+          logger.info(`Página ${i}: ${pageText.length} caracteres extraídos`);
         }
-      } catch (pageError) {
-        logger.warn(`Erro na página ${i}, continuando...`);
-        continue;
       }
     }
     
@@ -113,6 +107,15 @@ export const extractTextFromPDF = async (
     let errorMessage = "Erro desconhecido";
     if (error instanceof Error) {
       errorMessage = error.message;
+      
+      // Mensagens mais específicas para erros comuns
+      if (errorMessage.includes("Timeout")) {
+        errorMessage = "O PDF é muito grande ou complexo. Tente um arquivo menor.";
+      } else if (errorMessage.includes("password")) {
+        errorMessage = "PDF protegido por senha não é suportado.";
+      } else if (errorMessage.includes("worker") || errorMessage.includes("fetch")) {
+        errorMessage = "Erro ao carregar processador de PDF. Verifique sua conexão.";
+      }
     }
     
     return {

@@ -6,6 +6,7 @@ export interface UserSettings {
   user_name?: string;
   user_oab?: string;
   contact_email?: string;
+  openai_api_key?: string;
   theme?: 'light' | 'dark' | 'system';
   created_at: string;
   updated_at: string;
@@ -17,6 +18,7 @@ export interface UserSettingsInsert {
   user_name?: string;
   user_oab?: string;
   contact_email?: string;
+  openai_api_key?: string;
   theme?: 'light' | 'dark' | 'system';
 }
 
@@ -25,6 +27,7 @@ export interface UserSettingsUpdate {
   user_name?: string;
   user_oab?: string;
   contact_email?: string;
+  openai_api_key?: string;
   theme?: 'light' | 'dark' | 'system';
   updated_at?: string;
 }

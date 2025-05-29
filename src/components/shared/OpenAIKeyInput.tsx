@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { hasGlobalApiKey } from '@/constants/apiKeys';
+import { useApiKey } from '@/context/ApiKeyContext';
 import { hasApiKey } from '@/services/apiKeyService';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from 'lucide-react';
@@ -15,12 +15,7 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
   buttonSize = "sm" 
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  
-  // Usar apenas funções globais
-  const isKeyConfigured = hasGlobalApiKey();
-  const isPlaceholderKey = !isKeyConfigured;
-  const isEnvironmentKey = false; // Sempre false pois usamos apenas constante
-
+  const { isKeyConfigured, isPlaceholderKey, isEnvironmentKey } = useApiKey();
   const [showError, setShowError] = useState(false);
 
   const keyConfigured = (hasApiKey() && isKeyConfigured && !isPlaceholderKey) || isEnvironmentKey;

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,13 +15,14 @@ const settingsSchema = z.object({
   userName: z.string().optional(),
   userOab: z.string().optional(),
   contactEmail: z.string().email('Email inválido').optional().or(z.literal('')),
+  apiKey: z.string().optional(),
   theme: z.enum(['light', 'dark', 'system']),
 });
 
 type SettingsFormData = z.infer<typeof settingsSchema>;
 
 const SettingsForm: React.FC = () => {
-  const { userSettings, isLoading, saveSettings } = useUserSettings();
+  const { settings, isLoading, saveSettings } = useUserSettings();
   const { setTheme, theme: currentTheme } = useTheme();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -33,28 +33,30 @@ const SettingsForm: React.FC = () => {
       userName: '',
       userOab: '',
       contactEmail: '',
+      apiKey: '',
       theme: 'light',
     }
   });
 
   useEffect(() => {
-    if (userSettings) {
+    if (settings) {
       // Garante que apenas valores válidos sejam atribuídos ao tema
-      const validTheme = (userSettings.theme === 'light' || userSettings.theme === 'dark' || userSettings.theme === 'system') 
-        ? userSettings.theme 
+      const validTheme = (settings.theme === 'light' || settings.theme === 'dark' || settings.theme === 'system') 
+        ? settings.theme 
         : (currentTheme === 'light' || currentTheme === 'dark' || currentTheme === 'system') 
           ? currentTheme 
           : 'light';
 
       form.reset({
-        companyName: userSettings.company_name || '',
-        userName: userSettings.user_name || '',
-        userOab: userSettings.user_oab || '',
-        contactEmail: userSettings.contact_email || '',
+        companyName: settings.company_name || '',
+        userName: settings.user_name || '',
+        userOab: settings.user_oab || '',
+        contactEmail: settings.contact_email || '',
+        apiKey: settings.openai_api_key || '',
         theme: validTheme,
       });
     }
-  }, [userSettings, form, currentTheme]);
+  }, [settings, form, currentTheme]);
 
   const onSubmit = async (data: SettingsFormData) => {
     setIsSubmitting(true);
@@ -70,6 +72,7 @@ const SettingsForm: React.FC = () => {
         user_name: data.userName,
         user_oab: data.userOab,
         contact_email: data.contactEmail,
+        openai_api_key: data.apiKey,
         theme: data.theme,
       });
 
@@ -99,9 +102,9 @@ const SettingsForm: React.FC = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Configurações do Perfil</CardTitle>
+        <CardTitle>Configurações do Sistema</CardTitle>
         <CardDescription>
-          Configure suas informações pessoais e preferências do sistema
+          Configure as informações do usuário e preferências do sistema
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -167,6 +170,27 @@ const SettingsForm: React.FC = () => {
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="apiKey"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Chave API OpenAI</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="password" 
+                      placeholder="sk-..." 
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Sua chave da API OpenAI para usar o assistente
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}

@@ -1,6 +1,6 @@
 
 import { SearchResult } from './openaiService';
-import { getGlobalApiKey } from '../constants/apiKeys';
+import { getApiKey } from './apiKeyService';
 
 export interface ChatMessage {
   id: string;
@@ -11,6 +11,7 @@ export interface ChatMessage {
 
 // Função para construir os prompts para a API OpenAI
 const buildChatPrompt = (messages: ChatMessage[]) => {
+  // Convert our internal message format to OpenAI's format
   return messages.map(msg => ({
     role: msg.role as 'user' | 'assistant' | 'system',
     content: msg.content
@@ -19,66 +20,53 @@ const buildChatPrompt = (messages: ChatMessage[]) => {
 
 // Função para realizar o chat com a API OpenAI
 export const sendChatMessage = async (
-  messages: ChatMessage[]
+  messages: ChatMessage[],
+  apiKey: string
 ): Promise<string> => {
   try {
-    // Usar apenas a chave global constante
-    const apiKey = getGlobalApiKey();
+    // Verificar se a chave foi fornecida diretamente ou usar a do ambiente
+    const key = apiKey || (typeof window !== 'undefined' && window.env?.OPENAI_API_KEY) || getApiKey();
     
-    // Validar se temos uma chave válida para usar
-    if (!apiKey || apiKey === "sk-adicione-uma-chave-valida-aqui" || apiKey.length < 20 || !apiKey.startsWith('sk-')) {
-      throw new Error(`
-🔑 CHAVE API NECESSÁRIA: 
-Para usar o chat, você precisa configurar uma chave OpenAI válida.
-
-📝 Como obter uma chave:
-1. Vá para https://platform.openai.com/api-keys
-2. Crie uma nova chave API
-3. Cole no arquivo src/constants/apiKeys.ts
-
-💡 A chave deve começar com 'sk-' e ter pelo menos 50 caracteres.
-      `);
+    if (!key) {
+      throw new Error('API key não fornecida. Configure sua chave OpenAI nas configurações.');
     }
     
-    console.log('🚀 === ENVIANDO MENSAGEM PARA OPENAI ===');
-    console.log('🔑 Usando chave:', apiKey.substring(0, 10) + '...');
-    console.log('📏 Tamanho da chave:', apiKey.length);
-    console.log('🎯 Formato válido?', apiKey.startsWith('sk-'));
+    // Verificar se a chave é um placeholder
+    if (key === 'sk-adicione-uma-chave-valida-aqui') {
+      throw new Error('A chave API configurada é inválida. Por favor, configure uma chave OpenAI válida.');
+    }
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Usar a API mais recente da OpenAI para chaves de projeto
+    const baseUrl = 'https://api.openai.com/v1/chat/completions';
+    
+    console.log('Enviando requisição para OpenAI...');
+    console.log('Usando chave do tipo:', key === apiKey ? 'Fornecida diretamente' : 
+                                         window.env?.OPENAI_API_KEY ? 'Ambiente (Railway)' : 
+                                         'Local Storage');
+
+    const response = await fetch(baseUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${key}`,
         'Content-Type': 'application/json',
+        'OpenAI-Beta': 'assistants=v1' // Header adicional para API mais recente
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "gpt-4o", // Usando GPT-4o para melhores resultados
         messages: buildChatPrompt(messages),
         temperature: 0.7,
-        max_tokens: 1000,
+        max_tokens: 2000,
+        top_p: 0.9
       }),
     });
 
-    console.log('📡 Resposta da API OpenAI - Status:', response.status);
-
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('❌ Erro completo da API OpenAI:', errorData);
+      console.error('Erro na resposta da API OpenAI:', errorData);
       
-      if (response.status === 401) {
-        throw new Error(`
-❌ CHAVE API INVÁLIDA!
-
-🔍 Detalhes do erro:
-- Status: ${response.status}
-- Chave enviada: ${apiKey.substring(0, 15)}...
-- Erro da API: ${errorData.error?.message || 'Não especificado'}
-
-📝 Solução:
-1. Verifique se sua chave OpenAI está ativa
-2. Confirme se tem créditos disponíveis
-3. Gere uma nova chave se necessário
-        `);
+      // Tratamento específico para erro de chave API inválida
+      if (response.status === 401 && errorData.error?.code === 'invalid_api_key') {
+        throw new Error(`Chave API inválida. Por favor, verifique sua chave OpenAI e configure-a novamente nas configurações.`);
       }
       
       throw new Error(`Erro na API: ${response.status} - ${errorData.error?.message || 'Erro desconhecido'}`);
@@ -91,10 +79,9 @@ Para usar o chat, você precisa configurar uma chave OpenAI válida.
       throw new Error('Resposta vazia da API');
     }
     
-    console.log('✅ Resposta recebida com sucesso da OpenAI');
     return content;
   } catch (error) {
-    console.error('❌ Erro ao enviar mensagem:', error);
+    console.error('Erro ao enviar mensagem:', error);
     throw error;
   }
 };
