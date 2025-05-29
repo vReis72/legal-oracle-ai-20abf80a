@@ -17,6 +17,7 @@ export const useApiKey = () => {
   if (context === undefined) {
     console.error('❌ useApiKey: Contexto ApiKeyContext não encontrado!');
     console.error('❌ Certifique-se de que o componente está envolvido por ApiKeyProvider');
+    console.error('❌ Stack trace:', new Error().stack);
     throw new Error('useApiKey deve ser usado dentro de um ApiKeyProvider');
   }
   

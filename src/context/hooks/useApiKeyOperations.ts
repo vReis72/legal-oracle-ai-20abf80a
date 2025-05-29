@@ -1,7 +1,7 @@
 
 import { useToast } from '@/hooks/use-toast';
 import { saveApiKey, removeApiKey } from '@/services/apiKeyService';
-import { isValidApiKey, getPriorityApiKey, PLACEHOLDER_TEXT, getEnvironmentApiKey } from '../utils/apiKeyUtils';
+import { isValidApiKey, getPriorityApiKey, PLACEHOLDER_TEXT } from '../utils/apiKeyUtils';
 
 interface UseApiKeyOperationsProps {
   apiKey: string | null;
