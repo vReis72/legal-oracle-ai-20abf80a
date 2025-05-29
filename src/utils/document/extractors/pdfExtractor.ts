@@ -5,7 +5,7 @@ import { createLogger } from '../logger';
 import { TextExtractionOptions, TextExtractionResult } from '../types';
 
 /**
- * Extrai texto de um arquivo PDF usando processamento interno
+ * Extrai texto de um arquivo PDF usando fallback interno
  */
 export const extractTextFromPDF = async (
   file: File, 
@@ -17,8 +17,8 @@ export const extractTextFromPDF = async (
   logger.info(`Iniciando extração de texto do PDF: ${file.name}`);
   
   try {
-    // Configurar para processamento interno
-    logger.info("Configurando PDF para processamento interno...");
+    // Configurar para usar fallback interno
+    logger.info("Configurando PDF para fallback interno...");
     const workerResult = configurePdfWorker({
       verbose: options.verbose,
       showToasts: false
@@ -40,17 +40,13 @@ export const extractTextFromPDF = async (
     
     logger.info(`ArrayBuffer carregado: ${arrayBuffer.byteLength} bytes`);
     
-    // Configuração otimizada para processamento interno
+    // Configuração simplificada para fallback interno
     const loadingTask = pdfjsLib.getDocument({
       data: arrayBuffer,
       verbosity: 0,
+      // Configurações para forçar processamento síncrono
       disableAutoFetch: true,
       disableStream: true,
-      useWorkerFetch: false,
-      isEvalSupported: false,
-      disableFontFace: true,
-      useSystemFonts: true,
-      // Forçar processamento main thread
       stopAtErrors: false
     });
     

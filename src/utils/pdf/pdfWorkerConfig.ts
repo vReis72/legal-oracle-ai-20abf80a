@@ -24,23 +24,23 @@ interface PdfWorkerConfigResult {
 }
 
 /**
- * Configura o PDF.js para funcionar sem worker externo
+ * Configura o PDF.js para funcionar sem worker externo usando fallback
  */
 export const configurePdfWorker = (options: PdfWorkerConfigOptions = {}): PdfWorkerConfigResult => {
   const { showToasts = true, verbose = false } = options;
   
   try {
-    // Desabilitar worker completamente para usar processamento interno
-    // Isso força o PDF.js a usar o modo legado sem worker
-    pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+    // Configurar para usar fallback interno (compatível com PDF.js 5.x)
+    // Usar 'false' força o uso do processamento síncrono interno
+    pdfjsLib.GlobalWorkerOptions.workerSrc = false as any;
     
     if (verbose) {
-      console.log('[PDF Worker]: Configurado para processamento interno (sem worker externo)');
+      console.log('[PDF Worker]: Configurado para usar fallback interno (processamento síncrono)');
     }
     
     return { 
       success: true, 
-      workerSrc: 'interno'
+      workerSrc: 'fallback-interno'
     };
   } catch (error) {
     const errorMessage = error instanceof Error 
