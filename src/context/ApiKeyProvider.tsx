@@ -18,9 +18,9 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   const [isEnvironmentKey, setIsEnvironmentKey] = useState(false);
   const { toast } = useToast();
   
-  // Hook para gerenciar configurações do usuário no Supabase
+  // Hook para gerenciar configurações do usuário e sistema
   const { 
-    apiKey: supabaseApiKey, 
+    apiKey: priorityApiKey, 
     saveApiKey: saveToSupabase, 
     removeApiKey: removeFromSupabase,
     hasValidApiKey: hasValidSupabaseKey,
@@ -63,13 +63,13 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     console.log("🚀 === INICIALIZANDO ApiKeyProvider ===");
     
     // 1. Verificar chave prioritária (ambiente ou global)
-    const priorityKey = getPriorityApiKey();
-    if (validateAndSetKey(priorityKey, 'Ambiente/Global')) {
+    const envPriorityKey = getPriorityApiKey();
+    if (validateAndSetKey(envPriorityKey, 'Ambiente/Global')) {
       // Sincronizar com localStorage se necessário
-      if (!hasApiKey() || getApiKey() !== priorityKey) {
-        saveApiKey(priorityKey!);
+      if (!hasApiKey() || getApiKey() !== envPriorityKey) {
+        saveApiKey(envPriorityKey!);
       }
-      console.log("🎯 Usando chave prioritária");
+      console.log("🎯 Usando chave prioritária (ambiente)");
       return;
     }
     
@@ -89,21 +89,21 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     console.log("🎯 === Estado inicial configurado ===");
   }, []);
 
-  // Sincronizar com chave do Supabase quando carregada
+  // Sincronizar com chave prioritária do useUserSettings quando carregada
   useEffect(() => {
-    if (!isLoadingSupabase && supabaseApiKey) {
-      if (validateAndSetKey(supabaseApiKey, 'Supabase')) {
+    if (!isLoadingSupabase && priorityApiKey) {
+      if (validateAndSetKey(priorityApiKey, 'Sistema/Supabase')) {
         // Sincronizar com localStorage
-        if (!hasApiKey() || getApiKey() !== supabaseApiKey) {
-          saveApiKey(supabaseApiKey);
+        if (!hasApiKey() || getApiKey() !== priorityApiKey) {
+          saveApiKey(priorityApiKey);
         }
-        console.log("🔄 Sincronizado com Supabase");
+        console.log("🔄 Sincronizado com chave do sistema/usuário");
       }
     }
-  }, [supabaseApiKey, isLoadingSupabase]);
+  }, [priorityApiKey, isLoadingSupabase]);
 
   // Determinar se a chave está configurada
-  const currentKey = apiKey || getPriorityApiKey();
+  const currentKey = apiKey || priorityApiKey || getPriorityApiKey();
   const isKeyConfigured = Boolean(currentKey && isValidApiKey(currentKey));
   
   console.log("📊 === Estado atual da API Key ===");

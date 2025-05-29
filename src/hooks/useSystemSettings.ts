@@ -16,10 +16,11 @@ export const useSystemSettings = () => {
   const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
 
   const loadSettings = async () => {
-    if (!profile?.is_admin) {
+    // Carrega configurações para todos os usuários autenticados
+    if (!user) {
       setIsLoading(false);
       return;
     }
@@ -45,7 +46,7 @@ export const useSystemSettings = () => {
 
   useEffect(() => {
     loadSettings();
-  }, [profile]);
+  }, [user]);
 
   const updateApiKey = async (apiKey: string): Promise<boolean> => {
     if (!profile?.is_admin || !settings) {

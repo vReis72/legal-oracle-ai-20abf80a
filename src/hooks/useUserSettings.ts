@@ -34,16 +34,24 @@ export const useUserSettings = () => {
     loadUserSettings();
   }, [user]);
 
-  // Função para obter a chave API com prioridade: global (admin) > usuário individual
+  // Função para obter a chave API com prioridade: global (sistema) > usuário individual
   const getApiKey = (): string | null => {
-    // Se é admin, usa a chave global
-    if (profile?.is_admin) {
-      const globalKey = getGlobalApiKey();
-      if (globalKey) return globalKey;
+    // Primeiro tenta usar a chave global do sistema (disponível para todos)
+    const globalKey = getGlobalApiKey();
+    if (globalKey) {
+      console.log('🌐 Usando chave API global do sistema');
+      return globalKey;
     }
     
-    // Senão, usa a chave individual do usuário
-    return userSettings?.openai_api_key || null;
+    // Se não houver chave global, usa a chave individual do usuário
+    const userKey = userSettings?.openai_api_key || null;
+    if (userKey) {
+      console.log('👤 Usando chave API individual do usuário');
+      return userKey;
+    }
+
+    console.log('❌ Nenhuma chave API disponível');
+    return null;
   };
 
   // Verifica se tem uma chave válida
@@ -77,15 +85,26 @@ export const useUserSettings = () => {
     }
   };
 
-  // Salva chave API individual (apenas para usuários não-admin)
+  // Salva chave API individual (apenas para usuários não-admin quando não há chave global)
   const saveApiKey = async (apiKey: string): Promise<boolean> => {
     if (!user) return false;
+
+    // Se há uma chave global configurada, não permite salvar chave individual
+    const globalKey = getGlobalApiKey();
+    if (globalKey) {
+      toast({
+        variant: "info",
+        title: "Chave global em uso",
+        description: "O sistema está usando a chave API global. Apenas administradores podem alterá-la.",
+      });
+      return false;
+    }
 
     if (profile?.is_admin) {
       toast({
         variant: "info",
-        title: "Uso da chave global",
-        description: "Administradores usam a chave API global configurada nas configurações do sistema.",
+        title: "Use as configurações administrativas",
+        description: "Administradores devem configurar a chave API global nas configurações administrativas.",
       });
       return false;
     }
