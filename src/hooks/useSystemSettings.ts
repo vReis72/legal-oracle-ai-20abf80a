@@ -34,7 +34,7 @@ export const useSystemSettings = () => {
 
       if (error) {
         console.error('❌ Erro ao carregar configurações do sistema:', error);
-        // Se não existir configuração, criar uma vazia para admin
+        // Se não existir configuração e o usuário for admin, criar uma vazia
         if (error.code === 'PGRST116' && profile?.is_admin) {
           console.log('🚀 Criando configuração inicial do sistema...');
           const { data: newData, error: createError } = await supabase
@@ -51,13 +51,15 @@ export const useSystemSettings = () => {
             console.log('✅ Configuração inicial criada');
           }
         }
+        setSettings(null);
         return;
       }
 
       setSettings(data);
-      console.log('✅ Configurações do sistema carregadas:', data ? 'com chave API' : 'sem chave API');
+      console.log('✅ Configurações do sistema carregadas:', data?.openai_api_key ? 'com chave API' : 'sem chave API');
     } catch (error) {
       console.error('❌ Erro inesperado ao carregar configurações:', error);
+      setSettings(null);
     } finally {
       setIsLoading(false);
     }

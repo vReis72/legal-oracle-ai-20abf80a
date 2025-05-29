@@ -92,22 +92,25 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
       console.log('🔄 Verificando chave global do sistema...');
       const globalKey = getGlobalApiKey();
       
-      if (globalKey && validateAndSetKey(globalKey, 'Sistema Global')) {
+      if (globalKey && isValidApiKey(globalKey)) {
+        console.log('✅ Chave global válida encontrada, configurando...');
+        setApiKeyState(globalKey);
+        setIsPlaceholderKey(false);
+        setIsEnvironmentKey(false);
+        
         // Sincronizar com localStorage
         if (!hasApiKey() || getApiKey() !== globalKey) {
           saveApiKey(globalKey);
+          console.log('🔄 Chave global sincronizada com localStorage');
         }
-        console.log("🔄 Sincronizado com chave global do sistema");
-      } else if (!globalKey && apiKey) {
-        // Se não há chave global mas há uma local, limpar
-        console.log("🔄 Removendo chave local (sem chave global configurada)");
+      } else if (!globalKey) {
+        console.log("❌ Nenhuma chave global configurada pelo administrador");
         setApiKeyState(null);
         setIsPlaceholderKey(true);
         setIsEnvironmentKey(false);
         removeApiKey();
-      } else if (!globalKey && !apiKey) {
-        // Nenhuma chave disponível
-        console.log("❌ Nenhuma chave global configurada pelo administrador");
+      } else {
+        console.log("❌ Chave global encontrada mas inválida");
         setApiKeyState(null);
         setIsPlaceholderKey(true);
         setIsEnvironmentKey(false);
@@ -123,7 +126,7 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   
   console.log("📊 === Estado atual da API Key ===");
   console.log("✅ Chave configurada:", isKeyConfigured);
-  console.log("🔑 Chave sendo usada:", currentKey?.substring(0, 30) + "...");
+  console.log("🔑 Chave sendo usada:", currentKey ? currentKey.substring(0, 30) + "..." : 'nenhuma');
   console.log("✅ É válida?", currentKey ? isValidApiKey(currentKey) : false);
   console.log("🔧 É placeholder?", isPlaceholderKey);
   console.log("🌍 É do ambiente?", isEnvironmentKey);
