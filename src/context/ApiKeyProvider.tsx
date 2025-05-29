@@ -3,7 +3,7 @@ import React, { useState, useEffect, ReactNode } from 'react';
 import { getApiKey, saveApiKey, hasApiKey, removeApiKey } from '@/services/apiKeyService';
 import { useToast } from '@/hooks/use-toast';
 import { isValidApiKey, getPriorityApiKey } from './utils/apiKeyUtils';
-import { useUserSettings } from '@/hooks/useUserSettings';
+import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { ApiKeyContext } from './ApiKeyContext';
 import { useApiKeyOperations } from './hooks/useApiKeyOperations';
 
@@ -18,22 +18,19 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   const [isEnvironmentKey, setIsEnvironmentKey] = useState(false);
   const { toast } = useToast();
   
-  // Hook para gerenciar configurações do usuário e sistema
+  // Hook para gerenciar configurações do sistema
   const { 
-    apiKey: priorityApiKey, 
-    saveApiKey: saveToSupabase, 
-    removeApiKey: removeFromSupabase,
-    hasValidApiKey: hasValidSupabaseKey,
-    isLoading: isLoadingSupabase 
-  } = useUserSettings();
+    getApiKey: getGlobalApiKey, 
+    isLoading: isLoadingSystem 
+  } = useSystemSettings();
 
   const { setApiKey, resetApiKey, checkApiKey } = useApiKeyOperations({
     apiKey,
     setApiKeyState,
     setIsPlaceholderKey,
     isEnvironmentKey,
-    saveToSupabase,
-    removeFromSupabase,
+    saveToSupabase: async () => false, // Não usado mais
+    removeFromSupabase: async () => false, // Não usado mais
     toast
   });
 
@@ -50,7 +47,7 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
       console.log(`✅ ${source}: Chave válida detectada`);
       setApiKeyState(key);
       setIsPlaceholderKey(false);
-      setIsEnvironmentKey(source === 'Ambiente/Global');
+      setIsEnvironmentKey(source === 'Ambiente');
       return true;
     } else {
       console.log(`❌ ${source}: Chave inválida`);
@@ -62,9 +59,9 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   useEffect(() => {
     console.log("🚀 === INICIALIZANDO ApiKeyProvider ===");
     
-    // 1. Verificar chave prioritária (ambiente ou global)
+    // 1. Verificar chave prioritária (ambiente)
     const envPriorityKey = getPriorityApiKey();
-    if (validateAndSetKey(envPriorityKey, 'Ambiente/Global')) {
+    if (validateAndSetKey(envPriorityKey, 'Ambiente')) {
       // Sincronizar com localStorage se necessário
       if (!hasApiKey() || getApiKey() !== envPriorityKey) {
         saveApiKey(envPriorityKey!);
@@ -89,31 +86,39 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     console.log("🎯 === Estado inicial configurado ===");
   }, []);
 
-  // Sincronizar com chave prioritária do useUserSettings quando carregada
+  // Sincronizar com chave global do sistema quando carregada
   useEffect(() => {
-    if (!isLoadingSupabase) {
-      console.log('🔄 Verificando chave do sistema/usuário...');
-      if (priorityApiKey && validateAndSetKey(priorityApiKey, 'Sistema/Supabase')) {
+    if (!isLoadingSystem) {
+      console.log('🔄 Verificando chave global do sistema...');
+      const globalKey = getGlobalApiKey();
+      
+      if (globalKey && validateAndSetKey(globalKey, 'Sistema Global')) {
         // Sincronizar com localStorage
-        if (!hasApiKey() || getApiKey() !== priorityApiKey) {
-          saveApiKey(priorityApiKey);
+        if (!hasApiKey() || getApiKey() !== globalKey) {
+          saveApiKey(globalKey);
         }
-        console.log("🔄 Sincronizado com chave do sistema/usuário");
-      } else if (!priorityApiKey && apiKey) {
-        // Se não há chave do sistema mas há uma local, manter a local
-        console.log("🔄 Mantendo chave local (sem chave do sistema)");
-      } else if (!priorityApiKey && !apiKey) {
+        console.log("🔄 Sincronizado com chave global do sistema");
+      } else if (!globalKey && apiKey) {
+        // Se não há chave global mas há uma local, limpar
+        console.log("🔄 Removendo chave local (sem chave global configurada)");
+        setApiKeyState(null);
+        setIsPlaceholderKey(true);
+        setIsEnvironmentKey(false);
+        removeApiKey();
+      } else if (!globalKey && !apiKey) {
         // Nenhuma chave disponível
-        console.log("❌ Nenhuma chave disponível - necessário configurar");
+        console.log("❌ Nenhuma chave global configurada pelo administrador");
         setApiKeyState(null);
         setIsPlaceholderKey(true);
         setIsEnvironmentKey(false);
       }
     }
-  }, [priorityApiKey, isLoadingSupabase]);
+  }, [getGlobalApiKey, isLoadingSystem]);
 
   // Determinar se a chave está configurada
-  const currentKey = priorityApiKey || apiKey || getPriorityApiKey();
+  const envKey = getPriorityApiKey();
+  const globalKey = getGlobalApiKey();
+  const currentKey = envKey || globalKey || apiKey;
   const isKeyConfigured = Boolean(currentKey && isValidApiKey(currentKey));
   
   console.log("📊 === Estado atual da API Key ===");
@@ -122,7 +127,7 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   console.log("✅ É válida?", currentKey ? isValidApiKey(currentKey) : false);
   console.log("🔧 É placeholder?", isPlaceholderKey);
   console.log("🌍 É do ambiente?", isEnvironmentKey);
-  console.log("🔄 Carregando Supabase?", isLoadingSupabase);
+  console.log("🔄 Carregando Sistema?", isLoadingSystem);
 
   return (
     <ApiKeyContext.Provider value={{ 
