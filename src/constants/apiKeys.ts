@@ -1,6 +1,5 @@
 
 // Constante global para a chave API OpenAI
-// Esta chave será usada em todo o aplicativo
 export const GLOBAL_OPENAI_API_KEY = "sk-adicione-uma-chave-valida-aqui";
 
 // Função para obter a chave global
