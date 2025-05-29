@@ -2,8 +2,8 @@
 // Constants
 export const PLACEHOLDER_TEXT = "sk-adicione-uma-chave-valida-aqui";
 
-// CHAVE FIXA PARA DESENVOLVIMENTO - CORRETA
-const DEVELOPMENT_API_KEY = "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";
+// CHAVE TEMPORÁRIA PARA TESTE - será substituída por uma válida
+const DEVELOPMENT_API_KEY = "sk-test-development-key-placeholder";
 
 // Get API key from the environment (if available)
 export const getEnvironmentApiKey = (): string | undefined => {
@@ -17,7 +17,7 @@ export const isValidApiKey = (key: string | null): boolean => {
   
   // Para desenvolvimento, aceitar a chave fixa SEMPRE
   if (key === DEVELOPMENT_API_KEY) {
-    console.log("✅ Chave de desenvolvimento CORRETA detectada e validada como VÁLIDA");
+    console.log("✅ Chave de desenvolvimento detectada e validada como VÁLIDA");
     return true;
   }
   

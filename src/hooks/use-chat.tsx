@@ -10,7 +10,16 @@ export const useChat = () => {
     {
       id: '1',
       role: 'assistant',
-      content: 'Olá! Sou o Legal Oracle IA, assistente especializado em direito. Como posso ajudar você hoje?',
+      content: `Olá! Sou o Legal Oracle IA, assistente especializado em direito. 
+
+🔑 **IMPORTANTE**: Para usar o chat, você precisa configurar uma chave OpenAI válida.
+
+📝 **Como obter uma chave**:
+1. Acesse: https://platform.openai.com/api-keys
+2. Crie uma nova chave API
+3. Configure nas configurações ou me informe aqui
+
+Como posso ajudar você hoje?`,
       timestamp: new Date()
     }
   ]);
@@ -19,7 +28,7 @@ export const useChat = () => {
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const { setApiKey } = useApiKey();
+  const { apiKey, setApiKey } = useApiKey();
 
   useEffect(() => {
     scrollToBottom();
@@ -47,7 +56,7 @@ export const useChat = () => {
     setError(null);
     
     try {
-      console.log('🚀 Iniciando envio com chave de desenvolvimento:', DEVELOPMENT_API_KEY.substring(0, 20) + '...');
+      console.log('🚀 Iniciando envio...');
       
       // Create array with system message and conversation history
       const conversationHistory: ChatMessage[] = [
@@ -61,8 +70,8 @@ export const useChat = () => {
         userMessage
       ];
       
-      // Sempre usar chave de desenvolvimento
-      const assistantResponse = await sendChatMessage(conversationHistory);
+      // Usar a chave do contexto ou permitir configuração
+      const assistantResponse = await sendChatMessage(conversationHistory, apiKey || undefined);
       
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
@@ -99,7 +108,7 @@ export const useChat = () => {
     messagesEndRef,
     handleSendMessage,
     handleRetry,
-    isKeyConfigured: true,
+    isKeyConfigured: Boolean(apiKey && apiKey !== DEVELOPMENT_API_KEY),
     setApiKey
   };
 };
