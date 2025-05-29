@@ -4,8 +4,16 @@ import { getApiKey, saveApiKey, hasApiKey, removeApiKey } from '@/services/apiKe
 import { useToast } from '@/hooks/use-toast';
 import { isValidApiKey, getPriorityApiKey } from './utils/apiKeyUtils';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
-import { useApiKeyOperations } from './hooks/useApiKeyOperations';
-import { ApiKeyContextType } from './types/apiKeyTypes';
+
+interface ApiKeyContextType {
+  apiKey: string | null;
+  setApiKey: (key: string) => void;
+  isKeyConfigured: boolean;
+  checkApiKey: () => boolean;
+  resetApiKey: () => void;
+  isPlaceholderKey: boolean;
+  isEnvironmentKey: boolean;
+}
 
 const ApiKeyContext = createContext<ApiKeyContextType | undefined>(undefined);
 
@@ -44,15 +52,100 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     isLoading: isLoadingSystem 
   } = useSystemSettings();
 
-  const { setApiKey, resetApiKey, checkApiKey } = useApiKeyOperations({
-    apiKey,
-    setApiKeyState,
-    setIsPlaceholderKey,
-    isEnvironmentKey,
-    saveToSupabase: async () => false, // Não usado mais
-    removeFromSupabase: async () => false, // Não usado mais
-    toast
-  });
+  // Funções internas para operações com API Key
+  const setApiKey = async (key: string) => {
+    // Não permitir sobrescrever a chave do ambiente
+    if (isEnvironmentKey) {
+      toast({
+        variant: "warning",
+        title: "Operação não permitida",
+        description: "Uma chave API já está configurada através de variáveis de ambiente (Railway).",
+      });
+      return;
+    }
+
+    if (key && key.trim()) {
+      try {
+        // Validação para chaves da OpenAI
+        if (!key.startsWith('sk-')) {
+          toast({
+            variant: "destructive",
+            title: "Formato inválido",
+            description: "A chave API da OpenAI deve começar com 'sk-'.",
+          });
+          return;
+        }
+        
+        // Salvar no localStorage
+        saveApiKey(key);
+        setApiKeyState(key);
+        setIsPlaceholderKey(key === 'sk-adicione-uma-chave-valida-aqui');
+        
+        toast({
+          title: "API Key Configurada",
+          description: "Sua chave da API OpenAI foi salva com sucesso.",
+        });
+        
+        console.log("API key configurada com sucesso");
+      } catch (error) {
+        console.error("Erro ao salvar API key:", error);
+        toast({
+          variant: "destructive",
+          title: "Erro ao salvar API Key",
+          description: "Não foi possível salvar sua chave API. Verifique o formato e tente novamente.",
+        });
+      }
+    }
+  };
+
+  const resetApiKey = async () => {
+    // Não permitir remover a chave do ambiente
+    if (isEnvironmentKey) {
+      toast({
+        variant: "warning",
+        title: "Operação não permitida",
+        description: "Não é possível remover uma chave configurada através de variáveis de ambiente (Railway).",
+      });
+      return;
+    }
+
+    try {
+      // Remover do localStorage
+      removeApiKey();
+      
+      // Restaurar chave global se disponível
+      const globalKey = getPriorityApiKey();
+      if (globalKey) {
+        console.log("Restaurando chave global");
+        setApiKeyState(globalKey);
+        setIsPlaceholderKey(false);
+        saveApiKey(globalKey);
+        
+        toast({
+          title: "Chave Restaurada",
+          description: "Chave global restaurada automaticamente.",
+        });
+      } else {
+        setApiKeyState(null);
+        setIsPlaceholderKey(true);
+        
+        toast({
+          title: "Chave Removida",
+          description: "Configure uma nova chave API para usar o sistema.",
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao resetar API key:", error);
+    }
+  };
+
+  const checkApiKey = (): boolean => {
+    const currentKey = apiKey || getPriorityApiKey();
+    const isValid = isValidApiKey(currentKey);
+    console.log("Verificação de API key - Chave atual:", currentKey?.substring(0, 30) + "...");
+    console.log("Verificação de API key - É válida?", isValid);
+    return isValid;
+  };
 
   // Função para validar e configurar uma chave
   const validateAndSetKey = (key: string | null, source: string) => {
