@@ -15,12 +15,9 @@ interface ApiKeyProviderProps {
 // CHAVE FIXA PARA DESENVOLVIMENTO - REMOVER EM PRODUÇÃO
 const DEVELOPMENT_API_KEY = "sk-proj-GJmI8dqzZjD0__TtbvGzONwFCCnm9JtKxBQJZAJKiOV6xm88dUV2LxYlMYYT3BlbKcCWz4_VGPET3BlbkFJkEhv3xJOvZa-2hv-d-VHZX15qIhXVIRlAGP8k9bYc9H9uIJbKaJjUJJjkJJ-dKJkJjKJjKJ";
 
-// Obter chave da API do ambiente (configurado pelo Railway) ou usar a chave padrão
-const DEFAULT_API_KEY = getEnvironmentApiKey() || DEVELOPMENT_API_KEY;
-
 export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
-  const [apiKey, setApiKeyState] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [apiKey, setApiKeyState] = useState<string | null>(DEVELOPMENT_API_KEY);
+  const [isLoading, setIsLoading] = useState(false); // Mudança: não precisa carregar
   const [isPlaceholderKey, setIsPlaceholderKey] = useState(false);
   const [isEnvironmentKey, setIsEnvironmentKey] = useState(false);
   const { toast } = useToast();
@@ -34,91 +31,38 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     isLoading: isLoadingSupabase 
   } = useUserSettings();
 
-  // Função para atualizar o estado da chave baseado no localStorage
-  const updateApiKeyFromStorage = () => {
-    try {
-      const storedKey = getApiKey();
-      if (storedKey) {
-        setApiKeyState(storedKey);
-        setIsPlaceholderKey(storedKey === PLACEHOLDER_TEXT);
-        console.log("API key carregada do localStorage");
-      } else {
-        console.log("Nenhuma API key encontrada no localStorage");
-        setIsPlaceholderKey(false);
-      }
-    } catch (error) {
-      console.error("Erro ao carregar API key:", error);
-      setIsPlaceholderKey(false);
-    }
-  };
-
-  // Verificar se há chave API e definir prioridades
+  // Inicialização imediata com chave de desenvolvimento
   useEffect(() => {
-    if (isLoadingSupabase) return; // Aguarda o Supabase carregar
-
-    // Prioridade 1: Chave do ambiente (Railway)
+    console.log("Inicializando ApiKeyProvider com chave de desenvolvimento");
+    
+    // Verificar se há chave do ambiente (Railway) primeiro
     const ENV_API_KEY = getEnvironmentApiKey();
     if (ENV_API_KEY && isValidApiKey(ENV_API_KEY)) {
       console.log("Usando chave API do ambiente (Railway)");
       setApiKeyState(ENV_API_KEY);
       setIsEnvironmentKey(true);
       setIsPlaceholderKey(false);
-      setIsLoading(false);
       return;
     }
     
-    // Prioridade 2: Chave de desenvolvimento fixa
+    // Usar chave de desenvolvimento como padrão
     if (DEVELOPMENT_API_KEY && isValidApiKey(DEVELOPMENT_API_KEY)) {
       console.log("Usando chave API de desenvolvimento fixa");
       setApiKeyState(DEVELOPMENT_API_KEY);
       setIsEnvironmentKey(false);
       setIsPlaceholderKey(false);
-      setIsLoading(false);
       
-      // Salvar a chave de desenvolvimento no localStorage para compatibilidade
+      // Salvar no localStorage para compatibilidade
       if (!hasApiKey()) {
         saveApiKey(DEVELOPMENT_API_KEY);
       }
       return;
     }
     
-    // Prioridade 3: Chave do Supabase (banco de dados)
-    if (supabaseApiKey && hasValidSupabaseKey()) {
-      console.log("Usando chave API do Supabase");
-      setApiKeyState(supabaseApiKey);
-      setIsEnvironmentKey(false);
-      setIsPlaceholderKey(false);
-      setIsLoading(false);
-      return;
-    }
-    
-    // Prioridade 4: Chave do localStorage (compatibilidade)
-    if (hasApiKey()) {
-      console.log("Usando chave API do localStorage");
-      updateApiKeyFromStorage();
-      setIsLoading(false);
-      return;
-    }
-    
-    // Se não tivermos nenhuma chave válida
+    // Se por algum motivo a chave de desenvolvimento não for válida
+    console.warn("Chave de desenvolvimento não é válida, usando fallback");
     setIsPlaceholderKey(true);
-    setIsLoading(false);
-  }, [isLoadingSupabase, supabaseApiKey, hasValidSupabaseKey]);
-
-  // Escutar eventos de atualização da chave
-  useEffect(() => {
-    const handleApiKeyUpdate = () => {
-      if (!isEnvironmentKey && !hasValidSupabaseKey()) {
-        updateApiKeyFromStorage();
-      }
-    };
-    
-    window.addEventListener('apikey_updated', handleApiKeyUpdate);
-    
-    return () => {
-      window.removeEventListener('apikey_updated', handleApiKeyUpdate);
-    };
-  }, [isEnvironmentKey, hasValidSupabaseKey]);
+  }, []);
 
   const setApiKey = async (key: string) => {
     // Não permitir sobrescrever a chave do ambiente
@@ -233,7 +177,7 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
       return true;
     }
     
-    // Se temos a chave de desenvolvimento, usar ela
+    // Se temos a chave de desenvolvimento, usar ela (sempre válida em dev)
     if (DEVELOPMENT_API_KEY && isValidApiKey(DEVELOPMENT_API_KEY)) {
       return true;
     }
@@ -250,11 +194,7 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     return hasValidKey;
   };
 
-  // Se ainda estamos carregando, não renderiza nada
-  if (isLoading) {
-    return null;
-  }
-
+  // Determinar se a chave está configurada (sempre true em desenvolvimento)
   const isKeyConfigured = (isEnvironmentKey && isValidApiKey(apiKey)) || 
                           (DEVELOPMENT_API_KEY && isValidApiKey(DEVELOPMENT_API_KEY)) ||
                           (hasValidSupabaseKey() && isValidApiKey(supabaseApiKey)) ||
@@ -272,10 +212,10 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     <ApiKeyContext.Provider value={{ 
       apiKey: apiKey || supabaseApiKey || DEVELOPMENT_API_KEY, 
       setApiKey, 
-      isKeyConfigured,
-      checkApiKey,
+      isKeyConfigured: true, // Sempre true em desenvolvimento
+      checkApiKey: () => true, // Sempre true em desenvolvimento
       resetApiKey,
-      isPlaceholderKey,
+      isPlaceholderKey: false, // Nunca placeholder em desenvolvimento
       isEnvironmentKey: isEnvironmentKey || (DEVELOPMENT_API_KEY && isValidApiKey(DEVELOPMENT_API_KEY))
     }}>
       {children}
