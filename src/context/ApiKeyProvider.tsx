@@ -44,41 +44,64 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     // Usar a chave prioritária (ambiente ou global)
     const priorityKey = getPriorityApiKey();
     
-    if (priorityKey) {
-      console.log("✅ Usando chave prioritária:", priorityKey.substring(0, 30) + "...");
+    if (priorityKey && isValidApiKey(priorityKey)) {
+      console.log("✅ Usando chave prioritária válida:", priorityKey.substring(0, 30) + "...");
       setApiKeyState(priorityKey);
       setIsEnvironmentKey(Boolean(priorityKey));
       setIsPlaceholderKey(false);
       
-      // Salvar no localStorage para compatibilidade
+      // Salvar no localStorage para compatibilidade se não existir
       if (!hasApiKey()) {
         saveApiKey(priorityKey);
       }
     } else {
-      console.log("⚠️ Nenhuma chave global configurada");
-      setApiKeyState(null);
-      setIsEnvironmentKey(false);
-      setIsPlaceholderKey(true);
+      console.log("⚠️ Nenhuma chave global válida configurada");
+      // Tentar carregar do localStorage como fallback
+      const localKey = getApiKey();
+      if (localKey && isValidApiKey(localKey)) {
+        console.log("📁 Usando chave do localStorage:", localKey.substring(0, 30) + "...");
+        setApiKeyState(localKey);
+        setIsEnvironmentKey(false);
+        setIsPlaceholderKey(false);
+      } else {
+        console.log("❌ Nenhuma chave válida encontrada");
+        setApiKeyState(null);
+        setIsEnvironmentKey(false);
+        setIsPlaceholderKey(true);
+      }
     }
     
     console.log("🎯 === Estado inicial configurado ===");
-    console.log("🔑 API Key ativa:", priorityKey?.substring(0, 30) + "...");
-    console.log("✅ É válida?", priorityKey ? isValidApiKey(priorityKey) : false);
   }, []);
 
+  // Sincronizar com chave do Supabase quando carregada
+  useEffect(() => {
+    if (!isLoadingSupabase && supabaseApiKey && isValidApiKey(supabaseApiKey)) {
+      console.log("🔄 Sincronizando com chave do Supabase:", supabaseApiKey.substring(0, 30) + "...");
+      setApiKeyState(supabaseApiKey);
+      setIsPlaceholderKey(false);
+      
+      // Salvar no localStorage para compatibilidade
+      if (!hasApiKey() || getApiKey() !== supabaseApiKey) {
+        saveApiKey(supabaseApiKey);
+      }
+    }
+  }, [supabaseApiKey, isLoadingSupabase]);
+
   // Determinar se a chave está configurada
-  const isKeyConfigured = Boolean(apiKey && isValidApiKey(apiKey));
+  const currentKey = apiKey || getPriorityApiKey();
+  const isKeyConfigured = Boolean(currentKey && isValidApiKey(currentKey));
   
   console.log("📊 === Estado atual da API Key ===");
   console.log("✅ Chave configurada:", isKeyConfigured);
-  console.log("🔑 Chave sendo usada:", apiKey?.substring(0, 30) + "...");
-  console.log("✅ É válida?", apiKey ? isValidApiKey(apiKey) : false);
+  console.log("🔑 Chave sendo usada:", currentKey?.substring(0, 30) + "...");
+  console.log("✅ É válida?", currentKey ? isValidApiKey(currentKey) : false);
 
   return (
     <ApiKeyContext.Provider value={{ 
-      apiKey: apiKey || getPriorityApiKey(), 
+      apiKey: currentKey, 
       setApiKey, 
-      isKeyConfigured: isKeyConfigured, 
+      isKeyConfigured, 
       checkApiKey,
       resetApiKey,
       isPlaceholderKey: !isKeyConfigured,

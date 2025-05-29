@@ -16,10 +16,19 @@ const ApiKeyCheck: React.FC<ApiKeyCheckProps> = ({ children }) => {
   const [showDialog, setShowDialog] = useState(false);
   
   useEffect(() => {
-    // Em desenvolvimento, nunca mostrar o diálogo
-    console.log("ApiKeyCheck - isKeyConfigured:", isKeyConfigured);
-    setShowDialog(false);
-  }, [isKeyConfigured, isPlaceholderKey, isEnvironmentKey]);
+    // Verificar se realmente precisamos mostrar o diálogo
+    console.log("ApiKeyCheck - Estado da chave:");
+    console.log("- isKeyConfigured:", isKeyConfigured);
+    console.log("- isPlaceholderKey:", isPlaceholderKey);
+    console.log("- isEnvironmentKey:", isEnvironmentKey);
+    console.log("- apiKey presente:", !!apiKey);
+    
+    // Só mostrar o diálogo se realmente não tiver uma chave válida
+    const shouldShowDialog = !isKeyConfigured && !isEnvironmentKey && isPlaceholderKey;
+    console.log("- Deve mostrar diálogo:", shouldShowDialog);
+    
+    setShowDialog(shouldShowDialog);
+  }, [isKeyConfigured, isPlaceholderKey, isEnvironmentKey, apiKey]);
 
   return (
     <>
@@ -35,7 +44,26 @@ const ApiKeyCheck: React.FC<ApiKeyCheckProps> = ({ children }) => {
       
       {children}
       
-      {/* Diálogo removido para desenvolvimento */}
+      {/* Diálogo para configuração de chave API apenas quando necessário */}
+      {showDialog && (
+        <Dialog open={showDialog} onOpenChange={setShowDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Configurar API OpenAI</DialogTitle>
+              <DialogDescription>
+                Para usar o assistente de IA, configure uma chave OpenAI válida.
+              </DialogDescription>
+            </DialogHeader>
+            <OpenAIKeyInput 
+              forceOpen={true}
+              onKeySubmit={(key) => {
+                setApiKey(key);
+                setShowDialog(false);
+              }}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   );
 };
