@@ -17,7 +17,7 @@ export const isValidApiKey = (key: string | null): boolean => {
   
   // Para desenvolvimento, aceitar a chave fixa SEMPRE
   if (key === DEVELOPMENT_API_KEY) {
-    console.log("Chave de desenvolvimento CORRETA detectada e validada como VÁLIDA");
+    console.log("✅ Chave de desenvolvimento CORRETA detectada e validada como VÁLIDA");
     return true;
   }
   
