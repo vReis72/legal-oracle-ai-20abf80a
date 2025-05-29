@@ -17,7 +17,7 @@ const isValidDevelopmentKey = (key: string | null): boolean => {
   if (!key) return false;
   // Para desenvolvimento, aceitar a chave fixa SEMPRE
   if (key === DEVELOPMENT_API_KEY) {
-    console.log("Chave de desenvolvimento validada como VÁLIDA:", key.substring(0, 20) + "...");
+    console.log("Chave de desenvolvimento CORRETA validada como VÁLIDA:", key.substring(0, 20) + "...");
     return true;
   }
   return isValidApiKey(key);
@@ -39,10 +39,10 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     isLoading: isLoadingSupabase 
   } = useUserSettings();
 
-  // Inicialização imediata com chave de desenvolvimento
+  // Inicialização imediata com chave de desenvolvimento CORRETA
   useEffect(() => {
     console.log("=== INICIALIZANDO ApiKeyProvider ===");
-    console.log("Chave de desenvolvimento:", DEVELOPMENT_API_KEY.substring(0, 30) + "...");
+    console.log("Chave de desenvolvimento CORRETA:", DEVELOPMENT_API_KEY.substring(0, 30) + "...");
     
     // Verificar se há chave do ambiente (Railway) primeiro
     const ENV_API_KEY = getEnvironmentApiKey();
@@ -54,8 +54,8 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
       return;
     }
     
-    // Usar chave de desenvolvimento como padrão
-    console.log("Configurando chave de desenvolvimento como padrão");
+    // Usar chave de desenvolvimento CORRETA como padrão
+    console.log("Configurando chave de desenvolvimento CORRETA como padrão");
     setApiKeyState(DEVELOPMENT_API_KEY);
     setIsEnvironmentKey(false);
     setIsPlaceholderKey(false);
