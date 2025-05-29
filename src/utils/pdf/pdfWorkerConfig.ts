@@ -24,22 +24,23 @@ interface PdfWorkerConfigResult {
 }
 
 /**
- * Configura o worker do PDF.js sem worker externo
+ * Configura o worker do PDF.js para usar processamento interno
  */
 export const configurePdfWorker = (options: PdfWorkerConfigOptions = {}): PdfWorkerConfigResult => {
   const { showToasts = true, verbose = false } = options;
   
   try {
-    // Forçar reset da configuração anterior
-    pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+    // Definir explicitamente para usar processamento interno
+    // Usar 'false' desabilita o worker completamente
+    pdfjsLib.GlobalWorkerOptions.workerSrc = false as any;
     
     if (verbose) {
-      console.log('[PDF Worker]: Configurado para processamento interno (sem worker externo)');
+      console.log('[PDF Worker]: Configurado para processamento interno (worker desabilitado)');
     }
     
     return { 
       success: true, 
-      workerSrc: 'internal'
+      workerSrc: 'disabled'
     };
   } catch (error) {
     const errorMessage = error instanceof Error 
