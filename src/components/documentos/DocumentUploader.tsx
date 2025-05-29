@@ -87,7 +87,7 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onDocumentProcessed
         <div className="flex items-center gap-4">
           <Input 
             type="file" 
-            accept=".pdf,.docx,.txt" 
+            accept=".pdf,.txt" 
             onChange={handleFileChange}
             disabled={isUploading}
           />
@@ -113,7 +113,7 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onDocumentProcessed
         )}
         
         <div className="text-sm text-muted-foreground">
-          <p>Formatos aceitos: PDF, DOCX, TXT</p>
+          <p>Formatos aceitos: PDF, TXT</p>
           <p>Tamanho máximo: 10MB</p>
         </div>
       </div>

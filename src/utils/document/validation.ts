@@ -7,8 +7,7 @@
 export const isSupportedFileType = (file: File): boolean => {
   const supportedTypes = [
     'application/pdf',
-    'text/plain',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    'text/plain'
   ];
   return supportedTypes.includes(file.type);
 };
@@ -29,7 +28,7 @@ export const validateExtractedContent = (text: string, fileType: string): { vali
   
   // For PDFs, be more lenient with length requirements
   // as they could be scanned documents with little text
-  const minLength = fileType === 'application/pdf' ? 10 : 50;
+  const minLength = fileType === 'application/pdf' ? 10 : 20;
   
   if (text.trim().length < minLength) {
     return {

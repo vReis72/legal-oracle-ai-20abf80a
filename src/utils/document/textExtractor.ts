@@ -5,14 +5,13 @@
 import { TextExtractionOptions } from './types';
 import { extractTextFromPDF } from './extractors/pdfExtractor';
 import { extractTextFromTxt } from './extractors/txtExtractor';
-import { extractTextFromDocx } from './extractors/docxExtractor';
 import { isSupportedFileType } from './validation';
 import { createLogger } from './logger';
 import { showNotification } from './notifications';
 
 /**
  * Extracts text from different file types
- * @param file File to extract text from (PDF, DOCX, TXT)
+ * @param file File to extract text from (PDF, TXT)
  * @param options Text extraction options
  * @returns Promise with extracted text or error
  */
@@ -25,7 +24,7 @@ export const extractTextFromFile = async (
   logger.info(`Iniciando extração de texto do arquivo: ${file.name} (${file.type})`);
   
   if (!isSupportedFileType(file)) {
-    const errorMessage = `Formato de arquivo não suportado: ${file.type}`;
+    const errorMessage = `Formato de arquivo não suportado: ${file.type}. Use apenas PDF ou TXT.`;
     logger.error(errorMessage);
     showNotification(options, 'error', errorMessage);
     throw new Error(errorMessage);
@@ -39,8 +38,10 @@ export const extractTextFromFile = async (
   } else if (file.type === 'application/pdf') {
     result = await extractTextFromPDF(file, options);
   } else {
-    // DOCX or other supported document formats
-    result = await extractTextFromDocx(file, options);
+    const errorMessage = `Tipo de arquivo não suportado: ${file.type}`;
+    logger.error(errorMessage);
+    showNotification(options, 'error', errorMessage);
+    throw new Error(errorMessage);
   }
   
   // Handle extraction result

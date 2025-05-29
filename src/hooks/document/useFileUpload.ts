@@ -29,10 +29,10 @@ export const useFileUpload = ({ onDocumentProcessed }: UseFileUploadProps) => {
     }
     
     const fileExtension = selectedFile.name.split('.').pop()?.toLowerCase();
-    const acceptedFormats = ['pdf', 'docx', 'txt'];
+    const acceptedFormats = ['pdf', 'txt'];
     
     if (!fileExtension || !acceptedFormats.includes(fileExtension)) {
-      toast.error("Formato de arquivo não suportado. Por favor, use PDF, DOCX ou TXT.");
+      toast.error("Formato de arquivo não suportado. Por favor, use PDF ou TXT.");
       return;
     }
 
