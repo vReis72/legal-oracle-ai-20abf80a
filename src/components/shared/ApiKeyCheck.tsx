@@ -11,6 +11,8 @@ interface ApiKeyCheckProps {
 const ApiKeyCheck: React.FC<ApiKeyCheckProps> = ({ children }) => {
   const { isConfigured } = useApiKey();
 
+  console.log('🚨 ApiKeyCheck - isConfigured:', isConfigured);
+
   return (
     <>
       {!isConfigured && (
