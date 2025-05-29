@@ -1,4 +1,5 @@
 
+
 import { SearchResult } from './openaiService';
 import { getGlobalApiKey, hasGlobalApiKey } from '../constants/apiKeys';
 
@@ -26,7 +27,8 @@ export const sendChatMessage = async (
     // Prioridade: 1) Chave do usuário, 2) Chave global/ambiente
     const apiKey = userApiKey || getGlobalApiKey();
     
-    if (!apiKey || !hasGlobalApiKey()) {
+    // Validar se temos uma chave válida para usar
+    if (!apiKey || apiKey === "sk-adicione-uma-chave-valida-aqui" || apiKey.length < 20 || !apiKey.startsWith('sk-')) {
       throw new Error(`
 🔑 CHAVE API NECESSÁRIA: 
 Para usar o chat, você precisa configurar uma chave OpenAI válida.
@@ -98,3 +100,4 @@ Para usar o chat, você precisa configurar uma chave OpenAI válida.
     throw error;
   }
 };
+
