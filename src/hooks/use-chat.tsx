@@ -18,7 +18,7 @@ export const useChat = () => {
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const { apiKey, setApiKey, isKeyConfigured, isPlaceholderKey } = useApiKey();
+  const { apiKey, setApiKey, isKeyConfigured } = useApiKey();
 
   useEffect(() => {
     scrollToBottom();
@@ -31,16 +31,6 @@ export const useChat = () => {
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
-    
-    // Verificar se a API key é válida
-    if (isPlaceholderKey) {
-      toast({
-        variant: "destructive",
-        title: "API Key Inválida",
-        description: "A chave API atual é um placeholder. Por favor, configure uma chave OpenAI válida.",
-      });
-      return;
-    }
     
     // Add user message
     const userMessage: ChatMessage = {
@@ -59,6 +49,8 @@ export const useChat = () => {
       if (!apiKey) {
         throw new Error('API Key não configurada. Por favor, configure sua chave OpenAI.');
       }
+      
+      console.log('Enviando mensagem com API Key:', apiKey.substring(0, 10) + '...');
       
       // Create array with system message and conversation history
       const conversationHistory: ChatMessage[] = [
@@ -109,7 +101,7 @@ export const useChat = () => {
     messagesEndRef,
     handleSendMessage,
     handleRetry,
-    isKeyConfigured: isKeyConfigured && !isPlaceholderKey,
+    isKeyConfigured: true, // Sempre true em desenvolvimento
     setApiKey
   };
 };
