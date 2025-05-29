@@ -24,14 +24,14 @@ interface PdfWorkerConfigResult {
 }
 
 /**
- * Configura o worker do PDF.js de forma mais simples
+ * Configura o worker do PDF.js de forma mais robusta
  */
 export const configurePdfWorker = (options: PdfWorkerConfigOptions = {}): PdfWorkerConfigResult => {
   const { showToasts = true, verbose = false } = options;
   
   try {
-    // Check if worker is already configured
-    if (isPdfWorkerConfigured()) {
+    // Primeiro, verificar se já está configurado
+    if (pdfjsLib.GlobalWorkerOptions.workerSrc) {
       if (verbose) {
         console.log(`[PDF Worker]: Já configurado - ${pdfjsLib.GlobalWorkerOptions.workerSrc}`);
       }
@@ -41,17 +41,17 @@ export const configurePdfWorker = (options: PdfWorkerConfigOptions = {}): PdfWor
       };
     }
     
-    // Use a simpler approach - let PDF.js handle the worker internally
-    // This avoids external CDN dependencies that can fail
-    pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+    // Configurar com uma URL CDN confiável
+    const workerSrc = 'https://unpkg.com/pdfjs-dist@5.2.133/build/pdf.worker.min.js';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
     
     if (verbose) {
-      console.log(`[PDF Worker]: Configurado para usar worker interno`);
+      console.log(`[PDF Worker]: Configurado com sucesso - ${workerSrc}`);
     }
     
     return { 
       success: true, 
-      workerSrc: 'internal'
+      workerSrc: workerSrc
     };
   } catch (error) {
     const errorMessage = error instanceof Error 
@@ -60,10 +60,22 @@ export const configurePdfWorker = (options: PdfWorkerConfigOptions = {}): PdfWor
     
     console.error(`[PDF Worker Error]: ${errorMessage}`);
     
-    return {
-      success: false,
-      error: errorMessage
-    };
+    // Fallback: tentar configurar sem worker
+    try {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+      if (verbose) {
+        console.log(`[PDF Worker]: Fallback - usando processamento interno`);
+      }
+      return { 
+        success: true, 
+        workerSrc: 'internal'
+      };
+    } catch (fallbackError) {
+      return {
+        success: false,
+        error: errorMessage
+      };
+    }
   }
 };
 
@@ -71,5 +83,6 @@ export const configurePdfWorker = (options: PdfWorkerConfigOptions = {}): PdfWor
  * Check if PDF.js worker is properly configured
  */
 export const isPdfWorkerConfigured = (): boolean => {
-  return pdfjsLib.GlobalWorkerOptions.workerSrc !== undefined;
+  return pdfjsLib.GlobalWorkerOptions.workerSrc !== undefined && 
+         pdfjsLib.GlobalWorkerOptions.workerSrc !== null;
 };

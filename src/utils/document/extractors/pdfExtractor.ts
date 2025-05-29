@@ -1,11 +1,11 @@
 
 import * as pdfjsLib from 'pdfjs-dist';
-import { configurePdfWorker, isPdfWorkerConfigured } from '../../pdf/pdfWorkerConfig';
+import { configurePdfWorker } from '../../pdf/pdfWorkerConfig';
 import { createLogger } from '../logger';
 import { TextExtractionOptions, TextExtractionResult } from '../types';
 
 /**
- * Extrai texto de um arquivo PDF de forma simplificada
+ * Extrai texto de um arquivo PDF com configuração mais robusta
  */
 export const extractTextFromPDF = async (
   file: File, 
@@ -17,14 +17,17 @@ export const extractTextFromPDF = async (
   logger.info(`Iniciando extração de texto do PDF: ${file.name}`);
   
   try {
-    // Configurar worker de forma simples
+    // Configurar worker antes de qualquer operação PDF
+    logger.info("Configurando PDF worker...");
     const workerResult = configurePdfWorker({
       verbose: options.verbose,
-      showToasts: false // Não mostrar toasts durante extração
+      showToasts: false
     });
     
     if (!workerResult.success) {
-      logger.warn("Worker configuration failed, continuing anyway...");
+      logger.warn(`Worker configuration failed: ${workerResult.error}, mas continuando...`);
+    } else {
+      logger.info(`Worker configurado: ${workerResult.workerSrc}`);
     }
     
     // Carregar arquivo
@@ -37,16 +40,18 @@ export const extractTextFromPDF = async (
     
     logger.info(`ArrayBuffer carregado: ${arrayBuffer.byteLength} bytes`);
     
-    // Carregar PDF com configuração mais simples
-    logger.info("Carregando documento PDF...");
+    // Configuração mais permissiva para o PDF
     const loadingTask = pdfjsLib.getDocument({
       data: arrayBuffer,
-      // Configurações mais permissivas
-      verbosity: 0, // Reduzir logs internos
-      disableAutoFetch: false,
-      disableStream: false
+      verbosity: 0,
+      disableAutoFetch: true,
+      disableStream: true,
+      useWorkerFetch: false,
+      isEvalSupported: false,
+      disableFontFace: true
     });
     
+    logger.info("Carregando documento PDF...");
     const pdfDoc = await Promise.race([
       loadingTask.promise,
       new Promise<never>((_, reject) => 
