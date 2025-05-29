@@ -1,7 +1,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { useApiKey } from '@/context/ApiKeyContext';
+import { useGlobalApiKey } from '@/hooks/useGlobalApiKey';
 import { ChatMessage, sendChatMessage } from '@/services/chatService';
 
 export const useChat = () => {
@@ -18,7 +18,7 @@ export const useChat = () => {
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const { apiKey, setApiKey, isKeyConfigured, isPlaceholderKey } = useApiKey();
+  const { globalApiKey, hasValidGlobalKey } = useGlobalApiKey();
 
   useEffect(() => {
     scrollToBottom();
@@ -32,12 +32,12 @@ export const useChat = () => {
     e.preventDefault();
     if (!input.trim()) return;
     
-    // Verificar se a API key é válida
-    if (isPlaceholderKey) {
+    // Verificar se há uma chave global válida
+    if (!hasValidGlobalKey) {
       toast({
         variant: "destructive",
-        title: "API Key Inválida",
-        description: "A chave API atual é um placeholder. Por favor, configure uma chave OpenAI válida.",
+        title: "Sistema não configurado",
+        description: "A chave API OpenAI não foi configurada pelo administrador. Contate o suporte.",
       });
       return;
     }
@@ -56,10 +56,6 @@ export const useChat = () => {
     setError(null);
     
     try {
-      if (!apiKey) {
-        throw new Error('API Key não configurada. Por favor, configure sua chave OpenAI.');
-      }
-      
       // Create array with system message and conversation history
       const conversationHistory: ChatMessage[] = [
         {
@@ -72,7 +68,7 @@ export const useChat = () => {
         userMessage
       ];
       
-      const assistantResponse = await sendChatMessage(conversationHistory, apiKey);
+      const assistantResponse = await sendChatMessage(conversationHistory, globalApiKey);
       
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
@@ -109,7 +105,6 @@ export const useChat = () => {
     messagesEndRef,
     handleSendMessage,
     handleRetry,
-    isKeyConfigured: isKeyConfigured && !isPlaceholderKey,
-    setApiKey
+    isKeyConfigured: hasValidGlobalKey
   };
 };

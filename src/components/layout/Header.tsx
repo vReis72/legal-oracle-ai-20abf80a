@@ -1,60 +1,91 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, MessageSquare, Scale, Settings } from "lucide-react";
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { useLocation } from 'react-router-dom';
-import { cn } from '@/lib/utils';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Scale, User, Settings, LogOut, Shield } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 const Header = () => {
-  const location = useLocation();
-  const currentPath = location.pathname;
+  const { user, profile, signOut, isAdmin } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
+  };
 
   return (
-    <header className="bg-eco-primary text-white py-4 px-6 sticky top-0 z-50 shadow-md">
-      <div className="container mx-auto flex flex-col md:flex-row justify-between items-center">
-        <div className="flex items-center mb-4 md:mb-0">
-          <Scale className="h-8 w-8 mr-2" />
-          <Link to="/" className="text-2xl font-serif font-bold">Legal Oracle AI</Link>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          <Tabs value={currentPath} className="w-full md:w-auto">
-            <TabsList className="bg-eco-dark/30 w-full md:w-auto grid grid-cols-3 md:grid-cols-3">
-              <TabsTrigger value="/" asChild>
-                <Link to="/" className={cn("flex items-center justify-center", currentPath === "/" && "bg-white/10")}>
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Assistente</span>
-                </Link>
-              </TabsTrigger>
-              <TabsTrigger value="/documentos" asChild>
-                <Link to="/documentos" className={cn("flex items-center justify-center", currentPath === "/documentos" && "bg-white/10")}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Documentos</span>
-                </Link>
-              </TabsTrigger>
-              <TabsTrigger value="/pecas" asChild>
-                <Link to="/pecas" className={cn("flex items-center justify-center", currentPath === "/pecas" && "bg-white/10")}>
-                  <Scale className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Peças Jurídicas</span>
-                </Link>
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-          
-          <Link to="/settings">
-            <Button 
-              variant="ghost" 
-              size="icon"
-              className={cn(
-                "text-white hover:bg-white/10",
-                currentPath === "/settings" && "bg-white/10"
-              )}
-            >
-              <Settings className="h-5 w-5" />
-            </Button>
+    <header className="border-b bg-white shadow-sm">
+      <div className="eco-container">
+        <div className="flex items-center justify-between h-16">
+          <Link to="/" className="flex items-center space-x-2">
+            <Scale className="h-8 w-8 text-eco-primary" />
+            <span className="text-xl font-serif font-bold text-eco-dark">
+              Legal Oracle IA
+            </span>
           </Link>
+          
+          <nav className="hidden md:flex items-center space-x-6">
+            <Link 
+              to="/" 
+              className="text-muted-foreground hover:text-eco-primary transition-colors"
+            >
+              Chat IA
+            </Link>
+            <Link 
+              to="/documentos" 
+              className="text-muted-foreground hover:text-eco-primary transition-colors"
+            >
+              Documentos
+            </Link>
+            <Link 
+              to="/pecas" 
+              className="text-muted-foreground hover:text-eco-primary transition-colors"
+            >
+              Peças Jurídicas
+            </Link>
+          </nav>
+
+          <div className="flex items-center space-x-4">
+            {user && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                    <User className="h-4 w-4" />
+                    <span className="hidden md:inline">
+                      {profile?.full_name || user.email}
+                    </span>
+                    {isAdmin && (
+                      <Shield className="h-3 w-3 text-eco-primary" />
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                    {user.email}
+                    {isAdmin && (
+                      <div className="text-xs text-eco-primary font-medium">
+                        Administrador
+                      </div>
+                    )}
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/settings" className="flex items-center">
+                      <Settings className="mr-2 h-4 w-4" />
+                      Configurações
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sair
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
         </div>
       </div>
     </header>

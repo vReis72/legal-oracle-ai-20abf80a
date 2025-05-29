@@ -1,9 +1,14 @@
 
 import React from 'react';
+import { useAuth } from '@/hooks/useAuth';
 import SettingsForm from '@/components/settings/SettingsForm';
-import { Settings as SettingsIcon } from 'lucide-react';
+import AdminSettings from '@/components/admin/AdminSettings';
+import { Settings as SettingsIcon, Shield } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Settings: React.FC = () => {
+  const { isAdmin } = useAuth();
+
   return (
     <div className="eco-container">
       <div className="max-w-4xl mx-auto">
@@ -17,7 +22,25 @@ const Settings: React.FC = () => {
           </p>
         </div>
         
-        <SettingsForm />
+        {isAdmin ? (
+          <Tabs defaultValue="personal" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="personal">Configurações Pessoais</TabsTrigger>
+              <TabsTrigger value="admin" className="flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                Administração
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="personal" className="mt-6">
+              <SettingsForm />
+            </TabsContent>
+            <TabsContent value="admin" className="mt-6">
+              <AdminSettings />
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <SettingsForm />
+        )}
       </div>
     </div>
   );
