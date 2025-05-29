@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { UserSettingsService } from '@/services/userSettingsService';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { useToast } from '@/hooks/use-toast';
-import { UserSettings } from '@/types/userSettings';
+import { UserSettings, UserSettingsUpdate } from '@/types/userSettings';
 
 export const useUserSettings = () => {
   const { user, profile } = useAuth();
@@ -50,6 +50,31 @@ export const useUserSettings = () => {
   const hasValidApiKey = (): boolean => {
     const key = getApiKey();
     return !!(key && key.startsWith('sk-') && key.length > 40);
+  };
+
+  // Salva configurações gerais do usuário
+  const saveSettings = async (settings: UserSettingsUpdate): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      const success = await UserSettingsService.saveSettings(user.id, settings);
+      if (success) {
+        await loadUserSettings();
+        toast({
+          title: "Sucesso",
+          description: "Configurações salvas com sucesso!",
+        });
+      }
+      return success;
+    } catch (error) {
+      console.error('Erro ao salvar configurações:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível salvar as configurações.",
+      });
+      return false;
+    }
   };
 
   // Salva chave API individual (apenas para usuários não-admin)
@@ -103,9 +128,11 @@ export const useUserSettings = () => {
 
   return {
     userSettings,
+    settings: userSettings, // Alias for backward compatibility
     isLoading,
     apiKey: getApiKey(),
     hasValidApiKey: hasValidApiKey(),
+    saveSettings,
     saveApiKey,
     removeApiKey,
     reloadSettings: loadUserSettings,

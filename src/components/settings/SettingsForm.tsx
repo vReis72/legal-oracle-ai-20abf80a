@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,7 +23,7 @@ const settingsSchema = z.object({
 type SettingsFormData = z.infer<typeof settingsSchema>;
 
 const SettingsForm: React.FC = () => {
-  const { settings, isLoading, saveSettings } = useUserSettings();
+  const { userSettings, isLoading, saveSettings } = useUserSettings();
   const { setTheme, theme: currentTheme } = useTheme();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -39,24 +40,24 @@ const SettingsForm: React.FC = () => {
   });
 
   useEffect(() => {
-    if (settings) {
+    if (userSettings) {
       // Garante que apenas valores válidos sejam atribuídos ao tema
-      const validTheme = (settings.theme === 'light' || settings.theme === 'dark' || settings.theme === 'system') 
-        ? settings.theme 
+      const validTheme = (userSettings.theme === 'light' || userSettings.theme === 'dark' || userSettings.theme === 'system') 
+        ? userSettings.theme 
         : (currentTheme === 'light' || currentTheme === 'dark' || currentTheme === 'system') 
           ? currentTheme 
           : 'light';
 
       form.reset({
-        companyName: settings.company_name || '',
-        userName: settings.user_name || '',
-        userOab: settings.user_oab || '',
-        contactEmail: settings.contact_email || '',
-        apiKey: settings.openai_api_key || '',
+        companyName: userSettings.company_name || '',
+        userName: userSettings.user_name || '',
+        userOab: userSettings.user_oab || '',
+        contactEmail: userSettings.contact_email || '',
+        apiKey: userSettings.openai_api_key || '',
         theme: validTheme,
       });
     }
-  }, [settings, form, currentTheme]);
+  }, [userSettings, form, currentTheme]);
 
   const onSubmit = async (data: SettingsFormData) => {
     setIsSubmitting(true);
