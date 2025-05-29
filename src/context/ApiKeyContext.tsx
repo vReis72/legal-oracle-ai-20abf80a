@@ -38,9 +38,13 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     isKeyConfigured,
     isPlaceholderKey,
     isEnvironmentKey,
-    setApiKey: () => {}, // Não faz nada - é constante
+    setApiKey: () => {
+      console.log('setApiKey chamado, mas usando apenas constante global');
+    },
     checkApiKey: () => isKeyConfigured,
-    resetApiKey: () => {}, // Não faz nada - é constante
+    resetApiKey: () => {
+      console.log('resetApiKey chamado, mas usando apenas constante global');
+    },
   };
 
   return (

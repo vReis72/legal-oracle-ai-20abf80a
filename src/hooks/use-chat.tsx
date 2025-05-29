@@ -1,8 +1,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { useApiKey } from '@/context/ApiKeyContext';
 import { ChatMessage, sendChatMessage } from '@/services/chatService';
+import { hasGlobalApiKey } from '@/constants/apiKeys';
 
 export const useChat = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -27,7 +27,9 @@ Como posso ajudar você hoje?`,
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const { isKeyConfigured, setApiKey } = useApiKey();
+
+  // Verificar se a chave está configurada usando apenas a função global
+  const isKeyConfigured = hasGlobalApiKey();
 
   useEffect(() => {
     scrollToBottom();
@@ -108,6 +110,6 @@ Como posso ajudar você hoje?`,
     handleSendMessage,
     handleRetry,
     isKeyConfigured,
-    setApiKey
+    setApiKey: () => console.log('setApiKey - usando apenas constante global')
   };
 };

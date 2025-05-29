@@ -21,9 +21,6 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
   isKeyConfigured,
   setApiKey
 }) => {
-  // Em desenvolvimento, sempre considerar a API como configurada
-  const isApiConfigured = true;
-  
   return (
     <form onSubmit={handleSendMessage} className="p-4 border-t bg-background">
       <div className="flex gap-2 items-end">
