@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { useApiKey } from '@/context/ApiKeyContext';
+import { hasGlobalApiKey, getGlobalApiKey } from '@/constants/apiKeys';
 import OpenAIKeyInput from './OpenAIKeyInput';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { hasApiKey } from '@/services/apiKeyService';
@@ -12,7 +12,12 @@ interface ApiKeyCheckProps {
 }
 
 const ApiKeyCheck: React.FC<ApiKeyCheckProps> = ({ children }) => {
-  const { apiKey, setApiKey, isKeyConfigured, isPlaceholderKey, isEnvironmentKey } = useApiKey();
+  // Usar apenas funções globais
+  const apiKey = getGlobalApiKey();
+  const isKeyConfigured = hasGlobalApiKey();
+  const isPlaceholderKey = !isKeyConfigured;
+  const isEnvironmentKey = false; // Sempre false pois usamos apenas constante
+  
   const [showDialog, setShowDialog] = useState(false);
   
   useEffect(() => {
@@ -30,6 +35,11 @@ const ApiKeyCheck: React.FC<ApiKeyCheckProps> = ({ children }) => {
     
     setShowDialog(shouldShowDialog);
   }, [isKeyConfigured, isPlaceholderKey, isEnvironmentKey, apiKey]);
+
+  const setApiKey = (key: string) => {
+    console.log('setApiKey chamado com chave:', key.substring(0, 20) + '...');
+    // Como usamos apenas constante, apenas log
+  };
 
   return (
     <>

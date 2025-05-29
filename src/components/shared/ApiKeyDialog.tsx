@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Cloud } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useApiKey } from '@/context/ApiKeyContext';
 
 interface ApiKeyDialogProps {
   isOpen: boolean;
@@ -25,8 +24,10 @@ const ApiKeyDialog: React.FC<ApiKeyDialogProps> = ({
 }) => {
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [isValidating, setIsValidating] = useState(false);
-  const { setApiKey, resetApiKey, isEnvironmentKey } = useApiKey();
   const { toast } = useToast();
+
+  // Como usamos apenas constante global, sempre false para environment
+  const isEnvironmentKey = false;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,8 +72,6 @@ const ApiKeyDialog: React.FC<ApiKeyDialogProps> = ({
     setIsValidating(true);
     
     try {
-      setApiKey(apiKeyInput.trim());
-      
       if (onKeySubmit) {
         onKeySubmit(apiKeyInput.trim());
       }
@@ -105,7 +104,7 @@ const ApiKeyDialog: React.FC<ApiKeyDialogProps> = ({
       });
       return;
     }
-    resetApiKey();
+    
     setIsOpen(false);
     toast({
       variant: "destructive",
