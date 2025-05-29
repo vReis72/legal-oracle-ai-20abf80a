@@ -1,16 +1,25 @@
 
 import * as pdfjsLib from 'pdfjs-dist';
 import { configurePdfWorker, isPdfWorkerConfigured } from './pdfWorkerConfig';
+import { toast } from "sonner";
 
 interface PdfPreviewOptions {
+  /** Scale for the preview image (default: 0.5) */
   scale?: number;
+  /** Timeout for PDF loading in ms (default: 10000) */
   timeout?: number;
+  /** Whether to show verbose logs */
   verbose?: boolean;
+  /** Whether to show toast notifications */
   showToasts?: boolean;
 }
 
 /**
- * Gera preview da primeira página de um PDF de forma simplificada
+ * Generates a preview image from the first page of a PDF file
+ * @param file PDF file to generate preview from
+ * @param options Preview generation options
+ * @returns A data URL containing the preview image or null if preview generation failed
+ * @throws Error if preview generation fails
  */
 export const generatePdfPreview = async (
   file: File,
@@ -18,72 +27,103 @@ export const generatePdfPreview = async (
 ): Promise<string | null> => {
   const {
     scale = 0.5,
-    timeout = 15000, // Timeout menor para preview
-    verbose = false,
-    showToasts = false
+    timeout = 10000,
+    verbose = true,
+    showToasts = true
   } = options;
   
   try {
-    // Configurar worker se necessário
+    // Configure PDF.js worker if not already configured
     if (!isPdfWorkerConfigured()) {
-      const workerResult = configurePdfWorker({ verbose, showToasts });
+      const workerResult = configurePdfWorker({
+        verbose,
+        showToasts: false, // We'll handle toasts ourselves
+        useLocalWorker: true // Try to use local worker first
+      });
+      
       if (!workerResult.success) {
-        throw new Error("Falha ao configurar worker PDF");
+        throw new Error(`PDF worker configuration failed: ${workerResult.error}`);
+      }
+      
+      if (workerResult.workerSrc === 'fake-worker' && verbose) {
+        console.warn("Using fake PDF worker. Performance may be degraded.");
       }
     }
     
-    if (verbose) console.log("Gerando preview para:", file.name);
+    if (verbose) console.log("Generating PDF preview for:", file.name);
     
-    // Carregar PDF
+    // Load the PDF file
     const arrayBuffer = await file.arrayBuffer();
+    
     if (!arrayBuffer || arrayBuffer.byteLength === 0) {
-      throw new Error("Arquivo PDF vazio");
+      throw new Error("PDF file is empty or corrupted");
     }
     
+    if (verbose) console.log("PDF ArrayBuffer loaded, size:", arrayBuffer.byteLength, "bytes");
+    
+    // Create a loading task with additional options
     const loadingTask = pdfjsLib.getDocument({
       data: arrayBuffer,
+      cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@latest/cmaps/',
+      cMapPacked: true,
+      // Add option to disable range requests which might be causing issues
       disableRange: true,
+      // Add option to disable streams which might be causing issues
       disableStream: true
     });
     
+    // Set a timeout for PDF loading
     const pdfDoc = await Promise.race([
       loadingTask.promise,
       new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error("Timeout")), timeout)
+        setTimeout(() => reject(new Error("PDF loading timeout")), timeout)
       )
     ]) as pdfjsLib.PDFDocumentProxy;
     
+    if (verbose) console.log("PDF loaded, pages:", pdfDoc.numPages);
+    
+    // If the PDF has no pages, return null
     if (pdfDoc.numPages <= 0) {
       return null;
     }
     
-    // Renderizar primeira página
+    // Get the first page
     const page = await pdfDoc.getPage(1);
+    
+    // Create a canvas with appropriate size
     const canvas = document.createElement('canvas');
     const viewport = page.getViewport({ scale });
-    
     canvas.width = viewport.width;
     canvas.height = viewport.height;
     
     const ctx = canvas.getContext('2d');
     if (!ctx) {
-      throw new Error("Falha ao obter contexto do canvas");
+      throw new Error("Could not get canvas context");
     }
     
-    await page.render({
+    const renderContext = {
       canvasContext: ctx,
       viewport: viewport,
-    }).promise;
+    };
     
-    if (verbose) console.log("Preview gerado com sucesso");
+    // Render the page
+    await page.render(renderContext).promise;
     
-    return canvas.toDataURL('image/png');
+    // Convert canvas to data URL
+    const dataUrl = canvas.toDataURL('image/png');
+    if (verbose) console.log("PDF preview generated successfully");
+    
+    return dataUrl;
   } catch (error) {
-    if (verbose) {
-      console.error('Erro ao gerar preview:', error);
+    if (verbose) console.error('Error generating PDF preview:', error);
+    
+    // More descriptive error message
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    
+    if (showToasts) {
+      toast.error(`Falha ao gerar visualização do PDF: ${errorMessage}`);
     }
     
-    // Não mostrar toast para falhas de preview - apenas retornar null
-    return null;
+    throw new Error(`Could not generate PDF preview: ${errorMessage}`);
   }
 };
