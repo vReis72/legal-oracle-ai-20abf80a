@@ -1,6 +1,6 @@
 
 import { SearchResult } from './openaiService';
-import { getPriorityApiKey, isValidApiKey } from '../context/utils/apiKeyUtils';
+import { getGlobalApiKey, hasGlobalApiKey } from '../constants/apiKeys';
 
 export interface ChatMessage {
   id: string;
@@ -24,9 +24,9 @@ export const sendChatMessage = async (
 ): Promise<string> => {
   try {
     // Prioridade: 1) Chave do usuário, 2) Chave global/ambiente
-    const apiKey = userApiKey || getPriorityApiKey();
+    const apiKey = userApiKey || getGlobalApiKey();
     
-    if (!apiKey || !isValidApiKey(apiKey)) {
+    if (!apiKey || !hasGlobalApiKey()) {
       throw new Error(`
 🔑 CHAVE API NECESSÁRIA: 
 Para usar o chat, você precisa configurar uma chave OpenAI válida.
