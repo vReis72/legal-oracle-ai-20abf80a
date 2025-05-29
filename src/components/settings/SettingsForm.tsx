@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -41,13 +40,20 @@ const SettingsForm: React.FC = () => {
 
   useEffect(() => {
     if (settings) {
+      // Garante que apenas valores válidos sejam atribuídos ao tema
+      const validTheme = (settings.theme === 'light' || settings.theme === 'dark' || settings.theme === 'system') 
+        ? settings.theme 
+        : (currentTheme === 'light' || currentTheme === 'dark' || currentTheme === 'system') 
+          ? currentTheme 
+          : 'light';
+
       form.reset({
         companyName: settings.company_name || '',
         userName: settings.user_name || '',
         userOab: settings.user_oab || '',
         contactEmail: settings.contact_email || '',
         apiKey: settings.openai_api_key || '',
-        theme: settings.theme || currentTheme || 'light',
+        theme: validTheme,
       });
     }
   }, [settings, form, currentTheme]);
