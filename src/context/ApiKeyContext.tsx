@@ -1,8 +1,9 @@
+
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { getApiKey, saveApiKey, hasApiKey, setDefaultApiKey, removeApiKey } from '@/services/apiKeyService';
 import { useToast } from '@/hooks/use-toast';
 import { ApiKeyContextType } from './types/apiKeyTypes';
-import { isValidApiKey, getEnvironmentApiKey, PLACEHOLDER_TEXT } from './utils/apiKeyUtils';
+import { isValidApiKey, getEnvironmentApiKey, PLACEHOLDER_TEXT, DEVELOPMENT_API_KEY } from './utils/apiKeyUtils';
 import { useUserSettings } from '@/hooks/useUserSettings';
 
 const ApiKeyContext = createContext<ApiKeyContextType | undefined>(undefined);
@@ -11,14 +12,14 @@ interface ApiKeyProviderProps {
   children: ReactNode;
 }
 
-// CHAVE FIXA PARA DESENVOLVIMENTO - REMOVER EM PRODUÇÃO
-const DEVELOPMENT_API_KEY = "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";
-
 // Função especial para validar chave de desenvolvimento
 const isValidDevelopmentKey = (key: string | null): boolean => {
   if (!key) return false;
-  // Para desenvolvimento, aceitar a chave fixa mesmo que não siga padrões normais
-  if (key === DEVELOPMENT_API_KEY) return true;
+  // Para desenvolvimento, aceitar a chave fixa SEMPRE
+  if (key === DEVELOPMENT_API_KEY) {
+    console.log("Chave de desenvolvimento validada como VÁLIDA:", key.substring(0, 20) + "...");
+    return true;
+  }
   return isValidApiKey(key);
 };
 
@@ -40,7 +41,8 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
 
   // Inicialização imediata com chave de desenvolvimento
   useEffect(() => {
-    console.log("Inicializando ApiKeyProvider com chave de desenvolvimento");
+    console.log("=== INICIALIZANDO ApiKeyProvider ===");
+    console.log("Chave de desenvolvimento:", DEVELOPMENT_API_KEY.substring(0, 30) + "...");
     
     // Verificar se há chave do ambiente (Railway) primeiro
     const ENV_API_KEY = getEnvironmentApiKey();
@@ -53,7 +55,7 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     }
     
     // Usar chave de desenvolvimento como padrão
-    console.log("Usando chave API de desenvolvimento fixa");
+    console.log("Configurando chave de desenvolvimento como padrão");
     setApiKeyState(DEVELOPMENT_API_KEY);
     setIsEnvironmentKey(false);
     setIsPlaceholderKey(false);
@@ -62,6 +64,10 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     if (!hasApiKey()) {
       saveApiKey(DEVELOPMENT_API_KEY);
     }
+    
+    console.log("=== Estado inicial configurado ===");
+    console.log("API Key ativa:", DEVELOPMENT_API_KEY.substring(0, 30) + "...");
+    console.log("É válida?", isValidDevelopmentKey(DEVELOPMENT_API_KEY));
   }, []);
 
   const setApiKey = async (key: string) => {
@@ -155,26 +161,31 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   };
 
   const checkApiKey = (): boolean => {
-    // Em desenvolvimento, sempre retornar true
-    console.log("Verificação de API key (desenvolvimento): sempre válida");
-    return true;
+    // Em desenvolvimento, sempre retornar true se a chave atual é válida
+    const currentKey = apiKey || DEVELOPMENT_API_KEY;
+    const isValid = isValidDevelopmentKey(currentKey);
+    console.log("Verificação de API key - Chave atual:", currentKey.substring(0, 30) + "...");
+    console.log("Verificação de API key - É válida?", isValid);
+    return isValid;
   };
 
-  // Determinar se a chave está configurada (sempre true em desenvolvimento)
-  const isKeyConfigured = true;
+  // Determinar se a chave está configurada
+  const isKeyConfigured = Boolean(apiKey && isValidDevelopmentKey(apiKey));
   
-  console.log("Estado atual da API key: Configurada (desenvolvimento)");
-  console.log("Chave sendo usada:", apiKey);
+  console.log("=== Estado atual da API Key ===");
+  console.log("Chave configurada:", isKeyConfigured);
+  console.log("Chave sendo usada:", apiKey?.substring(0, 30) + "...");
+  console.log("É válida?", apiKey ? isValidDevelopmentKey(apiKey) : false);
 
   return (
     <ApiKeyContext.Provider value={{ 
       apiKey: apiKey || DEVELOPMENT_API_KEY, 
       setApiKey, 
-      isKeyConfigured: true, // Sempre true em desenvolvimento
-      checkApiKey: () => true, // Sempre true em desenvolvimento
+      isKeyConfigured: isKeyConfigured, 
+      checkApiKey,
       resetApiKey,
       isPlaceholderKey: false, // Nunca placeholder em desenvolvimento
-      isEnvironmentKey: isEnvironmentKey || true // Tratar como ambiente em desenvolvimento
+      isEnvironmentKey: isEnvironmentKey || false
     }}>
       {children}
     </ApiKeyContext.Provider>

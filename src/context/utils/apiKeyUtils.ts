@@ -15,11 +15,17 @@ export const isValidApiKey = (key: string | null): boolean => {
   if (!key) return false;
   if (key === PLACEHOLDER_TEXT) return false;
   
-  // Para desenvolvimento, aceitar a chave fixa
-  if (key === DEVELOPMENT_API_KEY) return true;
+  // Para desenvolvimento, aceitar a chave fixa SEMPRE
+  if (key === DEVELOPMENT_API_KEY) {
+    console.log("Chave de desenvolvimento detectada e validada como VÁLIDA");
+    return true;
+  }
   
   // Validação normal para outras chaves
   if (!key.startsWith('sk-')) return false;
-  if (key.length < 20) return false; // Chaves reais OpenAI são longas
+  if (key.length < 20) return false;
   return true;
 };
+
+// Export da chave para uso em outros módulos
+export { DEVELOPMENT_API_KEY };

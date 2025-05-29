@@ -9,6 +9,9 @@ export interface ChatMessage {
   timestamp: Date;
 }
 
+// Chave de desenvolvimento
+const DEVELOPMENT_API_KEY = "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";
+
 // Função para construir os prompts para a API OpenAI
 const buildChatPrompt = (messages: ChatMessage[]) => {
   // Convert our internal message format to OpenAI's format
@@ -24,25 +27,19 @@ export const sendChatMessage = async (
   apiKey: string
 ): Promise<string> => {
   try {
-    // Verificar se a chave foi fornecida diretamente ou usar a do ambiente
-    const key = apiKey || (typeof window !== 'undefined' && window.env?.OPENAI_API_KEY) || getApiKey();
+    // Usar a chave fornecida ou a de desenvolvimento
+    const key = apiKey || DEVELOPMENT_API_KEY || (typeof window !== 'undefined' && window.env?.OPENAI_API_KEY) || getApiKey();
     
     if (!key) {
       throw new Error('API key não fornecida. Configure sua chave OpenAI nas configurações.');
     }
     
-    // Verificar se a chave é um placeholder
-    if (key === 'sk-adicione-uma-chave-valida-aqui') {
-      throw new Error('A chave API configurada é inválida. Por favor, configure uma chave OpenAI válida.');
-    }
+    console.log('=== ENVIANDO MENSAGEM PARA OPENAI ===');
+    console.log('Chave sendo usada:', key.substring(0, 30) + '...');
+    console.log('É a chave de desenvolvimento?', key === DEVELOPMENT_API_KEY);
 
     // Usar a API mais recente da OpenAI para chaves de projeto
     const baseUrl = 'https://api.openai.com/v1/chat/completions';
-    
-    console.log('Enviando requisição para OpenAI...');
-    console.log('Usando chave do tipo:', key === apiKey ? 'Fornecida diretamente' : 
-                                         window.env?.OPENAI_API_KEY ? 'Ambiente (Railway)' : 
-                                         'Local Storage');
 
     const response = await fetch(baseUrl, {
       method: 'POST',
@@ -59,6 +56,8 @@ export const sendChatMessage = async (
         top_p: 0.9
       }),
     });
+
+    console.log('Resposta da API OpenAI - Status:', response.status);
 
     if (!response.ok) {
       const errorData = await response.json();
@@ -79,6 +78,7 @@ export const sendChatMessage = async (
       throw new Error('Resposta vazia da API');
     }
     
+    console.log('Resposta recebida com sucesso da OpenAI');
     return content;
   } catch (error) {
     console.error('Erro ao enviar mensagem:', error);
