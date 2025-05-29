@@ -12,8 +12,11 @@ interface ApiKeyProviderProps {
   children: ReactNode;
 }
 
+// CHAVE FIXA PARA DESENVOLVIMENTO - REMOVER EM PRODUÇÃO
+const DEVELOPMENT_API_KEY = "sk-proj-GJmI8dqzZjD0__TtbvGzONwFCCnm9JtKxBQJZAJKiOV6xm88dUV2LxYlMYYT3BlbKcCWz4_VGPET3BlbkFJkEhv3xJOvZa-2hv-d-VHZX15qIhXVIRlAGP8k9bYc9H9uIJbKaJjUJJjkJJ-dKJkJjKJjKJ";
+
 // Obter chave da API do ambiente (configurado pelo Railway) ou usar a chave padrão
-const DEFAULT_API_KEY = getEnvironmentApiKey() || "";
+const DEFAULT_API_KEY = getEnvironmentApiKey() || DEVELOPMENT_API_KEY;
 
 export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   const [apiKey, setApiKeyState] = useState<string | null>(null);
@@ -64,7 +67,22 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
       return;
     }
     
-    // Prioridade 2: Chave do Supabase (banco de dados)
+    // Prioridade 2: Chave de desenvolvimento fixa
+    if (DEVELOPMENT_API_KEY && isValidApiKey(DEVELOPMENT_API_KEY)) {
+      console.log("Usando chave API de desenvolvimento fixa");
+      setApiKeyState(DEVELOPMENT_API_KEY);
+      setIsEnvironmentKey(false);
+      setIsPlaceholderKey(false);
+      setIsLoading(false);
+      
+      // Salvar a chave de desenvolvimento no localStorage para compatibilidade
+      if (!hasApiKey()) {
+        saveApiKey(DEVELOPMENT_API_KEY);
+      }
+      return;
+    }
+    
+    // Prioridade 3: Chave do Supabase (banco de dados)
     if (supabaseApiKey && hasValidSupabaseKey()) {
       console.log("Usando chave API do Supabase");
       setApiKeyState(supabaseApiKey);
@@ -74,7 +92,7 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
       return;
     }
     
-    // Prioridade 3: Chave do localStorage (compatibilidade)
+    // Prioridade 4: Chave do localStorage (compatibilidade)
     if (hasApiKey()) {
       console.log("Usando chave API do localStorage");
       updateApiKeyFromStorage();
@@ -82,23 +100,8 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
       return;
     }
     
-    // Prioridade 4: Chave padrão (se fornecida)
-    if (DEFAULT_API_KEY && DEFAULT_API_KEY !== PLACEHOLDER_TEXT) {
-      try {
-        console.log("Configurando chave padrão...");
-        removeApiKey();
-        if (setDefaultApiKey(DEFAULT_API_KEY)) {
-          console.log("API key padrão configurada automaticamente");
-          updateApiKeyFromStorage();
-        }
-      } catch (error) {
-        console.error("Erro ao definir chave padrão:", error);
-      }
-    } else {
-      // Se não tivermos nenhuma chave válida
-      setIsPlaceholderKey(true);
-    }
-    
+    // Se não tivermos nenhuma chave válida
+    setIsPlaceholderKey(true);
     setIsLoading(false);
   }, [isLoadingSupabase, supabaseApiKey, hasValidSupabaseKey]);
 
@@ -192,20 +195,32 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
       // Sempre remover do localStorage também
       removeApiKey();
       
-      // Limpar estados
-      setApiKeyState(null);
-      setIsPlaceholderKey(true);
-      
-      if (removedFromSupabase) {
+      // Restaurar chave de desenvolvimento
+      if (DEVELOPMENT_API_KEY && isValidApiKey(DEVELOPMENT_API_KEY)) {
+        setApiKeyState(DEVELOPMENT_API_KEY);
+        setIsPlaceholderKey(false);
+        saveApiKey(DEVELOPMENT_API_KEY);
+        
         toast({
-          title: "Chave API Removida",
-          description: "A chave API foi removida do banco de dados com sucesso.",
+          title: "Chave Restaurada",
+          description: "Chave de desenvolvimento restaurada automaticamente.",
         });
       } else {
-        toast({
-          title: "Chave API Removida (Local)",
-          description: "A chave API foi removida localmente.",
-        });
+        // Limpar estados
+        setApiKeyState(null);
+        setIsPlaceholderKey(true);
+        
+        if (removedFromSupabase) {
+          toast({
+            title: "Chave API Removida",
+            description: "A chave API foi removida do banco de dados com sucesso.",
+          });
+        } else {
+          toast({
+            title: "Chave API Removida (Local)",
+            description: "A chave API foi removida localmente.",
+          });
+        }
       }
     } catch (error) {
       console.error("Erro ao resetar API key:", error);
@@ -215,6 +230,11 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   const checkApiKey = (): boolean => {
     // Se temos uma chave do ambiente, ela tem prioridade
     if (isEnvironmentKey && isValidApiKey(apiKey)) {
+      return true;
+    }
+    
+    // Se temos a chave de desenvolvimento, usar ela
+    if (DEVELOPMENT_API_KEY && isValidApiKey(DEVELOPMENT_API_KEY)) {
       return true;
     }
     
@@ -236,25 +256,27 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   }
 
   const isKeyConfigured = (isEnvironmentKey && isValidApiKey(apiKey)) || 
+                          (DEVELOPMENT_API_KEY && isValidApiKey(DEVELOPMENT_API_KEY)) ||
                           (hasValidSupabaseKey() && isValidApiKey(supabaseApiKey)) ||
                           (apiKey !== null && apiKey !== PLACEHOLDER_TEXT && isValidApiKey(apiKey));
   
   console.log("Estado atual da API key:", isKeyConfigured ? "Configurada" : "Não configurada");
   console.log("Fonte da API key:", 
     isEnvironmentKey ? "Ambiente (Railway)" : 
+    (DEVELOPMENT_API_KEY && isValidApiKey(DEVELOPMENT_API_KEY)) ? "Desenvolvimento (Fixa)" :
     hasValidSupabaseKey() ? "Supabase (Banco)" : 
     "Local Storage"
   );
 
   return (
     <ApiKeyContext.Provider value={{ 
-      apiKey: apiKey || supabaseApiKey, 
+      apiKey: apiKey || supabaseApiKey || DEVELOPMENT_API_KEY, 
       setApiKey, 
       isKeyConfigured,
       checkApiKey,
       resetApiKey,
       isPlaceholderKey,
-      isEnvironmentKey
+      isEnvironmentKey: isEnvironmentKey || (DEVELOPMENT_API_KEY && isValidApiKey(DEVELOPMENT_API_KEY))
     }}>
       {children}
     </ApiKeyContext.Provider>
