@@ -1,6 +1,6 @@
 
 import { SearchResult } from './openaiService';
-import { DEVELOPMENT_API_KEY } from '../context/utils/apiKeyUtils';
+import { getPriorityApiKey, isValidApiKey } from '../context/utils/apiKeyUtils';
 
 export interface ChatMessage {
   id: string;
@@ -11,7 +11,6 @@ export interface ChatMessage {
 
 // Função para construir os prompts para a API OpenAI
 const buildChatPrompt = (messages: ChatMessage[]) => {
-  // Convert our internal message format to OpenAI's format
   return messages.map(msg => ({
     role: msg.role as 'user' | 'assistant' | 'system',
     content: msg.content
@@ -21,14 +20,13 @@ const buildChatPrompt = (messages: ChatMessage[]) => {
 // Função para realizar o chat com a API OpenAI
 export const sendChatMessage = async (
   messages: ChatMessage[],
-  apiKey?: string
+  userApiKey?: string
 ): Promise<string> => {
   try {
-    // Para desenvolvimento, vamos permitir que o usuário forneça uma chave
-    const key = apiKey || DEVELOPMENT_API_KEY;
+    // Prioridade: 1) Chave do usuário, 2) Chave global/ambiente
+    const apiKey = userApiKey || getPriorityApiKey();
     
-    // Se for a chave placeholder, solicitar uma chave real
-    if (key === "sk-test-development-key-placeholder") {
+    if (!apiKey || !isValidApiKey(apiKey)) {
       throw new Error(`
 🔑 CHAVE API NECESSÁRIA: 
 Para usar o chat, você precisa configurar uma chave OpenAI válida.
@@ -43,18 +41,18 @@ Para usar o chat, você precisa configurar uma chave OpenAI válida.
     }
     
     console.log('🚀 === ENVIANDO MENSAGEM PARA OPENAI ===');
-    console.log('🔑 Tentando usar chave:', key.substring(0, 10) + '...');
-    console.log('📏 Tamanho da chave:', key.length);
-    console.log('🎯 Formato válido?', key.startsWith('sk-'));
+    console.log('🔑 Usando chave:', apiKey.substring(0, 10) + '...');
+    console.log('📏 Tamanho da chave:', apiKey.length);
+    console.log('🎯 Formato válido?', apiKey.startsWith('sk-'));
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${key}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini", // Usando modelo mais barato para testes
+        model: "gpt-4o-mini",
         messages: buildChatPrompt(messages),
         temperature: 0.7,
         max_tokens: 1000,
@@ -73,7 +71,7 @@ Para usar o chat, você precisa configurar uma chave OpenAI válida.
 
 🔍 Detalhes do erro:
 - Status: ${response.status}
-- Chave enviada: ${key.substring(0, 15)}...
+- Chave enviada: ${apiKey.substring(0, 15)}...
 - Erro da API: ${errorData.error?.message || 'Não especificado'}
 
 📝 Solução:
