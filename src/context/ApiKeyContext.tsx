@@ -3,7 +3,6 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { getApiKey, saveApiKey, hasApiKey, removeApiKey } from '@/services/apiKeyService';
 import { useToast } from '@/hooks/use-toast';
 import { isValidApiKey, getPriorityApiKey } from './utils/apiKeyUtils';
-import { useSystemSettings } from '@/hooks/useSystemSettings';
 
 interface ApiKeyContextType {
   apiKey: string | null;
@@ -41,20 +40,13 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   console.log('🚀 ApiKeyProvider: Inicializando...');
   
   const [apiKey, setApiKeyState] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [isPlaceholderKey, setIsPlaceholderKey] = useState(true);
   const [isEnvironmentKey, setIsEnvironmentKey] = useState(false);
+  const [initialized, setInitialized] = useState(false);
   const { toast } = useToast();
-  
-  // Hook para gerenciar configurações do sistema
-  const { 
-    getApiKey: getGlobalApiKey, 
-    isLoading: isLoadingSystem 
-  } = useSystemSettings();
 
-  // Funções internas para operações com API Key
+  // Função simples para configurar chave
   const setApiKey = async (key: string) => {
-    // Não permitir sobrescrever a chave do ambiente
     if (isEnvironmentKey) {
       toast({
         variant: "warning",
@@ -66,7 +58,6 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
 
     if (key && key.trim()) {
       try {
-        // Validação para chaves da OpenAI
         if (!key.startsWith('sk-')) {
           toast({
             variant: "destructive",
@@ -76,7 +67,6 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
           return;
         }
         
-        // Salvar no localStorage
         saveApiKey(key);
         setApiKeyState(key);
         setIsPlaceholderKey(key === 'sk-adicione-uma-chave-valida-aqui');
@@ -86,9 +76,9 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
           description: "Sua chave da API OpenAI foi salva com sucesso.",
         });
         
-        console.log("API key configurada com sucesso");
+        console.log("✅ API key configurada com sucesso");
       } catch (error) {
-        console.error("Erro ao salvar API key:", error);
+        console.error("❌ Erro ao salvar API key:", error);
         toast({
           variant: "destructive",
           title: "Erro ao salvar API Key",
@@ -99,7 +89,6 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   };
 
   const resetApiKey = async () => {
-    // Não permitir remover a chave do ambiente
     if (isEnvironmentKey) {
       toast({
         variant: "warning",
@@ -110,13 +99,11 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     }
 
     try {
-      // Remover do localStorage
       removeApiKey();
-      
-      // Restaurar chave global se disponível
       const globalKey = getPriorityApiKey();
+      
       if (globalKey) {
-        console.log("Restaurando chave global");
+        console.log("🔄 Restaurando chave global");
         setApiKeyState(globalKey);
         setIsPlaceholderKey(false);
         saveApiKey(globalKey);
@@ -135,115 +122,67 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
         });
       }
     } catch (error) {
-      console.error("Erro ao resetar API key:", error);
+      console.error("❌ Erro ao resetar API key:", error);
     }
   };
 
   const checkApiKey = (): boolean => {
     const currentKey = apiKey || getPriorityApiKey();
     const isValid = isValidApiKey(currentKey);
-    console.log("Verificação de API key - Chave atual:", currentKey?.substring(0, 30) + "...");
-    console.log("Verificação de API key - É válida?", isValid);
+    console.log("🔍 Verificação de API key - Chave atual:", currentKey?.substring(0, 30) + "...");
+    console.log("🔍 Verificação de API key - É válida?", isValid);
     return isValid;
   };
 
-  // Função para validar e configurar uma chave
-  const validateAndSetKey = (key: string | null, source: string) => {
-    if (!key) {
-      console.log(`❌ ${source}: Chave não fornecida`);
-      return false;
-    }
-
-    console.log(`🔍 ${source}: Validando chave ${key.substring(0, 20)}...`);
-    
-    if (isValidApiKey(key)) {
-      console.log(`✅ ${source}: Chave válida detectada`);
-      setApiKeyState(key);
-      setIsPlaceholderKey(false);
-      setIsEnvironmentKey(source === 'Ambiente');
-      return true;
-    } else {
-      console.log(`❌ ${source}: Chave inválida`);
-      return false;
-    }
-  };
-
-  // Inicialização com priorização de chaves
+  // Inicialização simples - apenas uma vez
   useEffect(() => {
-    console.log("🚀 === INICIALIZANDO ApiKeyProvider ===");
+    if (initialized) return;
+    
+    console.log("🚀 === INICIALIZANDO ApiKeyProvider (UMA VEZ) ===");
     
     // 1. Verificar chave prioritária (ambiente)
     const envPriorityKey = getPriorityApiKey();
-    if (validateAndSetKey(envPriorityKey, 'Ambiente')) {
+    if (envPriorityKey && isValidApiKey(envPriorityKey)) {
+      console.log("🌍 Usando chave prioritária (ambiente)");
+      setApiKeyState(envPriorityKey);
+      setIsPlaceholderKey(false);
+      setIsEnvironmentKey(true);
+      
       // Sincronizar com localStorage se necessário
       if (!hasApiKey() || getApiKey() !== envPriorityKey) {
-        saveApiKey(envPriorityKey!);
+        saveApiKey(envPriorityKey);
       }
-      console.log("🎯 Usando chave prioritária (ambiente)");
-      return;
-    }
-    
-    // 2. Verificar localStorage como fallback
-    const localKey = getApiKey();
-    if (validateAndSetKey(localKey, 'localStorage')) {
-      console.log("🎯 Usando chave do localStorage");
-      return;
-    }
-    
-    // 3. Nenhuma chave válida encontrada
-    console.log("❌ Nenhuma chave válida encontrada - aguardando carregamento do sistema");
-    setApiKeyState(null);
-    setIsEnvironmentKey(false);
-    setIsPlaceholderKey(true);
-    
-    console.log("🎯 === Estado inicial configurado ===");
-  }, []);
-
-  // Sincronizar com chave global do sistema quando carregada
-  useEffect(() => {
-    if (!isLoadingSystem) {
-      console.log('🔄 Verificando chave global do sistema...');
-      const globalKey = getGlobalApiKey();
-      
-      if (globalKey && isValidApiKey(globalKey)) {
-        console.log('✅ Chave global válida encontrada, configurando...');
-        setApiKeyState(globalKey);
+    } else {
+      // 2. Verificar localStorage como fallback
+      const localKey = getApiKey();
+      if (localKey && isValidApiKey(localKey)) {
+        console.log("💾 Usando chave do localStorage");
+        setApiKeyState(localKey);
         setIsPlaceholderKey(false);
         setIsEnvironmentKey(false);
-        
-        // Sincronizar com localStorage
-        if (!hasApiKey() || getApiKey() !== globalKey) {
-          saveApiKey(globalKey);
-          console.log('🔄 Chave global sincronizada com localStorage');
-        }
-      } else if (!globalKey) {
-        console.log("❌ Nenhuma chave global configurada pelo administrador");
-        setApiKeyState(null);
-        setIsPlaceholderKey(true);
-        setIsEnvironmentKey(false);
-        removeApiKey();
       } else {
-        console.log("❌ Chave global encontrada mas inválida");
+        // 3. Nenhuma chave válida encontrada
+        console.log("❌ Nenhuma chave válida encontrada");
         setApiKeyState(null);
-        setIsPlaceholderKey(true);
         setIsEnvironmentKey(false);
+        setIsPlaceholderKey(true);
       }
     }
-  }, [getGlobalApiKey, isLoadingSystem]);
+    
+    setInitialized(true);
+    console.log("✅ === ApiKeyProvider inicializado ===");
+  }, [initialized]);
 
-  // Determinar se a chave está configurada
+  // Determinar estado atual
   const envKey = getPriorityApiKey();
-  const globalKey = getGlobalApiKey();
-  const currentKey = envKey || globalKey || apiKey;
+  const currentKey = envKey || apiKey;
   const isKeyConfigured = Boolean(currentKey && isValidApiKey(currentKey));
   
-  console.log("📊 === Estado atual da API Key ===");
+  console.log("📊 Estado atual da API Key:");
   console.log("✅ Chave configurada:", isKeyConfigured);
   console.log("🔑 Chave sendo usada:", currentKey ? currentKey.substring(0, 30) + "..." : 'nenhuma');
-  console.log("✅ É válida?", currentKey ? isValidApiKey(currentKey) : false);
   console.log("🔧 É placeholder?", isPlaceholderKey);
   console.log("🌍 É do ambiente?", isEnvironmentKey);
-  console.log("🔄 Carregando Sistema?", isLoadingSystem);
 
   const contextValue = { 
     apiKey: currentKey, 
@@ -254,8 +193,6 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     isPlaceholderKey: isPlaceholderKey && !isKeyConfigured,
     isEnvironmentKey: isEnvironmentKey || false
   };
-
-  console.log('✅ ApiKeyProvider: Fornecendo contexto:', contextValue);
 
   return (
     <ApiKeyContext.Provider value={contextValue}>
