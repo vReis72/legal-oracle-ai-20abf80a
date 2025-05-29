@@ -1,7 +1,6 @@
 
-
 import { SearchResult } from './openaiService';
-import { getGlobalApiKey, hasGlobalApiKey } from '../constants/apiKeys';
+import { getGlobalApiKey } from '../constants/apiKeys';
 
 export interface ChatMessage {
   id: string;
@@ -20,12 +19,11 @@ const buildChatPrompt = (messages: ChatMessage[]) => {
 
 // Função para realizar o chat com a API OpenAI
 export const sendChatMessage = async (
-  messages: ChatMessage[],
-  userApiKey?: string
+  messages: ChatMessage[]
 ): Promise<string> => {
   try {
-    // Prioridade: 1) Chave do usuário, 2) Chave global/ambiente
-    const apiKey = userApiKey || getGlobalApiKey();
+    // Usar apenas a chave global constante
+    const apiKey = getGlobalApiKey();
     
     // Validar se temos uma chave válida para usar
     if (!apiKey || apiKey === "sk-adicione-uma-chave-valida-aqui" || apiKey.length < 20 || !apiKey.startsWith('sk-')) {
@@ -36,7 +34,7 @@ Para usar o chat, você precisa configurar uma chave OpenAI válida.
 📝 Como obter uma chave:
 1. Vá para https://platform.openai.com/api-keys
 2. Crie uma nova chave API
-3. Cole aqui no chat ou configure nas configurações
+3. Cole no arquivo src/constants/apiKeys.ts
 
 💡 A chave deve começar com 'sk-' e ter pelo menos 50 caracteres.
       `);
@@ -100,4 +98,3 @@ Para usar o chat, você precisa configurar uma chave OpenAI válida.
     throw error;
   }
 };
-
