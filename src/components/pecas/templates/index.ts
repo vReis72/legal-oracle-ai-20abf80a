@@ -8,6 +8,7 @@ import { empresarialTemplates } from './empresarialTemplates';
 import { recursalTemplates } from './recursalTemplates';
 import { contratualTemplates } from './contratualTemplates';
 import { administrativoTemplates } from './administrativoTemplates';
+import { ambientalTemplates } from './ambientalTemplates';
 
 export const modelosReais = [
   ...civilTemplates,
@@ -18,7 +19,8 @@ export const modelosReais = [
   ...empresarialTemplates,
   ...recursalTemplates,
   ...contratualTemplates,
-  ...administrativoTemplates
+  ...administrativoTemplates,
+  ...ambientalTemplates
 ];
 
 // Export individual template arrays for future use if needed
@@ -31,5 +33,6 @@ export {
   empresarialTemplates,
   recursalTemplates,
   contratualTemplates,
-  administrativoTemplates
+  administrativoTemplates,
+  ambientalTemplates
 };
