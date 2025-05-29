@@ -8,7 +8,7 @@ import DocumentSummary from './DocumentSummary';
 import DocumentKeyPoints from './DocumentKeyPoints';
 import DocumentConclusion from './DocumentConclusion';
 import { useDocumentAnalysis } from '@/hooks/document/useDocumentAnalysis';
-import { useApiKey } from '@/context/ApiKeyContext';
+import { useApiKey } from '@/hooks/useApiKey';
 import ErrorMessage from '../ai/ErrorMessage'; 
 
 interface DocumentAnalyzerProps {
@@ -20,7 +20,7 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
   document, 
   onAnalysisComplete
 }) => {
-  // Obter a chave API do contexto em vez de receber como prop
+  // Usar o novo hook useApiKey em vez do contexto
   const { apiKey } = useApiKey();
   
   const {
