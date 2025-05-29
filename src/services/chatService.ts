@@ -1,6 +1,5 @@
 
 import { SearchResult } from './openaiService';
-import { getApiKey } from './apiKeyService';
 import { DEVELOPMENT_API_KEY } from '../context/utils/apiKeyUtils';
 
 export interface ChatMessage {
@@ -22,33 +21,25 @@ const buildChatPrompt = (messages: ChatMessage[]) => {
 // Função para realizar o chat com a API OpenAI
 export const sendChatMessage = async (
   messages: ChatMessage[],
-  apiKey: string
+  apiKey?: string
 ): Promise<string> => {
   try {
-    // Usar a chave fornecida ou a de desenvolvimento
-    const key = apiKey || DEVELOPMENT_API_KEY || (typeof window !== 'undefined' && window.env?.OPENAI_API_KEY) || getApiKey();
-    
-    if (!key) {
-      throw new Error('API key não fornecida. Configure sua chave OpenAI nas configurações.');
-    }
+    // SEMPRE usar a chave de desenvolvimento em modo desenvolvimento
+    const key = DEVELOPMENT_API_KEY;
     
     console.log('🚀 === ENVIANDO MENSAGEM PARA OPENAI ===');
-    console.log('🔑 Chave sendo usada:', key.substring(0, 30) + '...');
-    console.log('✅ É a chave de desenvolvimento CORRETA?', key === DEVELOPMENT_API_KEY);
-    console.log('📝 Chave completa para debug:', key);
+    console.log('🔑 Usando chave de desenvolvimento FIXA');
+    console.log('📝 Chave sendo enviada:', key);
 
-    // Usar a API mais recente da OpenAI para chaves de projeto
-    const baseUrl = 'https://api.openai.com/v1/chat/completions';
-
-    const response = await fetch(baseUrl, {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${key}`,
         'Content-Type': 'application/json',
-        'OpenAI-Beta': 'assistants=v1' // Header adicional para API mais recente
+        'OpenAI-Beta': 'assistants=v1'
       },
       body: JSON.stringify({
-        model: "gpt-4o", // Usando GPT-4o para melhores resultados
+        model: "gpt-4o",
         messages: buildChatPrompt(messages),
         temperature: 0.7,
         max_tokens: 2000,
@@ -62,9 +53,9 @@ export const sendChatMessage = async (
       const errorData = await response.json();
       console.error('❌ Erro na resposta da API OpenAI:', errorData);
       
-      // Tratamento específico para erro de chave API inválida
-      if (response.status === 401 && errorData.error?.code === 'invalid_api_key') {
-        throw new Error(`Chave API inválida. Por favor, verifique sua chave OpenAI e configure-a novamente nas configurações.`);
+      if (response.status === 401) {
+        console.error('❌ CHAVE API INVÁLIDA! Chave enviada:', key);
+        throw new Error(`Chave API inválida. Chave enviada: ${key.substring(0, 20)}...`);
       }
       
       throw new Error(`Erro na API: ${response.status} - ${errorData.error?.message || 'Erro desconhecido'}`);

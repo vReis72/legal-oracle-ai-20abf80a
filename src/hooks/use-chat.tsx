@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useApiKey } from '@/context/ApiKeyContext';
 import { ChatMessage, sendChatMessage } from '@/services/chatService';
+import { DEVELOPMENT_API_KEY } from '@/context/utils/apiKeyUtils';
 
 export const useChat = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -18,7 +19,7 @@ export const useChat = () => {
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const { apiKey, setApiKey, isKeyConfigured } = useApiKey();
+  const { setApiKey } = useApiKey();
 
   useEffect(() => {
     scrollToBottom();
@@ -46,11 +47,7 @@ export const useChat = () => {
     setError(null);
     
     try {
-      if (!apiKey) {
-        throw new Error('API Key não configurada. Por favor, configure sua chave OpenAI.');
-      }
-      
-      console.log('Enviando mensagem com API Key:', apiKey.substring(0, 10) + '...');
+      console.log('🚀 Iniciando envio com chave de desenvolvimento:', DEVELOPMENT_API_KEY.substring(0, 20) + '...');
       
       // Create array with system message and conversation history
       const conversationHistory: ChatMessage[] = [
@@ -64,7 +61,8 @@ export const useChat = () => {
         userMessage
       ];
       
-      const assistantResponse = await sendChatMessage(conversationHistory, apiKey);
+      // Sempre usar chave de desenvolvimento
+      const assistantResponse = await sendChatMessage(conversationHistory);
       
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
@@ -101,7 +99,7 @@ export const useChat = () => {
     messagesEndRef,
     handleSendMessage,
     handleRetry,
-    isKeyConfigured: true, // Sempre true em desenvolvimento
+    isKeyConfigured: true,
     setApiKey
   };
 };
