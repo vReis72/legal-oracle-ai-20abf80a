@@ -8,7 +8,7 @@ import { UserSettings, UserSettingsUpdate } from '@/types/userSettings';
 
 export const useUserSettings = () => {
   const { user, profile } = useAuth();
-  const { getApiKey: getGlobalApiKey } = useSystemSettings();
+  const { getApiKey: getGlobalApiKey, isLoading: isLoadingSystem } = useSystemSettings();
   const { toast } = useToast();
   const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -21,10 +21,12 @@ export const useUserSettings = () => {
     }
 
     try {
+      console.log('👤 Carregando configurações do usuário...');
       const settings = await UserSettingsService.getUserSettings(user.id);
       setUserSettings(settings);
+      console.log('✅ Configurações do usuário carregadas');
     } catch (error) {
-      console.error('Erro ao carregar configurações do usuário:', error);
+      console.error('❌ Erro ao carregar configurações do usuário:', error);
     } finally {
       setIsLoading(false);
     }
@@ -57,7 +59,9 @@ export const useUserSettings = () => {
   // Verifica se tem uma chave válida
   const hasValidApiKey = (): boolean => {
     const key = getApiKey();
-    return !!(key && key.startsWith('sk-') && key.length > 40);
+    const isValid = !!(key && key.startsWith('sk-') && key.length > 40);
+    console.log('🔍 hasValidApiKey:', isValid, key ? `chave: ${key.substring(0, 20)}...` : 'sem chave');
+    return isValid;
   };
 
   // Salva configurações gerais do usuário
@@ -65,6 +69,7 @@ export const useUserSettings = () => {
     if (!user) return false;
 
     try {
+      console.log('💾 Salvando configurações do usuário...');
       const success = await UserSettingsService.saveSettings(user.id, settings);
       if (success) {
         await loadUserSettings();
@@ -72,10 +77,11 @@ export const useUserSettings = () => {
           title: "Sucesso",
           description: "Configurações salvas com sucesso!",
         });
+        console.log('✅ Configurações do usuário salvas');
       }
       return success;
     } catch (error) {
-      console.error('Erro ao salvar configurações:', error);
+      console.error('❌ Erro ao salvar configurações:', error);
       toast({
         variant: "destructive",
         title: "Erro",
@@ -110,6 +116,7 @@ export const useUserSettings = () => {
     }
 
     try {
+      console.log('💾 Salvando chave API individual...');
       const success = await UserSettingsService.saveApiKey(user.id, apiKey);
       if (success) {
         await loadUserSettings();
@@ -117,10 +124,11 @@ export const useUserSettings = () => {
           title: "Sucesso",
           description: "Chave API salva com sucesso!",
         });
+        console.log('✅ Chave API individual salva');
       }
       return success;
     } catch (error) {
-      console.error('Erro ao salvar chave API:', error);
+      console.error('❌ Erro ao salvar chave API:', error);
       return false;
     }
   };
@@ -130,6 +138,7 @@ export const useUserSettings = () => {
     if (!user) return false;
 
     try {
+      console.log('🗑️ Removendo chave API individual...');
       const success = await UserSettingsService.removeApiKey(user.id);
       if (success) {
         await loadUserSettings();
@@ -137,20 +146,24 @@ export const useUserSettings = () => {
           title: "Chave removida",
           description: "Chave API removida com sucesso!",
         });
+        console.log('✅ Chave API individual removida');
       }
       return success;
     } catch (error) {
-      console.error('Erro ao remover chave API:', error);
+      console.error('❌ Erro ao remover chave API:', error);
       return false;
     }
   };
 
+  const currentApiKey = getApiKey();
+  const isValidKey = hasValidApiKey();
+
   return {
     userSettings,
     settings: userSettings, // Alias for backward compatibility
-    isLoading,
-    apiKey: getApiKey(),
-    hasValidApiKey: hasValidApiKey(),
+    isLoading: isLoading || isLoadingSystem,
+    apiKey: currentApiKey,
+    hasValidApiKey: isValidKey,
     saveSettings,
     saveApiKey,
     removeApiKey,

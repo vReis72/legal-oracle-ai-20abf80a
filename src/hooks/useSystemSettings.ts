@@ -26,19 +26,38 @@ export const useSystemSettings = () => {
     }
 
     try {
+      console.log('🔍 Carregando configurações do sistema...');
       const { data, error } = await supabase
         .from('system_settings')
         .select('*')
         .single();
 
       if (error) {
-        console.error('Error loading system settings:', error);
+        console.error('❌ Erro ao carregar configurações do sistema:', error);
+        // Se não existir configuração, criar uma vazia para admin
+        if (error.code === 'PGRST116' && profile?.is_admin) {
+          console.log('🚀 Criando configuração inicial do sistema...');
+          const { data: newData, error: createError } = await supabase
+            .from('system_settings')
+            .insert({
+              openai_api_key: null,
+              updated_by: profile.id,
+            })
+            .select()
+            .single();
+
+          if (!createError) {
+            setSettings(newData);
+            console.log('✅ Configuração inicial criada');
+          }
+        }
         return;
       }
 
       setSettings(data);
+      console.log('✅ Configurações do sistema carregadas:', data ? 'com chave API' : 'sem chave API');
     } catch (error) {
-      console.error('Error loading system settings:', error);
+      console.error('❌ Erro inesperado ao carregar configurações:', error);
     } finally {
       setIsLoading(false);
     }
@@ -46,7 +65,7 @@ export const useSystemSettings = () => {
 
   useEffect(() => {
     loadSettings();
-  }, [user]);
+  }, [user, profile]);
 
   const updateApiKey = async (apiKey: string): Promise<boolean> => {
     if (!profile?.is_admin || !settings) {
@@ -59,6 +78,7 @@ export const useSystemSettings = () => {
     }
 
     try {
+      console.log('💾 Salvando chave API global...');
       const { error } = await supabase
         .from('system_settings')
         .update({
@@ -68,6 +88,7 @@ export const useSystemSettings = () => {
         .eq('id', settings.id);
 
       if (error) {
+        console.error('❌ Erro ao salvar chave API:', error);
         toast({
           variant: "destructive",
           title: "Erro",
@@ -82,9 +103,10 @@ export const useSystemSettings = () => {
       });
       
       await loadSettings();
+      console.log('✅ Chave API global salva com sucesso');
       return true;
     } catch (error) {
-      console.error('Error updating API key:', error);
+      console.error('❌ Erro inesperado ao salvar chave API:', error);
       toast({
         variant: "destructive",
         title: "Erro",
@@ -95,7 +117,9 @@ export const useSystemSettings = () => {
   };
 
   const getApiKey = (): string | null => {
-    return settings?.openai_api_key || null;
+    const key = settings?.openai_api_key || null;
+    console.log('🔑 getApiKey chamado:', key ? 'chave encontrada' : 'sem chave');
+    return key;
   };
 
   return {

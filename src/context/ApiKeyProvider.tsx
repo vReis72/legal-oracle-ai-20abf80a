@@ -81,7 +81,7 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     }
     
     // 3. Nenhuma chave válida encontrada
-    console.log("❌ Nenhuma chave válida encontrada - necessário configurar");
+    console.log("❌ Nenhuma chave válida encontrada - aguardando carregamento do sistema");
     setApiKeyState(null);
     setIsEnvironmentKey(false);
     setIsPlaceholderKey(true);
@@ -91,19 +91,29 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
 
   // Sincronizar com chave prioritária do useUserSettings quando carregada
   useEffect(() => {
-    if (!isLoadingSupabase && priorityApiKey) {
-      if (validateAndSetKey(priorityApiKey, 'Sistema/Supabase')) {
+    if (!isLoadingSupabase) {
+      console.log('🔄 Verificando chave do sistema/usuário...');
+      if (priorityApiKey && validateAndSetKey(priorityApiKey, 'Sistema/Supabase')) {
         // Sincronizar com localStorage
         if (!hasApiKey() || getApiKey() !== priorityApiKey) {
           saveApiKey(priorityApiKey);
         }
         console.log("🔄 Sincronizado com chave do sistema/usuário");
+      } else if (!priorityApiKey && apiKey) {
+        // Se não há chave do sistema mas há uma local, manter a local
+        console.log("🔄 Mantendo chave local (sem chave do sistema)");
+      } else if (!priorityApiKey && !apiKey) {
+        // Nenhuma chave disponível
+        console.log("❌ Nenhuma chave disponível - necessário configurar");
+        setApiKeyState(null);
+        setIsPlaceholderKey(true);
+        setIsEnvironmentKey(false);
       }
     }
   }, [priorityApiKey, isLoadingSupabase]);
 
   // Determinar se a chave está configurada
-  const currentKey = apiKey || priorityApiKey || getPriorityApiKey();
+  const currentKey = priorityApiKey || apiKey || getPriorityApiKey();
   const isKeyConfigured = Boolean(currentKey && isValidApiKey(currentKey));
   
   console.log("📊 === Estado atual da API Key ===");
@@ -112,6 +122,7 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   console.log("✅ É válida?", currentKey ? isValidApiKey(currentKey) : false);
   console.log("🔧 É placeholder?", isPlaceholderKey);
   console.log("🌍 É do ambiente?", isEnvironmentKey);
+  console.log("🔄 Carregando Supabase?", isLoadingSupabase);
 
   return (
     <ApiKeyContext.Provider value={{ 
@@ -120,7 +131,7 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
       isKeyConfigured, 
       checkApiKey,
       resetApiKey,
-      isPlaceholderKey,
+      isPlaceholderKey: isPlaceholderKey && !isKeyConfigured,
       isEnvironmentKey: isEnvironmentKey || false
     }}>
       {children}
