@@ -2,13 +2,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserSettingsService } from '@/services/userSettingsService';
-import { useSystemSettings } from '@/hooks/useSystemSettings';
+import { getGlobalApiKey, hasGlobalApiKey } from '@/constants/apiKeys';
 import { useToast } from '@/hooks/use-toast';
 import { UserSettings, UserSettingsUpdate } from '@/types/userSettings';
 
 export const useUserSettings = () => {
   const { user, profile } = useAuth();
-  const { getApiKey: getGlobalApiKey, isLoading: isLoadingSystem } = useSystemSettings();
   const { toast } = useToast();
   const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -50,9 +49,8 @@ export const useUserSettings = () => {
 
   // Verifica se tem uma chave válida
   const hasValidApiKey = (): boolean => {
-    const key = getApiKey();
-    const isValid = !!(key && key.startsWith('sk-') && key.length > 40);
-    console.log('🔍 hasValidApiKey:', isValid, key ? `chave: ${key.substring(0, 20)}...` : 'sem chave');
+    const isValid = hasGlobalApiKey();
+    console.log('🔍 hasValidApiKey:', isValid);
     return isValid;
   };
 
@@ -89,7 +87,7 @@ export const useUserSettings = () => {
   return {
     userSettings,
     settings: userSettings, // Alias for backward compatibility
-    isLoading: isLoading || isLoadingSystem,
+    isLoading: false, // Removendo dependência de isLoadingSystem
     apiKey: currentApiKey,
     hasValidApiKey: isValidKey,
     saveSettings,

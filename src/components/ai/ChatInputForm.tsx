@@ -17,9 +17,7 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
   input,
   setInput,
   handleSendMessage,
-  isLoading,
-  isKeyConfigured,
-  setApiKey
+  isLoading
 }) => {
   return (
     <form onSubmit={handleSendMessage} className="p-4 border-t bg-background">

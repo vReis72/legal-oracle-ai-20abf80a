@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react';
 import { hasGlobalApiKey, getGlobalApiKey } from '@/constants/apiKeys';
 import OpenAIKeyInput from './OpenAIKeyInput';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { hasApiKey } from '@/services/apiKeyService';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Cloud } from 'lucide-react';
 

@@ -6,7 +6,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "./providers/ThemeProvider";
 import { AuthProvider } from "./contexts/AuthContext";
-import { ApiKeyProvider } from "./context/ApiKeyContext";
 import { router } from './router';
 
 const App = () => {
@@ -14,11 +13,9 @@ const App = () => {
     <ThemeProvider defaultTheme="light">
       <AuthProvider>
         <TooltipProvider>
-          <ApiKeyProvider>
-            <Toaster />
-            <Sonner />
-            <RouterProvider router={router} />
-          </ApiKeyProvider>
+          <Toaster />
+          <Sonner />
+          <RouterProvider router={router} />
         </TooltipProvider>
       </AuthProvider>
     </ThemeProvider>
