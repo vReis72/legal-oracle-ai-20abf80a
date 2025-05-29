@@ -5,7 +5,7 @@ import { createLogger } from '../logger';
 import { TextExtractionOptions, TextExtractionResult } from '../types';
 
 /**
- * Extrai texto de um arquivo PDF sem worker externo
+ * Extrai texto de um arquivo PDF usando processamento interno
  */
 export const extractTextFromPDF = async (
   file: File, 
@@ -40,7 +40,7 @@ export const extractTextFromPDF = async (
     
     logger.info(`ArrayBuffer carregado: ${arrayBuffer.byteLength} bytes`);
     
-    // Configuração sem worker externo
+    // Configuração otimizada para processamento interno
     const loadingTask = pdfjsLib.getDocument({
       data: arrayBuffer,
       verbosity: 0,
@@ -49,7 +49,9 @@ export const extractTextFromPDF = async (
       useWorkerFetch: false,
       isEvalSupported: false,
       disableFontFace: true,
-      useSystemFonts: true
+      useSystemFonts: true,
+      // Forçar processamento main thread
+      stopAtErrors: false
     });
     
     logger.info("Carregando documento PDF...");

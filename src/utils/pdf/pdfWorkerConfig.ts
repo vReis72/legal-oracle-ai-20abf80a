@@ -24,24 +24,23 @@ interface PdfWorkerConfigResult {
 }
 
 /**
- * Configura o worker do PDF.js para usar o arquivo local
+ * Configura o PDF.js para funcionar sem worker externo
  */
 export const configurePdfWorker = (options: PdfWorkerConfigOptions = {}): PdfWorkerConfigResult => {
   const { showToasts = true, verbose = false } = options;
   
   try {
-    // Usar o worker local do pacote pdfjs-dist
-    // O Vite automaticamente resolve este caminho
-    const workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.js', import.meta.url).toString();
-    pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+    // Desabilitar worker completamente para usar processamento interno
+    // Isso força o PDF.js a usar o modo legado sem worker
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '';
     
     if (verbose) {
-      console.log('[PDF Worker]: Configurado com worker local:', workerSrc);
+      console.log('[PDF Worker]: Configurado para processamento interno (sem worker externo)');
     }
     
     return { 
       success: true, 
-      workerSrc: workerSrc
+      workerSrc: 'interno'
     };
   } catch (error) {
     const errorMessage = error instanceof Error 
@@ -61,6 +60,5 @@ export const configurePdfWorker = (options: PdfWorkerConfigOptions = {}): PdfWor
  * Check if PDF.js worker is properly configured
  */
 export const isPdfWorkerConfigured = (): boolean => {
-  return pdfjsLib.GlobalWorkerOptions.workerSrc !== undefined && 
-         pdfjsLib.GlobalWorkerOptions.workerSrc !== null;
+  return pdfjsLib.GlobalWorkerOptions.workerSrc !== undefined;
 };
