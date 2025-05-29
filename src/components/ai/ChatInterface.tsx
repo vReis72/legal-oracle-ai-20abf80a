@@ -18,8 +18,7 @@ const ChatInterface: React.FC = () => {
     messagesEndRef,
     handleSendMessage,
     handleRetry,
-    isKeyConfigured,
-    setApiKey
+    isKeyConfigured
   } = useChat();
 
   return (
@@ -44,7 +43,6 @@ const ChatInterface: React.FC = () => {
         handleSendMessage={handleSendMessage}
         isLoading={isLoading}
         isKeyConfigured={isKeyConfigured}
-        setApiKey={setApiKey}
       />
     </div>
   );
