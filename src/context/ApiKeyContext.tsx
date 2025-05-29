@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { getApiKey, saveApiKey, hasApiKey, setDefaultApiKey, removeApiKey } from '@/services/apiKeyService';
 import { useToast } from '@/hooks/use-toast';
@@ -11,17 +12,6 @@ const ApiKeyContext = createContext<ApiKeyContextType | undefined>(undefined);
 interface ApiKeyProviderProps {
   children: ReactNode;
 }
-
-// Função especial para validar chave de desenvolvimento
-const isValidDevelopmentKey = (key: string | null): boolean => {
-  if (!key) return false;
-  // Para desenvolvimento, aceitar a chave fixa SEMPRE
-  if (key === DEVELOPMENT_API_KEY) {
-    console.log("✅ Chave de desenvolvimento CORRETA validada como VÁLIDA:", key.substring(0, 20) + "...");
-    return true;
-  }
-  return isValidApiKey(key);
-};
 
 export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   const [apiKey, setApiKeyState] = useState<string | null>(null);
@@ -81,8 +71,8 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
 
     if (key && key.trim()) {
       try {
-        // Validação flexível para desenvolvimento
-        if (!key.startsWith('sk-') && key !== DEVELOPMENT_API_KEY) {
+        // Validação para chaves da OpenAI
+        if (!key.startsWith('sk-')) {
           toast({
             variant: "destructive",
             title: "Formato inválido",
@@ -143,26 +133,36 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
       // Sempre remover do localStorage também
       removeApiKey();
       
-      // Restaurar chave de desenvolvimento
-      console.log("Restaurando chave de desenvolvimento");
-      setApiKeyState(DEVELOPMENT_API_KEY);
-      setIsPlaceholderKey(false);
-      saveApiKey(DEVELOPMENT_API_KEY);
-      
-      toast({
-        title: "Chave Restaurada",
-        description: "Chave de desenvolvimento restaurada automaticamente.",
-      });
+      // Restaurar chave global se disponível
+      const globalKey = getPriorityApiKey();
+      if (globalKey) {
+        console.log("Restaurando chave global");
+        setApiKeyState(globalKey);
+        setIsPlaceholderKey(false);
+        saveApiKey(globalKey);
+        
+        toast({
+          title: "Chave Restaurada",
+          description: "Chave global restaurada automaticamente.",
+        });
+      } else {
+        setApiKeyState(null);
+        setIsPlaceholderKey(true);
+        
+        toast({
+          title: "Chave Removida",
+          description: "Configure uma nova chave API para usar o sistema.",
+        });
+      }
     } catch (error) {
       console.error("Erro ao resetar API key:", error);
     }
   };
 
   const checkApiKey = (): boolean => {
-    // Em desenvolvimento, sempre retornar true se a chave atual é válida
-    const currentKey = apiKey || DEVELOPMENT_API_KEY;
-    const isValid = isValidDevelopmentKey(currentKey);
-    console.log("Verificação de API key - Chave atual:", currentKey.substring(0, 30) + "...");
+    const currentKey = apiKey || getPriorityApiKey();
+    const isValid = isValidApiKey(currentKey);
+    console.log("Verificação de API key - Chave atual:", currentKey?.substring(0, 30) + "...");
     console.log("Verificação de API key - É válida?", isValid);
     return isValid;
   };

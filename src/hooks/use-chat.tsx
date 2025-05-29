@@ -3,7 +3,6 @@ import { useState, useRef, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useApiKey } from '@/context/ApiKeyContext';
 import { ChatMessage, sendChatMessage } from '@/services/chatService';
-import { DEVELOPMENT_API_KEY } from '@/context/utils/apiKeyUtils';
 
 export const useChat = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -28,7 +27,7 @@ Como posso ajudar você hoje?`,
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const { apiKey, setApiKey } = useApiKey();
+  const { apiKey, setApiKey, isKeyConfigured } = useApiKey();
 
   useEffect(() => {
     scrollToBottom();
@@ -70,7 +69,7 @@ Como posso ajudar você hoje?`,
         userMessage
       ];
       
-      // Usar a chave do contexto ou permitir configuração
+      // Usar a chave do contexto
       const assistantResponse = await sendChatMessage(conversationHistory, apiKey || undefined);
       
       const assistantMessage: ChatMessage = {
@@ -108,7 +107,7 @@ Como posso ajudar você hoje?`,
     messagesEndRef,
     handleSendMessage,
     handleRetry,
-    isKeyConfigured: Boolean(apiKey && apiKey !== DEVELOPMENT_API_KEY),
+    isKeyConfigured,
     setApiKey
   };
 };
