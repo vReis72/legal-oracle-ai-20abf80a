@@ -37,53 +37,67 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     toast
   });
 
-  // Inicialização com chave global/ambiente
+  // Função para validar e configurar uma chave
+  const validateAndSetKey = (key: string | null, source: string) => {
+    if (!key) {
+      console.log(`❌ ${source}: Chave não fornecida`);
+      return false;
+    }
+
+    console.log(`🔍 ${source}: Validando chave ${key.substring(0, 20)}...`);
+    
+    if (isValidApiKey(key)) {
+      console.log(`✅ ${source}: Chave válida detectada`);
+      setApiKeyState(key);
+      setIsPlaceholderKey(false);
+      setIsEnvironmentKey(source === 'Ambiente/Global');
+      return true;
+    } else {
+      console.log(`❌ ${source}: Chave inválida`);
+      return false;
+    }
+  };
+
+  // Inicialização com priorização de chaves
   useEffect(() => {
     console.log("🚀 === INICIALIZANDO ApiKeyProvider ===");
     
-    // Usar a chave prioritária (ambiente ou global)
+    // 1. Verificar chave prioritária (ambiente ou global)
     const priorityKey = getPriorityApiKey();
-    
-    if (priorityKey && isValidApiKey(priorityKey)) {
-      console.log("✅ Usando chave prioritária válida:", priorityKey.substring(0, 30) + "...");
-      setApiKeyState(priorityKey);
-      setIsEnvironmentKey(Boolean(priorityKey));
-      setIsPlaceholderKey(false);
-      
-      // Salvar no localStorage para compatibilidade se não existir
-      if (!hasApiKey()) {
-        saveApiKey(priorityKey);
+    if (validateAndSetKey(priorityKey, 'Ambiente/Global')) {
+      // Sincronizar com localStorage se necessário
+      if (!hasApiKey() || getApiKey() !== priorityKey) {
+        saveApiKey(priorityKey!);
       }
-    } else {
-      console.log("⚠️ Nenhuma chave global válida configurada");
-      // Tentar carregar do localStorage como fallback
-      const localKey = getApiKey();
-      if (localKey && isValidApiKey(localKey)) {
-        console.log("📁 Usando chave do localStorage:", localKey.substring(0, 30) + "...");
-        setApiKeyState(localKey);
-        setIsEnvironmentKey(false);
-        setIsPlaceholderKey(false);
-      } else {
-        console.log("❌ Nenhuma chave válida encontrada - será necessário configurar");
-        setApiKeyState(null);
-        setIsEnvironmentKey(false);
-        setIsPlaceholderKey(true);
-      }
+      console.log("🎯 Usando chave prioritária");
+      return;
     }
+    
+    // 2. Verificar localStorage como fallback
+    const localKey = getApiKey();
+    if (validateAndSetKey(localKey, 'localStorage')) {
+      console.log("🎯 Usando chave do localStorage");
+      return;
+    }
+    
+    // 3. Nenhuma chave válida encontrada
+    console.log("❌ Nenhuma chave válida encontrada - necessário configurar");
+    setApiKeyState(null);
+    setIsEnvironmentKey(false);
+    setIsPlaceholderKey(true);
     
     console.log("🎯 === Estado inicial configurado ===");
   }, []);
 
   // Sincronizar com chave do Supabase quando carregada
   useEffect(() => {
-    if (!isLoadingSupabase && supabaseApiKey && isValidApiKey(supabaseApiKey)) {
-      console.log("🔄 Sincronizando com chave do Supabase:", supabaseApiKey.substring(0, 30) + "...");
-      setApiKeyState(supabaseApiKey);
-      setIsPlaceholderKey(false);
-      
-      // Salvar no localStorage para compatibilidade
-      if (!hasApiKey() || getApiKey() !== supabaseApiKey) {
-        saveApiKey(supabaseApiKey);
+    if (!isLoadingSupabase && supabaseApiKey) {
+      if (validateAndSetKey(supabaseApiKey, 'Supabase')) {
+        // Sincronizar com localStorage
+        if (!hasApiKey() || getApiKey() !== supabaseApiKey) {
+          saveApiKey(supabaseApiKey);
+        }
+        console.log("🔄 Sincronizado com Supabase");
       }
     }
   }, [supabaseApiKey, isLoadingSupabase]);
@@ -97,6 +111,7 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   console.log("🔑 Chave sendo usada:", currentKey?.substring(0, 30) + "...");
   console.log("✅ É válida?", currentKey ? isValidApiKey(currentKey) : false);
   console.log("🔧 É placeholder?", isPlaceholderKey);
+  console.log("🌍 É do ambiente?", isEnvironmentKey);
 
   return (
     <ApiKeyContext.Provider value={{ 

@@ -16,15 +16,16 @@ const ApiKeyCheck: React.FC<ApiKeyCheckProps> = ({ children }) => {
   const [showDialog, setShowDialog] = useState(false);
   
   useEffect(() => {
-    // Verificar se realmente precisamos mostrar o diálogo
-    console.log("ApiKeyCheck - Estado da chave:");
+    console.log("ApiKeyCheck - Verificando estado da chave:");
     console.log("- isKeyConfigured:", isKeyConfigured);
     console.log("- isPlaceholderKey:", isPlaceholderKey);
     console.log("- isEnvironmentKey:", isEnvironmentKey);
     console.log("- apiKey presente:", !!apiKey);
+    console.log("- apiKey válida:", apiKey?.length, "caracteres");
     
-    // Só mostrar o diálogo se não tiver uma chave válida configurada
-    const shouldShowDialog = !isKeyConfigured || isPlaceholderKey;
+    // Só mostrar o diálogo se realmente não tiver uma chave válida
+    // E não for uma chave do ambiente
+    const shouldShowDialog = (!isKeyConfigured || isPlaceholderKey) && !isEnvironmentKey;
     console.log("- Deve mostrar diálogo:", shouldShowDialog);
     
     setShowDialog(shouldShowDialog);
@@ -45,7 +46,7 @@ const ApiKeyCheck: React.FC<ApiKeyCheckProps> = ({ children }) => {
       {children}
       
       {/* Diálogo para configuração de chave API quando necessário */}
-      {showDialog && !isEnvironmentKey && (
+      {showDialog && (
         <Dialog open={showDialog} onOpenChange={setShowDialog}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
@@ -58,6 +59,7 @@ const ApiKeyCheck: React.FC<ApiKeyCheckProps> = ({ children }) => {
             <OpenAIKeyInput 
               forceOpen={true}
               onKeySubmit={(key) => {
+                console.log("📝 Nova chave submetida:", key.substring(0, 20) + "...");
                 setApiKey(key);
                 setShowDialog(false);
               }}
