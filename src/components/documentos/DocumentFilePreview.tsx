@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import ImagePreview from './previews/ImagePreview';
@@ -6,8 +5,7 @@ import PdfPreview from './previews/PdfPreview';
 import GenericFilePreview from './previews/GenericFilePreview';
 import FileDetails from './previews/FileDetails';
 import { generatePdfPreview } from '@/utils/pdf/pdfPreviewGenerator';
-import { configurePdfWorker, preloadPdfWorker } from '@/utils/pdf/pdfWorkerConfig';
-import { toast } from "sonner";
+import { configurePdfWorker } from '@/utils/pdf/pdfWorkerConfig';
 
 interface DocumentFilePreviewProps {
   file: File | null;
@@ -19,13 +17,11 @@ const DocumentFilePreview: React.FC<DocumentFilePreviewProps> = ({ file }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Configure PDF.js worker when component mounts with improved configuration
+  // Configure PDF.js worker when component mounts
   useEffect(() => {
-    // Configura o worker com múltiplos fallbacks
     const workerResult = configurePdfWorker({ 
       verbose: true,
-      showToasts: true,
-      useLocalWorker: true // Tenta usar worker local primeiro
+      showToasts: true
     });
     
     if (!workerResult.success) {
@@ -72,35 +68,25 @@ const DocumentFilePreview: React.FC<DocumentFilePreviewProps> = ({ file }) => {
       const handlePdfPreview = async () => {
         try {
           // Ensure worker is configured before generating preview
-          // Tente múltiplas estratégias para configurar o worker
           const workerConfig = configurePdfWorker({ 
             verbose: true, 
-            showToasts: false,
-            useLocalWorker: true
+            showToasts: false
           });
           
-          // Se nenhuma estratégia normal funcionar, tenta usar worker fake
           if (!workerConfig.success) {
-            console.warn("Tentando worker fake como alternativa...");
-            // Último recurso: worker fake (dentro da função getDocument)
+            console.warn("Worker configuration failed, but attempting preview anyway...");
           }
           
-          // Tenta gerar preview mesmo se worker falhar (pode usar fallback interno)
           const previewImage = await generatePdfPreview(file, {
             verbose: true,
-            showToasts: false, // Don't show toasts for preview issues
+            showToasts: false,
             scale: 0.5,
-            timeout: 25000 // Increased timeout for larger PDFs
+            timeout: 25000
           });
           setPdfFirstPage(previewImage);
         } catch (error) {
           setError(error instanceof Error ? error.message : "Unknown error");
           console.error("Falha ao gerar visualização do PDF:", error);
-          
-          // No toast here - we'll just show the PDF icon instead
-          // Don't need to alert the user about preview issues if they can still upload
-          
-          // Try an alternative approach - just show the icon
           setPdfFirstPage(null);
         } finally {
           setIsLoading(false);
