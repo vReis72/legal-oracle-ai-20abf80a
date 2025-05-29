@@ -23,8 +23,8 @@ const ApiKeyCheck: React.FC<ApiKeyCheckProps> = ({ children }) => {
     console.log("- isEnvironmentKey:", isEnvironmentKey);
     console.log("- apiKey presente:", !!apiKey);
     
-    // Só mostrar o diálogo se realmente não tiver uma chave válida
-    const shouldShowDialog = !isKeyConfigured && !isEnvironmentKey && isPlaceholderKey;
+    // Só mostrar o diálogo se não tiver uma chave válida configurada
+    const shouldShowDialog = !isKeyConfigured || isPlaceholderKey;
     console.log("- Deve mostrar diálogo:", shouldShowDialog);
     
     setShowDialog(shouldShowDialog);
@@ -44,14 +44,15 @@ const ApiKeyCheck: React.FC<ApiKeyCheckProps> = ({ children }) => {
       
       {children}
       
-      {/* Diálogo para configuração de chave API apenas quando necessário */}
-      {showDialog && (
+      {/* Diálogo para configuração de chave API quando necessário */}
+      {showDialog && !isEnvironmentKey && (
         <Dialog open={showDialog} onOpenChange={setShowDialog}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Configurar API OpenAI</DialogTitle>
               <DialogDescription>
                 Para usar o assistente de IA, configure uma chave OpenAI válida.
+                Você pode obter uma chave em <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-eco-primary hover:underline">platform.openai.com/api-keys</a>.
               </DialogDescription>
             </DialogHeader>
             <OpenAIKeyInput 

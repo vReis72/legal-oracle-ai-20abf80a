@@ -14,7 +14,7 @@ interface ApiKeyProviderProps {
 export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   const [apiKey, setApiKeyState] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isPlaceholderKey, setIsPlaceholderKey] = useState(false);
+  const [isPlaceholderKey, setIsPlaceholderKey] = useState(true);
   const [isEnvironmentKey, setIsEnvironmentKey] = useState(false);
   const { toast } = useToast();
   
@@ -64,7 +64,7 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
         setIsEnvironmentKey(false);
         setIsPlaceholderKey(false);
       } else {
-        console.log("❌ Nenhuma chave válida encontrada");
+        console.log("❌ Nenhuma chave válida encontrada - será necessário configurar");
         setApiKeyState(null);
         setIsEnvironmentKey(false);
         setIsPlaceholderKey(true);
@@ -96,6 +96,7 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   console.log("✅ Chave configurada:", isKeyConfigured);
   console.log("🔑 Chave sendo usada:", currentKey?.substring(0, 30) + "...");
   console.log("✅ É válida?", currentKey ? isValidApiKey(currentKey) : false);
+  console.log("🔧 É placeholder?", isPlaceholderKey);
 
   return (
     <ApiKeyContext.Provider value={{ 
@@ -104,7 +105,7 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
       isKeyConfigured, 
       checkApiKey,
       resetApiKey,
-      isPlaceholderKey: !isKeyConfigured,
+      isPlaceholderKey,
       isEnvironmentKey: isEnvironmentKey || false
     }}>
       {children}
