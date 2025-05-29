@@ -1,141 +1,113 @@
-import { useState, useEffect } from 'react';
-import { UserSettingsService } from '@/services/userSettingsService';
-import { LocalUserSettingsService } from '@/services/localUserSettingsService';
-import { UserSettings, UserSettingsUpdate } from '@/types/userSettings';
-import { useToast } from '@/hooks/use-toast';
-import { useTheme } from '@/providers/ThemeProvider';
 
-// Por enquanto vamos usar um ID fixo para o usuário
-// Quando implementarmos autenticação, isso virá do contexto de auth
-const TEMP_USER_ID = 'temp-user-001';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { UserSettingsService } from '@/services/userSettingsService';
+import { useSystemSettings } from '@/hooks/useSystemSettings';
+import { useToast } from '@/hooks/use-toast';
+import { UserSettings } from '@/types/userSettings';
 
 export const useUserSettings = () => {
-  const [settings, setSettings] = useState<UserSettings | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, profile } = useAuth();
+  const { getApiKey: getGlobalApiKey } = useSystemSettings();
   const { toast } = useToast();
-  const { setTheme } = useTheme();
+  const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const loadSettings = async () => {
-    setIsLoading(true);
+  // Carrega configurações do usuário
+  const loadUserSettings = async () => {
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      // Tenta carregar do Supabase primeiro
-      let userSettings = await UserSettingsService.getUserSettings(TEMP_USER_ID);
-      
-      // Se não conseguir do Supabase, tenta do localStorage
-      if (!userSettings) {
-        userSettings = LocalUserSettingsService.getUserSettings(TEMP_USER_ID);
-      }
-      
-      setSettings(userSettings);
-
-      // Aplica o tema salvo
-      if (userSettings?.theme) {
-        setTheme(userSettings.theme);
-      }
+      const settings = await UserSettingsService.getUserSettings(user.id);
+      setUserSettings(settings);
     } catch (error) {
-      console.error('Erro ao carregar configurações:', error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível carregar as configurações do usuário.",
-      });
+      console.error('Erro ao carregar configurações do usuário:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadSettings();
-  }, []);
+    loadUserSettings();
+  }, [user]);
 
-  const saveSettings = async (newSettings: Partial<UserSettingsUpdate>): Promise<boolean> => {
+  // Função para obter a chave API com prioridade: global (admin) > usuário individual
+  const getApiKey = (): string | null => {
+    // Se é admin, usa a chave global
+    if (profile?.is_admin) {
+      const globalKey = getGlobalApiKey();
+      if (globalKey) return globalKey;
+    }
+    
+    // Senão, usa a chave individual do usuário
+    return userSettings?.openai_api_key || null;
+  };
+
+  // Verifica se tem uma chave válida
+  const hasValidApiKey = (): boolean => {
+    const key = getApiKey();
+    return !!(key && key.startsWith('sk-') && key.length > 40);
+  };
+
+  // Salva chave API individual (apenas para usuários não-admin)
+  const saveApiKey = async (apiKey: string): Promise<boolean> => {
+    if (!user) return false;
+
+    if (profile?.is_admin) {
+      toast({
+        variant: "info",
+        title: "Uso da chave global",
+        description: "Administradores usam a chave API global configurada nas configurações do sistema.",
+      });
+      return false;
+    }
+
     try {
-      // Tenta salvar no Supabase primeiro
-      let success = await UserSettingsService.saveSettings(TEMP_USER_ID, newSettings);
-      
-      // Se falhar no Supabase, salva no localStorage
-      if (!success) {
-        success = LocalUserSettingsService.saveSettings(TEMP_USER_ID, newSettings);
-        if (success) {
-          toast({
-            title: "Configurações Salvas (Local)",
-            description: "Suas configurações foram salvas localmente. Para sincronizar com o banco, execute a migration do Supabase.",
-          });
-        }
-      } else {
+      const success = await UserSettingsService.saveApiKey(user.id, apiKey);
+      if (success) {
+        await loadUserSettings();
         toast({
           title: "Sucesso",
-          description: "Configurações salvas com sucesso!",
+          description: "Chave API salva com sucesso!",
         });
       }
-      
-      if (success) {
-        await loadSettings(); // Recarrega as configurações
-        return true;
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Erro",
-          description: "Não foi possível salvar as configurações.",
-        });
-        return false;
-      }
+      return success;
     } catch (error) {
-      console.error('Erro ao salvar configurações:', error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Erro inesperado ao salvar as configurações.",
-      });
+      console.error('Erro ao salvar chave API:', error);
       return false;
     }
   };
 
-  const saveApiKey = async (key: string): Promise<boolean> => {
-    return saveSettings({ openai_api_key: key });
-  };
-
+  // Remove chave API individual
   const removeApiKey = async (): Promise<boolean> => {
-    return saveSettings({ openai_api_key: null });
-  };
+    if (!user) return false;
 
-  const updateTheme = async (theme: 'light' | 'dark' | 'system'): Promise<boolean> => {
-    return saveSettings({ theme });
-  };
-
-  const updateCompanyInfo = async (companyName: string, contactEmail?: string): Promise<boolean> => {
-    return saveSettings({ company_name: companyName, contact_email: contactEmail });
-  };
-
-  const updateUserInfo = async (userName: string, userOab?: string): Promise<boolean> => {
-    return saveSettings({ user_name: userName, user_oab: userOab });
-  };
-
-  const hasValidApiKey = (): boolean => {
-    const apiKey = settings?.openai_api_key;
-    return apiKey !== null && 
-           apiKey !== undefined &&
-           apiKey.trim() !== '' && 
-           apiKey.startsWith('sk-') && 
-           apiKey !== 'sk-adicione-uma-chave-valida-aqui';
+    try {
+      const success = await UserSettingsService.removeApiKey(user.id);
+      if (success) {
+        await loadUserSettings();
+        toast({
+          title: "Chave removida",
+          description: "Chave API removida com sucesso!",
+        });
+      }
+      return success;
+    } catch (error) {
+      console.error('Erro ao remover chave API:', error);
+      return false;
+    }
   };
 
   return {
-    settings,
+    userSettings,
     isLoading,
-    apiKey: settings?.openai_api_key || null,
-    theme: settings?.theme || 'light',
-    companyName: settings?.company_name || '',
-    userName: settings?.user_name || '',
-    userOab: settings?.user_oab || '',
-    contactEmail: settings?.contact_email || '',
-    saveSettings,
+    apiKey: getApiKey(),
+    hasValidApiKey: hasValidApiKey(),
     saveApiKey,
     removeApiKey,
-    updateTheme,
-    updateCompanyInfo,
-    updateUserInfo,
-    hasValidApiKey,
-    reloadSettings: loadSettings
+    reloadSettings: loadUserSettings,
   };
 };
