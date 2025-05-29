@@ -69,7 +69,7 @@ Como posso ajudar você hoje?`,
         userMessage
       ];
       
-      // Usar apenas a chave global - sem parâmetro adicional
+      // Usar apenas a função global sem parâmetros
       const assistantResponse = await sendChatMessage(conversationHistory);
       
       const assistantMessage: ChatMessage = {

@@ -1,8 +1,6 @@
 
 import React, { createContext, useContext, ReactNode } from 'react';
-
-// Chave API constante - simplesmente isso
-const API_KEY = "sk-adicione-uma-chave-valida-aqui";
+import { getGlobalApiKey, hasGlobalApiKey } from '@/constants/apiKeys';
 
 interface ApiKeyContextType {
   apiKey: string;
@@ -29,14 +27,11 @@ interface ApiKeyProviderProps {
 }
 
 export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
-  // Chave do ambiente se existir
-  const envKey = typeof window !== 'undefined' && window.env?.OPENAI_API_KEY;
-  
-  // Usar chave do ambiente ou constante
-  const currentKey = envKey || API_KEY;
-  const isEnvironmentKey = !!envKey;
+  // Usar sempre a chave global constante
+  const currentKey = getGlobalApiKey();
+  const isKeyConfigured = hasGlobalApiKey();
   const isPlaceholderKey = currentKey === "sk-adicione-uma-chave-valida-aqui";
-  const isKeyConfigured = currentKey.startsWith('sk-') && currentKey.length > 40 && !isPlaceholderKey;
+  const isEnvironmentKey = false; // Sempre false pois usamos apenas constante
 
   const contextValue: ApiKeyContextType = {
     apiKey: currentKey,
