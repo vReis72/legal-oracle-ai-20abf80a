@@ -33,7 +33,16 @@ export const useChat = () => {
     if (!input.trim()) return;
     
     // Verificar se há uma chave global válida
-    if (!hasValidGlobalKey || keyLoading) {
+    if (keyLoading) {
+      toast({
+        variant: "destructive",
+        title: "Sistema carregando",
+        description: "Aguarde enquanto o sistema carrega as configurações.",
+      });
+      return;
+    }
+    
+    if (!hasValidGlobalKey) {
       toast({
         variant: "destructive",
         title: "Sistema não configurado",
