@@ -33,7 +33,7 @@ export const useChat = () => {
     if (!input.trim()) return;
     
     // Verificar se há uma chave global válida
-    if (!hasValidGlobalKey) {
+    if (!hasValidGlobalKey || keyLoading) {
       toast({
         variant: "destructive",
         title: "Sistema não configurado",
@@ -68,7 +68,7 @@ export const useChat = () => {
         userMessage
       ];
       
-      const assistantResponse = await sendChatMessage(conversationHistory, globalApiKey);
+      const assistantResponse = await sendChatMessage(conversationHistory, globalApiKey!);
       
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),

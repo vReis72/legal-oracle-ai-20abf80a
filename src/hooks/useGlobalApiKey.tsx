@@ -60,13 +60,21 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
+    let mounted = true;
+    
     if (user) {
       fetchGlobalApiKey();
     } else {
-      setGlobalApiKey(null);
-      setLoading(false);
+      if (mounted) {
+        setGlobalApiKey(null);
+        setLoading(false);
+      }
     }
-  }, [user]);
+
+    return () => {
+      mounted = false;
+    };
+  }, [user?.id]); // Usar user?.id em vez de user para evitar re-renders desnecessários
 
   const saveGlobalApiKey = async (key: string): Promise<boolean> => {
     if (!user) {
@@ -144,8 +152,6 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
                             globalApiKey.trim() !== '' && 
                             globalApiKey.startsWith('sk-') && 
                             globalApiKey !== 'sk-adicione-uma-chave-valida-aqui';
-
-  console.log('Estado da chave global:', { globalApiKey: globalApiKey ? 'configurada' : 'não configurada', hasValidGlobalKey, loading });
 
   return (
     <GlobalApiKeyContext.Provider value={{
