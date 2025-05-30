@@ -25,7 +25,6 @@ const GlobalApiKeyContext = createContext<GlobalApiKeyContextType | undefined>(u
 export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   const [globalApiKey, setGlobalApiKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [initialized, setInitialized] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -49,35 +48,16 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Simplificar a inicialização
   useEffect(() => {
-    let mounted = true;
-    
     const initializeApiKey = async () => {
-      if (!user || initialized) {
-        if (!user && mounted) {
-          setGlobalApiKey(null);
-          setLoading(false);
-          setInitialized(true);
-        }
-        return;
-      }
-
-      setLoading(true);
       const key = await fetchGlobalApiKey();
-      
-      if (mounted) {
-        setGlobalApiKey(key);
-        setLoading(false);
-        setInitialized(true);
-      }
+      setGlobalApiKey(key);
+      setLoading(false);
     };
 
     initializeApiKey();
-
-    return () => {
-      mounted = false;
-    };
-  }, [user?.id, initialized]);
+  }, []); // Removida dependência do user para evitar loops
 
   const saveGlobalApiKey = async (key: string): Promise<boolean> => {
     if (!user) {
@@ -147,8 +127,6 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const refreshGlobalApiKey = async () => {
-    if (!user) return;
-    
     setLoading(true);
     const key = await fetchGlobalApiKey();
     setGlobalApiKey(key);
@@ -161,6 +139,8 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
     globalApiKey.startsWith('sk-') && 
     globalApiKey !== 'sk-adicione-uma-chave-valida-aqui'
   );
+
+  console.log('GlobalApiKey status:', { globalApiKey: globalApiKey ? 'SET' : 'NOT_SET', hasValidGlobalKey, loading });
 
   return (
     <GlobalApiKeyContext.Provider value={{
