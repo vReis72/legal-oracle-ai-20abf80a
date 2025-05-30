@@ -46,8 +46,10 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
 
       if (data?.openai_api_key) {
         setGlobalApiKey(data.openai_api_key);
+        console.log('Chave global carregada com sucesso');
       } else {
         setGlobalApiKey(null);
+        console.log('Nenhuma chave global encontrada');
       }
     } catch (error) {
       console.error('Erro inesperado ao buscar chave global:', error);
@@ -117,6 +119,7 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
       }
 
       setGlobalApiKey(key);
+      console.log('Chave global salva com sucesso');
       toast({
         title: "Sucesso",
         description: "Chave API OpenAI salva com sucesso!",
@@ -141,6 +144,8 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
                             globalApiKey.trim() !== '' && 
                             globalApiKey.startsWith('sk-') && 
                             globalApiKey !== 'sk-adicione-uma-chave-valida-aqui';
+
+  console.log('Estado da chave global:', { globalApiKey: globalApiKey ? 'configurada' : 'não configurada', hasValidGlobalKey, loading });
 
   return (
     <GlobalApiKeyContext.Provider value={{

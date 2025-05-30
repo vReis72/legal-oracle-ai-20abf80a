@@ -18,7 +18,7 @@ export const useChat = () => {
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const { globalApiKey, hasValidGlobalKey } = useGlobalApiKey();
+  const { globalApiKey, hasValidGlobalKey, loading: keyLoading } = useGlobalApiKey();
 
   useEffect(() => {
     scrollToBottom();
@@ -105,6 +105,6 @@ export const useChat = () => {
     messagesEndRef,
     handleSendMessage,
     handleRetry,
-    isKeyConfigured: hasValidGlobalKey
+    isKeyConfigured: hasValidGlobalKey && !keyLoading
   };
 };
