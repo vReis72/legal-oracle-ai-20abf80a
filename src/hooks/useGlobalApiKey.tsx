@@ -1,5 +1,5 @@
 
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { useState, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -16,17 +16,17 @@ const GlobalApiKeyContext = createContext<GlobalApiKeyContextType | undefined>(u
 
 export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   const [globalApiKey, setGlobalApiKey] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
 
   const fetchGlobalApiKey = async () => {
     if (!user) {
       setGlobalApiKey(null);
-      setLoading(false);
       return;
     }
 
+    setLoading(true);
     try {
       console.log('Buscando chave global do Supabase...');
       const { data, error } = await supabase
@@ -38,7 +38,6 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
       if (error) {
         console.error('Erro ao buscar chave global:', error);
         setGlobalApiKey(null);
-        setLoading(false);
         return;
       }
 
@@ -46,33 +45,13 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
       console.log('Chave global encontrada:', apiKey ? 'SIM' : 'NÃO');
       
       setGlobalApiKey(apiKey);
-      setLoading(false);
     } catch (error) {
       console.error('Erro inesperado ao buscar chave global:', error);
       setGlobalApiKey(null);
+    } finally {
       setLoading(false);
     }
   };
-
-  // Carregar chave apenas uma vez quando o componente montar e o usuário estiver disponível
-  useEffect(() => {
-    let isMounted = true;
-    
-    if (user) {
-      fetchGlobalApiKey().then(() => {
-        if (isMounted) {
-          console.log('Chave global carregada');
-        }
-      });
-    } else {
-      setGlobalApiKey(null);
-      setLoading(false);
-    }
-
-    return () => {
-      isMounted = false;
-    };
-  }, [user?.id]); // Dependência estável
 
   const saveGlobalApiKey = async (key: string): Promise<boolean> => {
     if (!user) {
@@ -143,7 +122,6 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const refreshGlobalApiKey = async () => {
-    setLoading(true);
     await fetchGlobalApiKey();
   };
 

@@ -18,7 +18,7 @@ export const useChat = () => {
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const { globalApiKey, hasValidGlobalKey, loading: keyLoading } = useGlobalApiKey();
+  const { globalApiKey, hasValidGlobalKey, loading: keyLoading, refreshGlobalApiKey } = useGlobalApiKey();
 
   useEffect(() => {
     scrollToBottom();
@@ -33,6 +33,12 @@ export const useChat = () => {
     if (!input.trim()) return;
     
     console.log('Verificando chave API antes de enviar mensagem');
+    
+    // Se não temos a chave ainda, tentar buscar
+    if (!hasValidGlobalKey && !keyLoading) {
+      console.log('Tentando buscar chave global...');
+      await refreshGlobalApiKey();
+    }
     
     if (keyLoading) {
       toast({
@@ -109,7 +115,7 @@ export const useChat = () => {
     setError(null);
   };
 
-  // Verificação simples da chave configurada
+  // Verificação simples - não busca automaticamente
   const isKeyConfigured = hasValidGlobalKey && !keyLoading;
 
   return {
