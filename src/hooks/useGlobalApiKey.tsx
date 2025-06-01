@@ -16,13 +16,15 @@ const GlobalApiKeyContext = createContext<GlobalApiKeyContextType | undefined>(u
 
 export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   const [globalApiKey, setGlobalApiKey] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
 
   const fetchGlobalApiKey = async () => {
     if (!user) {
-      return null;
+      setGlobalApiKey(null);
+      setLoading(false);
+      return;
     }
 
     try {
@@ -35,48 +37,42 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) {
         console.error('Erro ao buscar chave global:', error);
-        return null;
+        setGlobalApiKey(null);
+        setLoading(false);
+        return;
       }
 
       const apiKey = data?.openai_api_key || null;
       console.log('Chave global encontrada:', apiKey ? 'SIM' : 'NÃO');
       
-      return apiKey;
+      setGlobalApiKey(apiKey);
+      setLoading(false);
     } catch (error) {
       console.error('Erro inesperado ao buscar chave global:', error);
-      return null;
-    }
-  };
-
-  const loadGlobalApiKey = async () => {
-    if (!user) {
       setGlobalApiKey(null);
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const key = await fetchGlobalApiKey();
-      setGlobalApiKey(key);
-      console.log('Chave global carregada:', key ? 'SUCESSO' : 'FALHOU');
-    } catch (error) {
-      console.error('Erro ao carregar chave global:', error);
-      setGlobalApiKey(null);
-    } finally {
       setLoading(false);
     }
   };
 
-  // Carregar chave apenas quando o usuário estiver disponível
+  // Carregar chave apenas uma vez quando o componente montar e o usuário estiver disponível
   useEffect(() => {
+    let isMounted = true;
+    
     if (user) {
-      loadGlobalApiKey();
+      fetchGlobalApiKey().then(() => {
+        if (isMounted) {
+          console.log('Chave global carregada');
+        }
+      });
     } else {
       setGlobalApiKey(null);
       setLoading(false);
     }
-  }, [user?.id]); // Usar user?.id em vez de user para evitar re-renders
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id]); // Dependência estável
 
   const saveGlobalApiKey = async (key: string): Promise<boolean> => {
     if (!user) {
@@ -147,7 +143,8 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const refreshGlobalApiKey = async () => {
-    await loadGlobalApiKey();
+    setLoading(true);
+    await fetchGlobalApiKey();
   };
 
   const hasValidGlobalKey = Boolean(

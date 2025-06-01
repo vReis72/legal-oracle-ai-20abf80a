@@ -109,7 +109,7 @@ export const useChat = () => {
     setError(null);
   };
 
-  // Simplificar a verificação da chave
+  // Verificação simples da chave configurada
   const isKeyConfigured = hasValidGlobalKey && !keyLoading;
 
   return {
