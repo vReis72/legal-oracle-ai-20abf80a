@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,7 +16,6 @@ const settingsSchema = z.object({
   userName: z.string().optional(),
   userOab: z.string().optional(),
   contactEmail: z.string().email('Email inválido').optional().or(z.literal('')),
-  apiKey: z.string().optional(),
   theme: z.enum(['light', 'dark', 'system']),
 });
 
@@ -33,7 +33,6 @@ const SettingsForm: React.FC = () => {
       userName: '',
       userOab: '',
       contactEmail: '',
-      apiKey: '',
       theme: 'light',
     }
   });
@@ -52,7 +51,6 @@ const SettingsForm: React.FC = () => {
         userName: settings.user_name || '',
         userOab: settings.user_oab || '',
         contactEmail: settings.contact_email || '',
-        apiKey: settings.openai_api_key || '',
         theme: validTheme,
       });
     }
@@ -66,13 +64,12 @@ const SettingsForm: React.FC = () => {
         setTheme(data.theme);
       }
 
-      // Depois salva as configurações
+      // Depois salva as configurações (sem o campo apiKey)
       const success = await saveSettings({
         company_name: data.companyName,
         user_name: data.userName,
         user_oab: data.userOab,
         contact_email: data.contactEmail,
-        openai_api_key: data.apiKey,
         theme: data.theme,
       });
 
@@ -170,27 +167,6 @@ const SettingsForm: React.FC = () => {
                 )}
               />
             </div>
-
-            <FormField
-              control={form.control}
-              name="apiKey"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Chave API OpenAI</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="password" 
-                      placeholder="sk-..." 
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Sua chave da API OpenAI para usar o assistente
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             <FormField
               control={form.control}
