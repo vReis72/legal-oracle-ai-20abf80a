@@ -30,6 +30,7 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchGlobalApiKey = async () => {
     try {
+      console.log('Buscando chave global do Supabase...');
       const { data, error } = await supabase
         .from('system_settings')
         .select('*')
@@ -41,23 +42,37 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
         return null;
       }
 
-      return data?.openai_api_key || null;
+      const apiKey = data?.openai_api_key || null;
+      console.log('Chave global encontrada:', apiKey ? 'SIM' : 'NÃO');
+      if (apiKey) {
+        console.log('Primeiros caracteres da chave:', apiKey.substring(0, 10) + '...');
+      }
+      
+      return apiKey;
     } catch (error) {
       console.error('Erro inesperado ao buscar chave global:', error);
       return null;
     }
   };
 
-  // Simplificar a inicialização
-  useEffect(() => {
-    const initializeApiKey = async () => {
+  const loadGlobalApiKey = async () => {
+    setLoading(true);
+    try {
       const key = await fetchGlobalApiKey();
       setGlobalApiKey(key);
+      console.log('Chave global carregada:', key ? 'SUCESSO' : 'FALHOU');
+    } catch (error) {
+      console.error('Erro ao carregar chave global:', error);
+      setGlobalApiKey(null);
+    } finally {
       setLoading(false);
-    };
+    }
+  };
 
-    initializeApiKey();
-  }, []); // Removida dependência do user para evitar loops
+  // Carregar chave na inicialização
+  useEffect(() => {
+    loadGlobalApiKey();
+  }, []);
 
   const saveGlobalApiKey = async (key: string): Promise<boolean> => {
     if (!user) {
@@ -70,6 +85,8 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
+      console.log('Salvando chave global...');
+      
       // Verificar se já existe uma configuração
       const { data: existing } = await supabase
         .from('system_settings')
@@ -110,6 +127,8 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
       }
 
       setGlobalApiKey(key);
+      console.log('Chave global salva com sucesso');
+      
       toast({
         title: "Sucesso",
         description: "Chave API OpenAI salva com sucesso!",
@@ -127,20 +146,24 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const refreshGlobalApiKey = async () => {
-    setLoading(true);
-    const key = await fetchGlobalApiKey();
-    setGlobalApiKey(key);
-    setLoading(false);
+    await loadGlobalApiKey();
   };
 
+  // Validação mais robusta da chave
   const hasValidGlobalKey = Boolean(
     globalApiKey && 
     globalApiKey.trim() !== '' && 
     globalApiKey.startsWith('sk-') && 
+    globalApiKey.length > 20 && // Chaves OpenAI são bem longas
     globalApiKey !== 'sk-adicione-uma-chave-valida-aqui'
   );
 
-  console.log('GlobalApiKey status:', { globalApiKey: globalApiKey ? 'SET' : 'NOT_SET', hasValidGlobalKey, loading });
+  console.log('Estado da chave global:', {
+    hasKey: !!globalApiKey,
+    keyStart: globalApiKey ? globalApiKey.substring(0, 7) : 'NENHUMA',
+    isValid: hasValidGlobalKey,
+    loading
+  });
 
   return (
     <GlobalApiKeyContext.Provider value={{

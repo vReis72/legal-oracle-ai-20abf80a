@@ -32,6 +32,12 @@ export const useChat = () => {
     e.preventDefault();
     if (!input.trim()) return;
     
+    console.log('Enviando mensagem. Estado da chave:', {
+      hasValidGlobalKey,
+      keyLoading,
+      globalApiKey: globalApiKey ? 'PRESENTE' : 'AUSENTE'
+    });
+    
     // Verificar se há uma chave global válida
     if (keyLoading) {
       toast({
@@ -43,10 +49,21 @@ export const useChat = () => {
     }
     
     if (!hasValidGlobalKey) {
+      console.error('Chave global inválida ou ausente');
       toast({
         variant: "destructive",
         title: "Sistema não configurado",
         description: "A chave API OpenAI não foi configurada pelo administrador. Contate o suporte.",
+      });
+      return;
+    }
+
+    if (!globalApiKey) {
+      console.error('GlobalApiKey é null');
+      toast({
+        variant: "destructive",
+        title: "Erro de configuração",
+        description: "Chave API não disponível. Contate o administrador.",
       });
       return;
     }
@@ -65,6 +82,8 @@ export const useChat = () => {
     setError(null);
     
     try {
+      console.log('Enviando para OpenAI com chave:', globalApiKey.substring(0, 10) + '...');
+      
       // Create array with system message and conversation history
       const conversationHistory: ChatMessage[] = [
         {
@@ -77,7 +96,7 @@ export const useChat = () => {
         userMessage
       ];
       
-      const assistantResponse = await sendChatMessage(conversationHistory, globalApiKey!);
+      const assistantResponse = await sendChatMessage(conversationHistory, globalApiKey);
       
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
@@ -87,6 +106,7 @@ export const useChat = () => {
       };
       
       setMessages(prev => [...prev, assistantMessage]);
+      console.log('Resposta recebida com sucesso');
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error);
       setError((error as Error).message || 'Erro ao processar sua pergunta');

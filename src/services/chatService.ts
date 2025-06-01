@@ -1,6 +1,4 @@
 
-import { useGlobalApiKey } from '@/hooks/useGlobalApiKey';
-
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant' | 'system';
@@ -8,9 +6,16 @@ export interface ChatMessage {
   timestamp: Date;
 }
 
-export const sendChatMessage = async (messages: ChatMessage[], globalApiKey?: string): Promise<string> => {
+export const sendChatMessage = async (messages: ChatMessage[], globalApiKey: string): Promise<string> => {
+  console.log('ChatService: Iniciando envio para OpenAI');
+  console.log('ChatService: Chave API recebida:', globalApiKey ? globalApiKey.substring(0, 10) + '...' : 'NENHUMA');
+  
   if (!globalApiKey) {
     throw new Error('Chave API OpenAI não configurada pelo administrador do sistema.');
+  }
+
+  if (!globalApiKey.startsWith('sk-')) {
+    throw new Error('Chave API OpenAI inválida. A chave deve começar com "sk-".');
   }
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -20,7 +25,7 @@ export const sendChatMessage = async (messages: ChatMessage[], globalApiKey?: st
       'Authorization': `Bearer ${globalApiKey}`,
     },
     body: JSON.stringify({
-      model: 'gpt-4',
+      model: 'gpt-4o-mini',
       messages: messages.map(msg => ({
         role: msg.role,
         content: msg.content
@@ -30,8 +35,11 @@ export const sendChatMessage = async (messages: ChatMessage[], globalApiKey?: st
     }),
   });
 
+  console.log('ChatService: Status da resposta:', response.status);
+
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
+    console.error('ChatService: Erro da API:', errorData);
     
     if (response.status === 401) {
       throw new Error('Chave API OpenAI inválida. Contate o administrador do sistema.');
@@ -50,5 +58,6 @@ export const sendChatMessage = async (messages: ChatMessage[], globalApiKey?: st
     throw new Error('Resposta inválida da API OpenAI.');
   }
 
+  console.log('ChatService: Resposta recebida com sucesso');
   return data.choices[0].message.content;
 };
