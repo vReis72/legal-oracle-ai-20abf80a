@@ -1,7 +1,6 @@
 
 import { useState, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from './useAuth';
 import { useToast } from '@/hooks/use-toast';
 
 interface GlobalApiKeyContextType {
@@ -17,10 +16,12 @@ const GlobalApiKeyContext = createContext<GlobalApiKeyContextType | undefined>(u
 export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   const [globalApiKey, setGlobalApiKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const { user } = useAuth();
   const { toast } = useToast();
 
   const fetchGlobalApiKey = async () => {
+    // Buscar o usuário atual diretamente do Supabase ao invés de usar o hook
+    const { data: { user } } = await supabase.auth.getUser();
+    
     if (!user) {
       setGlobalApiKey(null);
       return;
@@ -54,6 +55,9 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const saveGlobalApiKey = async (key: string): Promise<boolean> => {
+    // Buscar o usuário atual diretamente do Supabase
+    const { data: { user } } = await supabase.auth.getUser();
+    
     if (!user) {
       toast({
         variant: "destructive",

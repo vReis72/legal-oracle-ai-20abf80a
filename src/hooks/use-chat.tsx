@@ -34,7 +34,7 @@ export const useChat = () => {
     
     console.log('Verificando chave API antes de enviar mensagem');
     
-    // Se não temos a chave ainda, tentar buscar
+    // Se não temos a chave ainda, tentar buscar uma vez
     if (!hasValidGlobalKey && !keyLoading) {
       console.log('Tentando buscar chave global...');
       await refreshGlobalApiKey();
