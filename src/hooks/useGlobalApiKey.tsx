@@ -17,11 +17,11 @@ const GlobalApiKeyContext = createContext<GlobalApiKeyContextType | undefined>(u
 export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   const [globalApiKey, setGlobalApiKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   const fetchGlobalApiKey = async () => {
-    if (!user || authLoading) {
+    if (!user) {
       return null;
     }
 
@@ -49,8 +49,9 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const loadGlobalApiKey = async () => {
-    if (!user || authLoading) {
+    if (!user) {
       setGlobalApiKey(null);
+      setLoading(false);
       return;
     }
 
@@ -67,17 +68,15 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Só carregar chave quando o usuário estiver autenticado
+  // Carregar chave apenas quando o usuário estiver disponível
   useEffect(() => {
-    if (authLoading) return;
-    
     if (user) {
       loadGlobalApiKey();
     } else {
       setGlobalApiKey(null);
       setLoading(false);
     }
-  }, [user, authLoading]);
+  }, [user?.id]); // Usar user?.id em vez de user para evitar re-renders
 
   const saveGlobalApiKey = async (key: string): Promise<boolean> => {
     if (!user) {
