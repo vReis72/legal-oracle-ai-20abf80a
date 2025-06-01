@@ -1,5 +1,5 @@
 
-import { useState, createContext, useContext, ReactNode } from 'react';
+import { useState, createContext, useContext, ReactNode, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -16,20 +16,58 @@ const GlobalApiKeyContext = createContext<GlobalApiKeyContextType | undefined>(u
 export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   const [globalApiKey, setGlobalApiKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [initialized, setInitialized] = useState(false);
   const { toast } = useToast();
 
-  const fetchGlobalApiKey = async () => {
-    // Buscar o usuário atual diretamente do Supabase ao invés de usar o hook
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      setGlobalApiKey(null);
-      return;
-    }
-
-    setLoading(true);
+  // Verificar conectividade do Supabase
+  const checkSupabaseConnection = async () => {
     try {
-      console.log('Buscando chave global do Supabase...');
+      console.log('Testando conexão com Supabase...');
+      const { data, error } = await supabase.from('system_settings').select('count').limit(1);
+      if (error) {
+        console.error('Erro de conexão com Supabase:', error);
+        return false;
+      }
+      console.log('Conexão com Supabase OK');
+      return true;
+    } catch (error) {
+      console.error('Erro ao testar conexão:', error);
+      return false;
+    }
+  };
+
+  const fetchGlobalApiKey = async () => {
+    if (loading || initialized) return;
+    
+    try {
+      setLoading(true);
+      console.log('Iniciando fetchGlobalApiKey...');
+      
+      // Verificar conexão primeiro
+      const isConnected = await checkSupabaseConnection();
+      if (!isConnected) {
+        console.error('Sem conexão com Supabase, cancelando busca da chave');
+        setGlobalApiKey(null);
+        return;
+      }
+
+      // Buscar o usuário atual
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        console.error('Erro ao buscar usuário:', userError);
+        setGlobalApiKey(null);
+        return;
+      }
+      
+      if (!user) {
+        console.log('Usuário não autenticado, não buscando chave global');
+        setGlobalApiKey(null);
+        return;
+      }
+
+      console.log('Usuário autenticado, buscando chave global...');
+      
       const { data, error } = await supabase
         .from('system_settings')
         .select('*')
@@ -38,6 +76,9 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) {
         console.error('Erro ao buscar chave global:', error);
+        if (error.code === '42P01') {
+          console.log('Tabela system_settings não existe');
+        }
         setGlobalApiKey(null);
         return;
       }
@@ -51,23 +92,31 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
       setGlobalApiKey(null);
     } finally {
       setLoading(false);
+      setInitialized(true);
     }
   };
 
-  const saveGlobalApiKey = async (key: string): Promise<boolean> => {
-    // Buscar o usuário atual diretamente do Supabase
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Usuário não autenticado.",
-      });
-      return false;
+  // Inicializar apenas uma vez
+  useEffect(() => {
+    if (!initialized) {
+      fetchGlobalApiKey();
     }
+  }, [initialized]);
 
+  const saveGlobalApiKey = async (key: string): Promise<boolean> => {
     try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        console.error('Erro de autenticação ao salvar chave:', userError);
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Usuário não autenticado.",
+        });
+        return false;
+      }
+
       console.log('Salvando chave global...');
       
       const { data: existing } = await supabase
@@ -126,6 +175,7 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const refreshGlobalApiKey = async () => {
+    setInitialized(false);
     await fetchGlobalApiKey();
   };
 

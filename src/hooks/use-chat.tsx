@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useGlobalApiKey } from '@/hooks/useGlobalApiKey';
+import { useAuth } from '@/hooks/useAuth';
 import { ChatMessage, sendChatMessage } from '@/services/chatService';
 
 export const useChat = () => {
@@ -18,7 +19,8 @@ export const useChat = () => {
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const { globalApiKey, hasValidGlobalKey, loading: keyLoading, refreshGlobalApiKey } = useGlobalApiKey();
+  const { globalApiKey, hasValidGlobalKey, loading: keyLoading } = useGlobalApiKey();
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
     scrollToBottom();
@@ -32,14 +34,33 @@ export const useChat = () => {
     e.preventDefault();
     if (!input.trim()) return;
     
-    console.log('Verificando chave API antes de enviar mensagem');
+    console.log('=== Iniciando envio de mensagem ===');
+    console.log('User:', user ? 'Autenticado' : 'Não autenticado');
+    console.log('AuthLoading:', authLoading);
+    console.log('KeyLoading:', keyLoading);
+    console.log('HasValidGlobalKey:', hasValidGlobalKey);
+    console.log('GlobalApiKey existe:', globalApiKey ? 'SIM' : 'NÃO');
     
-    // Se não temos a chave ainda, tentar buscar uma vez
-    if (!hasValidGlobalKey && !keyLoading) {
-      console.log('Tentando buscar chave global...');
-      await refreshGlobalApiKey();
+    // Verificar se o usuário está autenticado
+    if (authLoading) {
+      toast({
+        variant: "destructive",
+        title: "Sistema carregando",
+        description: "Aguarde enquanto o sistema carrega...",
+      });
+      return;
     }
     
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Acesso negado",
+        description: "Você precisa estar logado para usar o chat.",
+      });
+      return;
+    }
+    
+    // Verificar se a chave está carregando
     if (keyLoading) {
       toast({
         variant: "destructive",
@@ -49,6 +70,7 @@ export const useChat = () => {
       return;
     }
     
+    // Verificar se temos uma chave válida
     if (!hasValidGlobalKey || !globalApiKey) {
       console.error('Chave global inválida ou ausente');
       toast({
@@ -115,8 +137,8 @@ export const useChat = () => {
     setError(null);
   };
 
-  // Verificação simples - não busca automaticamente
-  const isKeyConfigured = hasValidGlobalKey && !keyLoading;
+  // Sistema configurado apenas se temos usuário autenticado e chave válida
+  const isKeyConfigured = user && hasValidGlobalKey && !keyLoading && !authLoading;
 
   return {
     messages,
