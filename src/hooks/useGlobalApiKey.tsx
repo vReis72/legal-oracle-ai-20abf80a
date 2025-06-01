@@ -4,14 +4,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from '@/hooks/use-toast';
 
-interface SystemSettings {
-  id: string;
-  openai_api_key: string | null;
-  updated_by: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
 interface GlobalApiKeyContextType {
   globalApiKey: string | null;
   loading: boolean;
@@ -24,11 +16,15 @@ const GlobalApiKeyContext = createContext<GlobalApiKeyContextType | undefined>(u
 
 export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   const [globalApiKey, setGlobalApiKey] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
   const fetchGlobalApiKey = async () => {
+    if (!user || authLoading) {
+      return null;
+    }
+
     try {
       console.log('Buscando chave global do Supabase...');
       const { data, error } = await supabase
@@ -44,9 +40,6 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
 
       const apiKey = data?.openai_api_key || null;
       console.log('Chave global encontrada:', apiKey ? 'SIM' : 'NÃO');
-      if (apiKey) {
-        console.log('Primeiros caracteres da chave:', apiKey.substring(0, 10) + '...');
-      }
       
       return apiKey;
     } catch (error) {
@@ -56,6 +49,11 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const loadGlobalApiKey = async () => {
+    if (!user || authLoading) {
+      setGlobalApiKey(null);
+      return;
+    }
+
     setLoading(true);
     try {
       const key = await fetchGlobalApiKey();
@@ -69,10 +67,17 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Carregar chave na inicialização
+  // Só carregar chave quando o usuário estiver autenticado
   useEffect(() => {
-    loadGlobalApiKey();
-  }, []);
+    if (authLoading) return;
+    
+    if (user) {
+      loadGlobalApiKey();
+    } else {
+      setGlobalApiKey(null);
+      setLoading(false);
+    }
+  }, [user, authLoading]);
 
   const saveGlobalApiKey = async (key: string): Promise<boolean> => {
     if (!user) {
@@ -87,7 +92,6 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
     try {
       console.log('Salvando chave global...');
       
-      // Verificar se já existe uma configuração
       const { data: existing } = await supabase
         .from('system_settings')
         .select('id')
@@ -97,7 +101,6 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
       let result;
       
       if (existing) {
-        // Atualizar configuração existente
         result = await supabase
           .from('system_settings')
           .update({
@@ -107,7 +110,6 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
           })
           .eq('id', existing.id);
       } else {
-        // Criar nova configuração
         result = await supabase
           .from('system_settings')
           .insert({
@@ -149,21 +151,12 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
     await loadGlobalApiKey();
   };
 
-  // Validação mais robusta da chave
   const hasValidGlobalKey = Boolean(
     globalApiKey && 
     globalApiKey.trim() !== '' && 
     globalApiKey.startsWith('sk-') && 
-    globalApiKey.length > 20 && // Chaves OpenAI são bem longas
-    globalApiKey !== 'sk-adicione-uma-chave-valida-aqui'
+    globalApiKey.length > 20
   );
-
-  console.log('Estado da chave global:', {
-    hasKey: !!globalApiKey,
-    keyStart: globalApiKey ? globalApiKey.substring(0, 7) : 'NENHUMA',
-    isValid: hasValidGlobalKey,
-    loading
-  });
 
   return (
     <GlobalApiKeyContext.Provider value={{

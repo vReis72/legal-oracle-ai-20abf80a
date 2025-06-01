@@ -32,13 +32,8 @@ export const useChat = () => {
     e.preventDefault();
     if (!input.trim()) return;
     
-    console.log('Enviando mensagem. Estado da chave:', {
-      hasValidGlobalKey,
-      keyLoading,
-      globalApiKey: globalApiKey ? 'PRESENTE' : 'AUSENTE'
-    });
+    console.log('Verificando chave API antes de enviar mensagem');
     
-    // Verificar se há uma chave global válida
     if (keyLoading) {
       toast({
         variant: "destructive",
@@ -48,22 +43,12 @@ export const useChat = () => {
       return;
     }
     
-    if (!hasValidGlobalKey) {
+    if (!hasValidGlobalKey || !globalApiKey) {
       console.error('Chave global inválida ou ausente');
       toast({
         variant: "destructive",
         title: "Sistema não configurado",
         description: "A chave API OpenAI não foi configurada pelo administrador. Contate o suporte.",
-      });
-      return;
-    }
-
-    if (!globalApiKey) {
-      console.error('GlobalApiKey é null');
-      toast({
-        variant: "destructive",
-        title: "Erro de configuração",
-        description: "Chave API não disponível. Contate o administrador.",
       });
       return;
     }
@@ -82,9 +67,8 @@ export const useChat = () => {
     setError(null);
     
     try {
-      console.log('Enviando para OpenAI com chave:', globalApiKey.substring(0, 10) + '...');
+      console.log('Enviando para OpenAI...');
       
-      // Create array with system message and conversation history
       const conversationHistory: ChatMessage[] = [
         {
           id: 'system',
@@ -92,7 +76,7 @@ export const useChat = () => {
           content: 'Você é um assistente especializado em direito brasileiro. Forneça respostas precisas e concisas sobre legislação, jurisprudência e consultas relacionadas ao direito. Cite leis, decisões judiciais e documentos pertinentes quando possível.',
           timestamp: new Date()
         },
-        ...messages.slice(-6), // Include last 6 messages for context
+        ...messages.slice(-6),
         userMessage
       ];
       
