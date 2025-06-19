@@ -54,15 +54,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
+    let mounted = true;
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
+        
+        if (!mounted) return;
+
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (session?.user) {
-          const userProfile = await fetchProfile(session.user.id);
-          setProfile(userProfile);
+        if (session?.user && mounted) {
+          // Use setTimeout to avoid potential deadlock
+          setTimeout(async () => {
+            if (mounted) {
+              const userProfile = await fetchProfile(session.user.id);
+              if (mounted) {
+                setProfile(userProfile);
+              }
+            }
+          }, 0);
         } else {
           setProfile(null);
         }
@@ -73,29 +86,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
+      
+      console.log('Initial session:', session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
       
-      if (session?.user) {
-        fetchProfile(session.user.id).then(setProfile);
+      if (session?.user && mounted) {
+        fetchProfile(session.user.id).then((profile) => {
+          if (mounted) {
+            setProfile(profile);
+          }
+        });
       }
       
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log('Tentando fazer login para:', email);
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
+        console.error('Erro de login:', error);
         throw error;
       }
+
+      console.log('Login bem-sucedido:', data.user?.email);
 
       toast({
         title: "Login realizado com sucesso!",
@@ -106,7 +134,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       toast({
         variant: "destructive",
         title: "Erro no login",
-        description: error.message || "Não foi possível fazer login.",
+        description: error.message || "Não foi possível fazer login. Verifique suas credenciais.",
       });
       throw error;
     }
@@ -114,10 +142,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signUp = async (email: string, password: string, fullName?: string) => {
     try {
-      const { error } = await supabase.auth.signUp({
+      console.log('Tentando criar conta para:', email);
+      
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo: redirectUrl,
           data: {
             full_name: fullName || '',
           }
@@ -125,8 +158,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       if (error) {
+        console.error('Erro de cadastro:', error);
         throw error;
       }
+
+      console.log('Cadastro bem-sucedido:', data.user?.email);
 
       toast({
         title: "Conta criada com sucesso!",
