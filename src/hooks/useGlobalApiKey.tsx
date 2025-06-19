@@ -2,6 +2,7 @@
 import { useState, createContext, useContext, ReactNode, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 interface GlobalApiKeyContextType {
   globalApiKey: string | null;
@@ -15,9 +16,10 @@ const GlobalApiKeyContext = createContext<GlobalApiKeyContextType | undefined>(u
 
 export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   const [globalApiKey, setGlobalApiKey] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const { toast } = useToast();
+  const { user, loading: authLoading } = useAuth();
 
   const checkSupabaseConnection = async () => {
     try {
@@ -36,33 +38,17 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const fetchGlobalApiKey = async () => {
-    if (loading && initialized) return;
+    if (loading || initialized || authLoading || !user) {
+      return;
+    }
     
     try {
       setLoading(true);
-      console.log('Iniciando fetchGlobalApiKey...');
+      console.log('Iniciando fetchGlobalApiKey para usuário autenticado...');
       
       const isConnected = await checkSupabaseConnection();
       if (!isConnected) {
         console.error('Sem conexão com Supabase, cancelando busca da chave');
-        setGlobalApiKey(null);
-        setLoading(false);
-        setInitialized(true);
-        return;
-      }
-
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError) {
-        console.error('Erro ao buscar usuário:', userError);
-        setGlobalApiKey(null);
-        setLoading(false);
-        setInitialized(true);
-        return;
-      }
-      
-      if (!user) {
-        console.log('Usuário não autenticado, não buscando chave global');
         setGlobalApiKey(null);
         setLoading(false);
         setInitialized(true);
@@ -97,18 +83,27 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Reset state quando usuário faz logout
   useEffect(() => {
-    if (!initialized) {
+    if (!user && !authLoading) {
+      console.log('Usuário não autenticado, resetando estado da chave global');
+      setGlobalApiKey(null);
+      setLoading(false);
+      setInitialized(false);
+    }
+  }, [user, authLoading]);
+
+  // Buscar chave quando usuário estiver autenticado
+  useEffect(() => {
+    if (user && !authLoading && !initialized) {
       fetchGlobalApiKey();
     }
-  }, [initialized]);
+  }, [user, authLoading, initialized]);
 
   const saveGlobalApiKey = async (key: string): Promise<boolean> => {
     try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError || !user) {
-        console.error('Erro de autenticação ao salvar chave:', userError);
+      if (!user) {
+        console.error('Usuário não autenticado ao salvar chave');
         toast({
           variant: "destructive",
           title: "Erro",
@@ -175,8 +170,10 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const refreshGlobalApiKey = async () => {
-    setInitialized(false);
-    await fetchGlobalApiKey();
+    if (user) {
+      setInitialized(false);
+      await fetchGlobalApiKey();
+    }
   };
 
   const hasValidGlobalKey = Boolean(
@@ -190,7 +187,9 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
     hasKey: !!globalApiKey,
     isValid: hasValidGlobalKey,
     loading,
-    initialized
+    initialized,
+    userAuthenticated: !!user,
+    authLoading
   });
 
   return (
