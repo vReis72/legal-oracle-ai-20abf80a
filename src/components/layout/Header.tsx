@@ -12,8 +12,14 @@ const Header = () => {
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate('/auth');
+    try {
+      await signOut();
+      navigate('/auth');
+    } catch (error) {
+      // Error handling is done in the signOut function
+      // Just navigate to auth page regardless
+      navigate('/auth');
+    }
   };
 
   const NavLinks = () => (

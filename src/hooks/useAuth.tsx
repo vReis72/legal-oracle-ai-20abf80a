@@ -53,6 +53,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const clearAuthState = () => {
+    setSession(null);
+    setUser(null);
+    setProfile(null);
+  };
+
   useEffect(() => {
     let mounted = true;
 
@@ -62,6 +68,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log('Auth state changed:', event, session?.user?.email);
         
         if (!mounted) return;
+
+        if (event === 'SIGNED_OUT' || !session) {
+          clearAuthState();
+          setLoading(false);
+          return;
+        }
 
         setSession(session);
         setUser(session?.user ?? null);
@@ -76,8 +88,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               }
             }
           }, 0);
-        } else {
-          setProfile(null);
         }
         
         setLoading(false);
@@ -89,6 +99,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!mounted) return;
       
       console.log('Initial session:', session?.user?.email);
+      
+      if (!session) {
+        clearAuthState();
+        setLoading(false);
+        return;
+      }
+      
       setSession(session);
       setUser(session?.user ?? null);
       
@@ -181,22 +198,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     try {
+      console.log('Iniciando logout...');
+      
+      // Clear state first to prevent UI flashing
+      clearAuthState();
+      
       const { error } = await supabase.auth.signOut();
       
       if (error) {
-        throw error;
+        console.error('Erro no logout:', error);
+        // Don't throw error for logout - just log it
+        toast({
+          variant: "destructive",
+          title: "Aviso",
+          description: "Houve um problema no logout, mas você foi desconectado localmente.",
+        });
+      } else {
+        toast({
+          title: "Logout realizado com sucesso!",
+          description: "Até logo!",
+        });
       }
-
-      toast({
-        title: "Logout realizado com sucesso!",
-        description: "Até logo!",
-      });
     } catch (error: any) {
-      console.error('Erro no logout:', error);
+      console.error('Erro inesperado no logout:', error);
+      // Even if there's an error, clear the local state
+      clearAuthState();
       toast({
         variant: "destructive",
-        title: "Erro no logout",
-        description: error.message || "Não foi possível fazer logout.",
+        title: "Aviso",
+        description: "Houve um problema no logout, mas você foi desconectado localmente.",
       });
     }
   };
