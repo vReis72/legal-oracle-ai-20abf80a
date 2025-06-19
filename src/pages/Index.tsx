@@ -1,9 +1,7 @@
 
 import React from 'react';
 import ChatInterface from '@/components/ai/ChatInterface';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Scale, MessageSquare } from "lucide-react";
-import { Link } from 'react-router-dom';
+import { Scale } from "lucide-react";
 
 const Index = () => {
   return (
@@ -20,31 +18,6 @@ const Index = () => {
       
       <div className="mb-10">
         <ChatInterface />
-      </div>
-      
-      <div className="mb-4">
-        <h2 className="text-2xl font-serif font-semibold mb-2 text-eco-dark">
-          Recursos Disponíveis
-        </h2>
-        <p className="text-muted-foreground">
-          Explore todas as ferramentas do Legal Oracle para otimizar sua atuação jurídica
-        </p>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mb-8 max-w-md mx-auto">
-        <Link to="/" className="block">
-          <Card className="h-full hover:shadow-md transition-all">
-            <CardHeader className="pb-2">
-              <MessageSquare className="h-6 w-6 text-eco-primary mb-2" />
-              <CardTitle>Assistente Jurídico</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CardDescription>
-                Tire suas dúvidas, receba orientações, pesquise jurisprudência e obtenha sugestões na área do Direito, conversando em linguagem natural com seu assistente jurídico pessoal
-              </CardDescription>
-            </CardContent>
-          </Card>
-        </Link>
       </div>
     </div>
   );

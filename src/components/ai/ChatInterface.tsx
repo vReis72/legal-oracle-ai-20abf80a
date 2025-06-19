@@ -1,50 +1,82 @@
 
-import React from 'react';
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useChat } from '@/hooks/use-chat';
+import React, { useState, useRef, useEffect } from 'react';
 import ChatMessage from './ChatMessage';
-import LoadingMessage from './LoadingMessage';
-import ErrorMessage from './ErrorMessage';
 import ChatInputForm from './ChatInputForm';
+import { useChat } from '@/hooks/use-chat';
+import { Card } from "@/components/ui/card";
+import { useGlobalApiKey } from '@/hooks/useGlobalApiKey';
 import ChatHeader from './ChatHeader';
 
-const ChatInterface: React.FC = () => {
-  const { 
-    messages, 
-    input, 
-    setInput, 
-    isLoading, 
-    error, 
-    messagesEndRef,
-    handleSendMessage,
-    handleRetry,
-    isKeyConfigured
-  } = useChat();
+interface Message {
+  id: string;
+  text: string;
+  sender: 'user' | 'ai';
+  timestamp: Date;
+}
+
+const ChatInterface = () => {
+  const [input, setInput] = useState('');
+  const { hasValidGlobalKey, loading: loadingApiKey } = useGlobalApiKey();
+  const { sendMessage, isLoading, messages } = useChat();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading || !hasValidGlobalKey) return;
+
+    const userMessage = input.trim();
+    setInput('');
+    
+    try {
+      await sendMessage(userMessage);
+    } catch (error) {
+      console.error('Erro ao enviar mensagem:', error);
+    }
+  };
+
+  if (loadingApiKey) {
+    return (
+      <Card className="w-full max-w-4xl mx-auto h-[600px] flex items-center justify-center">
+        <div className="flex items-center gap-2">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-eco-primary border-r-transparent" />
+          Carregando...
+        </div>
+      </Card>
+    );
+  }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-12rem)] border rounded-lg bg-card overflow-hidden">
+    <Card className="w-full max-w-4xl mx-auto h-[600px] flex flex-col">
       <ChatHeader />
       
-      <ScrollArea className="flex-grow p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message) => (
-          <ChatMessage key={message.id} message={message} />
+          <ChatMessage
+            key={message.id}
+            message={message.text}
+            sender={message.sender}
+            timestamp={message.timestamp}
+          />
         ))}
-        
-        {isLoading && <LoadingMessage />}
-        
-        <ErrorMessage error={error} onRetry={handleRetry} />
-        
         <div ref={messagesEndRef} />
-      </ScrollArea>
+      </div>
       
-      <ChatInputForm 
+      <ChatInputForm
         input={input}
         setInput={setInput}
         handleSendMessage={handleSendMessage}
         isLoading={isLoading}
-        isKeyConfigured={isKeyConfigured}
+        isKeyConfigured={hasValidGlobalKey}
       />
-    </div>
+    </Card>
   );
 };
 
