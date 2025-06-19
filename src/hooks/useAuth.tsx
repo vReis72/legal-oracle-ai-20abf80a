@@ -207,27 +207,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (error) {
         console.error('Erro no logout:', error);
-        // Don't throw error for logout - just log it
-        toast({
-          variant: "destructive",
-          title: "Aviso",
-          description: "Houve um problema no logout, mas você foi desconectado localmente.",
-        });
+        // Don't show error toast for logout - just log it
+        // User has already been logged out locally
       } else {
-        toast({
-          title: "Logout realizado com sucesso!",
-          description: "Até logo!",
-        });
+        console.log('Logout realizado com sucesso');
       }
     } catch (error: any) {
       console.error('Erro inesperado no logout:', error);
       // Even if there's an error, clear the local state
       clearAuthState();
-      toast({
-        variant: "destructive",
-        title: "Aviso",
-        description: "Houve um problema no logout, mas você foi desconectado localmente.",
-      });
     }
   };
 
