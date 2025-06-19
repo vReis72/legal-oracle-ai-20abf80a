@@ -2,15 +2,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Profile } from './types';
 
-// Função para validar e normalizar o status
-const validateStatus = (status: any): 'pending' | 'active' | 'blocked' => {
-  if (status === 'pending' || status === 'active' || status === 'blocked') {
-    return status;
-  }
-  // Fallback para 'active' se o valor não for válido
-  return 'active';
-};
-
 export const fetchProfile = async (userId: string): Promise<Profile | null> => {
   try {
     console.log('🔍 fetchProfile: Buscando perfil para userId:', userId);
@@ -40,15 +31,15 @@ export const fetchProfile = async (userId: string): Promise<Profile | null> => {
       status: data.status
     });
 
-    // Criar perfil com dados corretos e status validado
+    // Criar perfil com dados corretos
     const profile: Profile = {
       id: data.id,
       email: data.email,
       full_name: data.full_name,
       company_name: data.company_name,
       oab_number: data.oab_number,
-      status: validateStatus(data.status), // Usar função de validação
-      is_admin: Boolean(data.is_admin), // Garantir conversão para boolean
+      status: (data.status as 'pending' | 'active' | 'blocked') || 'active',
+      is_admin: Boolean(data.is_admin),
       created_at: data.created_at,
       updated_at: data.updated_at,
       approved_at: data.approved_at,
