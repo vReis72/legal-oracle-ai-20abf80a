@@ -37,14 +37,21 @@ export const fetchProfile = async (userId: string): Promise<Profile | null> => {
 
     console.log('✅ fetchProfile: Dados brutos do banco:', data);
     console.log('✅ fetchProfile: is_admin no banco:', data.is_admin, typeof data.is_admin);
+    console.log('✅ fetchProfile: status no banco:', data.status, typeof data.status);
     
+    // Garantir que o status seja um dos valores permitidos
+    const validStatus = ['pending', 'active', 'blocked'] as const;
+    const normalizedStatus = validStatus.includes(data.status as any) 
+      ? data.status as 'pending' | 'active' | 'blocked'
+      : 'active'; // fallback para 'active' se o status não for válido
+
     const profile: Profile = {
       id: data.id,
       email: data.email,
       full_name: data.full_name,
       company_name: data.company_name,
       oab_number: data.oab_number,
-      status: data.status,
+      status: normalizedStatus,
       is_admin: Boolean(data.is_admin), // Garantir que é boolean
       created_at: data.created_at,
       updated_at: data.updated_at,
