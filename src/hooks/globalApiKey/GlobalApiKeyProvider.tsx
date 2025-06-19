@@ -7,31 +7,27 @@ import { checkSupabaseConnection, fetchGlobalApiKeyFromDb, saveGlobalApiKeyToDb 
 
 export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   const [globalApiKey, setGlobalApiKey] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
 
   const fetchGlobalApiKey = async () => {
-    // Não requer autenticação para buscar a chave
     try {
-      setLoading(true);
-      console.log('Buscando chave global...');
+      console.log('🚀 Iniciando busca da chave global...');
       
       const isConnected = await checkSupabaseConnection();
       if (!isConnected) {
-        console.error('Sem conexão com Supabase, cancelando busca da chave');
+        console.error('❌ Sem conexão com Supabase, cancelando busca da chave');
         setGlobalApiKey(null);
-        setLoading(false);
-        setInitialized(true);
         return;
       }
 
       const apiKey = await fetchGlobalApiKeyFromDb();
-      console.log('Chave global obtida:', apiKey ? 'SIM' : 'NÃO');
+      console.log('📊 Resultado da busca:', apiKey ? 'CHAVE ENCONTRADA' : 'NENHUMA CHAVE');
       setGlobalApiKey(apiKey);
     } catch (error) {
-      console.error('Erro inesperado ao buscar chave global:', error);
+      console.error('💥 Erro inesperado ao buscar chave global:', error);
       setGlobalApiKey(null);
     } finally {
       setLoading(false);
@@ -41,15 +37,15 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
 
   // Buscar chave independente do estado de autenticação
   useEffect(() => {
-    if (!initialized && !authLoading) {
+    if (!initialized) {
       fetchGlobalApiKey();
     }
-  }, [initialized, authLoading]);
+  }, [initialized]);
 
   const saveGlobalApiKey = async (key: string): Promise<boolean> => {
     try {
       if (!user) {
-        console.error('Usuário não autenticado ao salvar chave');
+        console.error('❌ Usuário não autenticado ao salvar chave');
         toast({
           variant: "destructive",
           title: "Erro",
@@ -77,7 +73,7 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
       });
       return true;
     } catch (error) {
-      console.error('Erro inesperado ao salvar chave:', error);
+      console.error('💥 Erro inesperado ao salvar chave:', error);
       toast({
         variant: "destructive",
         title: "Erro",
@@ -89,6 +85,7 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
 
   const refreshGlobalApiKey = async () => {
     setInitialized(false);
+    setLoading(true);
     await fetchGlobalApiKey();
   };
 
@@ -99,12 +96,13 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
     globalApiKey.length > 20
   );
 
-  console.log('Estado da chave global FINAL:', {
+  console.log('🎯 Estado FINAL da chave global:', {
     hasKey: !!globalApiKey,
     isValid: hasValidGlobalKey,
     loading,
     initialized,
-    keyLength: globalApiKey?.length
+    keyLength: globalApiKey?.length,
+    keyPreview: globalApiKey ? `${globalApiKey.substring(0, 7)}...${globalApiKey.slice(-4)}` : 'NENHUMA'
   });
 
   return (

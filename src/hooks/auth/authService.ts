@@ -38,7 +38,7 @@ export const fetchProfile = async (userId: string): Promise<Profile | null> => {
       full_name: data.full_name,
       company_name: data.company_name,
       oab_number: data.oab_number,
-      status: (data.status as 'pending' | 'active' | 'blocked') || 'active',
+      status: data.status || 'active',
       is_admin: Boolean(data.is_admin),
       created_at: data.created_at,
       updated_at: data.updated_at,
