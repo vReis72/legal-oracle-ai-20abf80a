@@ -10,7 +10,7 @@ import ChatHeader from './ChatHeader';
 const ChatInterface = () => {
   const [input, setInput] = useState('');
   const { hasValidGlobalKey, loading: loadingApiKey } = useGlobalApiKey();
-  const { handleSendMessage, isLoading, messages, isKeyConfigured } = useChat();
+  const { handleSendMessage, isLoading, messages } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -76,7 +76,7 @@ const ChatInterface = () => {
         setInput={setInput}
         handleSendMessage={onSendMessage}
         isLoading={isLoading}
-        isKeyConfigured={isKeyConfigured}
+        isKeyConfigured={hasValidGlobalKey}
       />
     </Card>
   );
