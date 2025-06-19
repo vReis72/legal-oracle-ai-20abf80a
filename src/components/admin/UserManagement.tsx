@@ -42,7 +42,7 @@ const UserManagement: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setUsers(data || []);
+      setUsers((data || []) as UserProfile[]);
     } catch (error) {
       console.error('Erro ao carregar usuários:', error);
       toast({
@@ -191,7 +191,7 @@ const UserManagement: React.FC = () => {
                     <div className="flex items-center gap-2">
                       {userProfile.full_name || 'Sem nome'}
                       {userProfile.is_admin && (
-                        <Shield className="h-4 w-4 text-eco-primary" title="Administrador" />
+                        <Shield className="h-4 w-4 text-eco-primary" />
                       )}
                     </div>
                   </TableCell>
