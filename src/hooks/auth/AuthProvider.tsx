@@ -36,14 +36,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           id: userProfile.id,
           email: userProfile.email,
           is_admin: userProfile.is_admin,
-          status: userProfile.status
+          status: userProfile.status,
+          fullDetails: userProfile
         });
         setProfile(userProfile);
       } else {
         console.log('❌ Nenhum perfil encontrado para o usuário:', userId);
+        setProfile(null);
       }
     } catch (error) {
       console.error('❌ Erro ao carregar perfil:', error);
+      setProfile(null);
     }
   };
 
@@ -69,13 +72,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         
         if (session?.user && mounted) {
-          // Use setTimeout to avoid potential deadlock
-          setTimeout(async () => {
-            if (mounted) {
-              await refreshProfile(session.user.id);
-              setLoading(false);
-            }
-          }, 0);
+          await refreshProfile(session.user.id);
+          setLoading(false);
         } else {
           setLoading(false);
         }
@@ -83,7 +81,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     );
 
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!mounted) return;
       
       console.log('🎯 Sessão inicial:', session?.user?.email);
@@ -98,11 +96,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       
       if (session?.user && mounted) {
-        refreshProfile(session.user.id).finally(() => {
-          if (mounted) {
-            setLoading(false);
-          }
-        });
+        await refreshProfile(session.user.id);
+        setLoading(false);
       } else {
         setLoading(false);
       }
@@ -123,7 +118,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     profileEmail: profile?.email,
     isAdmin,
     profileIsAdmin: profile?.is_admin,
-    loading
+    profileType: typeof profile?.is_admin,
+    loading,
+    profileFull: profile
   });
 
   return (

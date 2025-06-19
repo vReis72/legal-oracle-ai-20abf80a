@@ -17,8 +17,10 @@ const Header = () => {
     profile: !!profile,
     profileEmail: profile?.email,
     profileIsAdmin: profile?.is_admin,
+    profileIsAdminType: typeof profile?.is_admin,
     isAdmin,
-    fullName: profile?.full_name
+    fullName: profile?.full_name,
+    fullProfile: profile
   });
 
   const handleSignOut = async () => {
@@ -122,12 +124,17 @@ const Header = () => {
                     {user.email}
                     {isAdmin && (
                       <div className="text-xs text-eco-primary font-medium">
-                        ✅ Administrador
+                        ✅ Administrador Detectado
                       </div>
                     )}
                     {!isAdmin && profile && (
                       <div className="text-xs text-orange-600 font-medium">
-                        ⚠️ Não é admin (is_admin: {String(profile.is_admin)})
+                        ⚠️ Admin: {String(profile.is_admin)} (type: {typeof profile.is_admin})
+                      </div>
+                    )}
+                    {!profile && (
+                      <div className="text-xs text-red-600 font-medium">
+                        ❌ Perfil não carregado
                       </div>
                     )}
                   </div>
