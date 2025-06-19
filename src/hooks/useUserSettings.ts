@@ -6,6 +6,7 @@ import { UserSettings, UserSettingsUpdate } from '@/types/userSettings';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useUserSettings = () => {
   const [settings, setSettings] = useState<UserSettings | null>(null);
@@ -51,6 +52,55 @@ export const useUserSettings = () => {
     loadSettings();
   }, [userId]);
 
+  // Função para sincronizar dados com a tabela profiles
+  const syncWithProfile = async (settingsData: Partial<UserSettingsUpdate>): Promise<boolean> => {
+    if (!user?.id) return false;
+
+    try {
+      const profileUpdates: any = {};
+      
+      // Mapeia os campos de user_settings para profiles
+      if (settingsData.user_name !== undefined) {
+        profileUpdates.full_name = settingsData.user_name;
+      }
+      
+      if (settingsData.contact_email !== undefined) {
+        profileUpdates.email = settingsData.contact_email;
+      }
+      
+      if (settingsData.company_name !== undefined) {
+        profileUpdates.company_name = settingsData.company_name;
+      }
+      
+      if (settingsData.user_oab !== undefined) {
+        profileUpdates.oab_number = settingsData.user_oab;
+      }
+
+      // Se há atualizações para fazer no perfil
+      if (Object.keys(profileUpdates).length > 0) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            ...profileUpdates,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id);
+
+        if (error) {
+          console.error('Erro ao sincronizar com perfil:', error);
+          return false;
+        }
+        
+        console.log('Perfil sincronizado com sucesso:', profileUpdates);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Erro inesperado ao sincronizar perfil:', error);
+      return false;
+    }
+  };
+
   const saveSettings = async (newSettings: Partial<UserSettingsUpdate>): Promise<boolean> => {
     try {
       // Se estamos salvando um tema, aplica imediatamente
@@ -72,10 +122,20 @@ export const useUserSettings = () => {
           });
         }
       } else {
-        toast({
-          title: "Sucesso",
-          description: "Configurações salvas com sucesso!",
-        });
+        // Se salvou com sucesso no Supabase, sincroniza com a tabela profiles
+        const profileSyncSuccess = await syncWithProfile(newSettings);
+        
+        if (profileSyncSuccess) {
+          toast({
+            title: "Sucesso",
+            description: "Configurações salvas e sincronizadas com sucesso!",
+          });
+        } else {
+          toast({
+            title: "Parcialmente Salvo",
+            description: "Configurações salvas, mas houve um problema na sincronização do perfil.",
+          });
+        }
       }
       
       if (success) {
