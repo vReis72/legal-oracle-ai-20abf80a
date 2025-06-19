@@ -7,17 +7,10 @@ import { Card } from "@/components/ui/card";
 import { useGlobalApiKey } from '@/hooks/useGlobalApiKey';
 import ChatHeader from './ChatHeader';
 
-interface Message {
-  id: string;
-  text: string;
-  sender: 'user' | 'ai';
-  timestamp: Date;
-}
-
 const ChatInterface = () => {
   const [input, setInput] = useState('');
   const { hasValidGlobalKey, loading: loadingApiKey } = useGlobalApiKey();
-  const { sendMessage, isLoading, messages } = useChat();
+  const { handleSendMessage, isLoading, messages, isKeyConfigured } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -28,15 +21,26 @@ const ChatInterface = () => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = async (e: React.FormEvent) => {
+  const onSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading || !hasValidGlobalKey) return;
 
     const userMessage = input.trim();
     setInput('');
     
+    // Create a synthetic event for handleSendMessage
+    const syntheticEvent = {
+      ...e,
+      target: {
+        ...e.target,
+        elements: {
+          messageInput: { value: userMessage }
+        }
+      }
+    } as React.FormEvent;
+    
     try {
-      await sendMessage(userMessage);
+      await handleSendMessage(syntheticEvent);
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error);
     }
@@ -61,9 +65,7 @@ const ChatInterface = () => {
         {messages.map((message) => (
           <ChatMessage
             key={message.id}
-            message={message.text}
-            sender={message.sender}
-            timestamp={message.timestamp}
+            message={message}
           />
         ))}
         <div ref={messagesEndRef} />
@@ -72,9 +74,9 @@ const ChatInterface = () => {
       <ChatInputForm
         input={input}
         setInput={setInput}
-        handleSendMessage={handleSendMessage}
+        handleSendMessage={onSendMessage}
         isLoading={isLoading}
-        isKeyConfigured={hasValidGlobalKey}
+        isKeyConfigured={isKeyConfigured}
       />
     </Card>
   );
