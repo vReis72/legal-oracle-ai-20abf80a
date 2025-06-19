@@ -1,11 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useApiKey } from '@/context/ApiKeyContext';
-import { hasApiKey } from '@/services/apiKeyService';
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from 'lucide-react';
-import ApiKeyButton from './ApiKeyButton';
-import ApiKeyDialog from './ApiKeyDialog';
+import { AlertCircle, Shield } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 import { OpenAIKeyInputProps } from './types/openAIKeyInputTypes';
 
 const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({ 
@@ -14,60 +12,45 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
   buttonVariant = "outline", 
   buttonSize = "sm" 
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const { isKeyConfigured, isPlaceholderKey, isEnvironmentKey } = useApiKey();
-  const [showError, setShowError] = useState(false);
+  const { isKeyConfigured } = useApiKey();
+  const { isAdmin } = useAuth();
 
-  const keyConfigured = (hasApiKey() && isKeyConfigured && !isPlaceholderKey) || isEnvironmentKey;
-
-  useEffect(() => {
-    if (forceOpen && (!keyConfigured || isPlaceholderKey) && !isEnvironmentKey) {
-      setIsOpen(true);
-    } else {
-      setIsOpen(false);
-    }
-    
-    setShowError(isPlaceholderKey && !isEnvironmentKey);
-  }, [forceOpen, keyConfigured, isPlaceholderKey, isEnvironmentKey]);
-
-  const handleUpdateKey = () => {
-    setIsOpen(true);
-  };
-
-  if (forceOpen && keyConfigured) {
+  // Se a chave já está configurada, não mostrar nada
+  if (isKeyConfigured) {
     return null;
   }
 
-  return (
-    <>
-      {showError && !forceOpen && (
-        <Alert variant="destructive" className="mb-3">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            A chave API atual é inválida. Por favor, configure uma nova chave.
-          </AlertDescription>
-        </Alert>
-      )}
-      
-      <ApiKeyDialog
-        isOpen={isOpen}
-        setIsOpen={setIsOpen}
-        onKeySubmit={onKeySubmit}
-        forceOpen={forceOpen}
-        keyConfigured={keyConfigured}
-      />
-      
-      {!forceOpen && (
-        <ApiKeyButton
-          isPlaceholderKey={isPlaceholderKey}
-          isEnvironmentKey={isEnvironmentKey}
-          keyConfigured={keyConfigured}
-          buttonSize={buttonSize}
-          onUpdateKey={handleUpdateKey}
-        />
-      )}
-    </>
-  );
+  // Se não é admin e não tem chave, mostrar aviso
+  if (!isAdmin && !isKeyConfigured) {
+    return (
+      <Alert variant="destructive" className="mb-4">
+        <Shield className="h-4 w-4" />
+        <AlertDescription>
+          <strong>Sistema não configurado.</strong><br />
+          A chave API OpenAI não foi configurada pelo administrador. 
+          Entre em contato com o suporte para que o sistema seja configurado adequadamente.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  // Para admins sem chave configurada, mostrar aviso diferente
+  if (isAdmin && !isKeyConfigured) {
+    return (
+      <Alert variant="destructive" className="mb-4">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          <strong>Configuração necessária.</strong><br />
+          Como administrador, você precisa configurar a chave API OpenAI global nas 
+          <a href="/settings" className="text-eco-primary hover:underline ml-1">
+            configurações administrativas
+          </a>.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  return null;
 };
 
 export default OpenAIKeyInput;

@@ -1,10 +1,12 @@
 
 import React, { useEffect, useState } from 'react';
 import { useGlobalApiKey } from '@/hooks/useGlobalApiKey';
-import OpenAIKeyInput from './OpenAIKeyInput';
+import { useAuth } from '@/hooks/useAuth';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Cloud } from 'lucide-react';
+import { AlertCircle, Shield } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { useNavigate } from 'react-router-dom';
 
 interface ApiKeyCheckProps {
   children: React.ReactNode;
@@ -12,10 +14,12 @@ interface ApiKeyCheckProps {
 
 const ApiKeyCheck: React.FC<ApiKeyCheckProps> = ({ children }) => {
   const { globalApiKey, hasValidGlobalKey, loading } = useGlobalApiKey();
+  const { isAdmin, loading: authLoading } = useAuth();
   const [showDialog, setShowDialog] = useState(false);
+  const navigate = useNavigate();
   
   useEffect(() => {
-    if (loading) return;
+    if (loading || authLoading) return;
     
     if (!hasValidGlobalKey) {
       const timer = setTimeout(() => {
@@ -25,43 +29,64 @@ const ApiKeyCheck: React.FC<ApiKeyCheckProps> = ({ children }) => {
     } else {
       setShowDialog(false);
     }
-  }, [hasValidGlobalKey, loading]);
+  }, [hasValidGlobalKey, loading, authLoading]);
 
-  return (
-    <>
-      {!hasValidGlobalKey && !loading && (
+  if (!hasValidGlobalKey && !loading && !authLoading) {
+    return (
+      <>
         <Alert variant="destructive" className="mb-4">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Atenção!</AlertTitle>
+          <Shield className="h-4 w-4" />
+          <AlertTitle>Sistema não configurado</AlertTitle>
           <AlertDescription>
-            A chave API OpenAI não foi configurada pelo administrador. Entre em contato com o suporte para configurar o sistema.
+            {isAdmin 
+              ? "Como administrador, você precisa configurar a chave API OpenAI global nas configurações."
+              : "A chave API OpenAI não foi configurada pelo administrador. Entre em contato com o suporte."
+            }
           </AlertDescription>
         </Alert>
-      )}
-      
-      {children}
-      
-      <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Sistema não configurado</DialogTitle>
-            <DialogDescription>
-              A chave API OpenAI não foi configurada pelo administrador do sistema. 
-              Entre em contato com o suporte para que a chave seja configurada nas configurações administrativas.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="pt-4">
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Apenas administradores podem configurar a chave API global do sistema.
-              </AlertDescription>
-            </Alert>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
-  );
+        
+        {children}
+        
+        <Dialog open={showDialog} onOpenChange={setShowDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                {isAdmin ? "Configuração necessária" : "Sistema não configurado"}
+              </DialogTitle>
+              <DialogDescription>
+                {isAdmin 
+                  ? "Como administrador, você precisa configurar a chave API OpenAI global para que o sistema funcione para todos os usuários."
+                  : "A chave API OpenAI não foi configurada pelo administrador do sistema. Entre em contato com o suporte para que a chave seja configurada."
+                }
+              </DialogDescription>
+            </DialogHeader>
+            <div className="pt-4">
+              {isAdmin ? (
+                <Button 
+                  onClick={() => {
+                    navigate('/settings');
+                    setShowDialog(false);
+                  }}
+                  className="w-full bg-eco-primary hover:bg-eco-dark"
+                >
+                  Ir para Configurações
+                </Button>
+              ) : (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Apenas administradores podem configurar a chave API global do sistema.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      </>
+    );
+  }
+
+  return <>{children}</>;
 };
 
 export default ApiKeyCheck;
