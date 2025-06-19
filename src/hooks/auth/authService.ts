@@ -31,6 +31,10 @@ export const fetchProfile = async (userId: string): Promise<Profile | null> => {
       status: data.status
     });
 
+    // Validar e definir status com tipo correto
+    const validStatuses = ['pending', 'active', 'blocked'] as const;
+    const status = validStatuses.includes(data.status as any) ? data.status as 'pending' | 'active' | 'blocked' : 'active';
+
     // Criar perfil com dados corretos
     const profile: Profile = {
       id: data.id,
@@ -38,7 +42,7 @@ export const fetchProfile = async (userId: string): Promise<Profile | null> => {
       full_name: data.full_name,
       company_name: data.company_name,
       oab_number: data.oab_number,
-      status: data.status || 'active',
+      status: status,
       is_admin: Boolean(data.is_admin),
       created_at: data.created_at,
       updated_at: data.updated_at,
