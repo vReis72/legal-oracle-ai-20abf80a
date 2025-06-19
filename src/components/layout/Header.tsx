@@ -113,7 +113,7 @@ const Header = () => {
                       {getDisplayName()}
                     </span>
                     {isAdmin && (
-                      <Shield className="h-3 w-3 text-eco-primary" title="Administrador" />
+                      <Shield className="h-3 w-3 text-eco-primary" />
                     )}
                   </Button>
                 </DropdownMenuTrigger>
