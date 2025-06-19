@@ -84,7 +84,7 @@ const Header = () => {
                   <Button variant="ghost" size="sm" className="flex items-center space-x-1 md:space-x-2">
                     <User className="h-4 w-4" />
                     <span className="hidden sm:inline text-sm md:text-base">
-                      {profile?.full_name || user.email}
+                      {profile?.full_name || user.email?.split('@')[0] || 'Usuário'}
                     </span>
                     {isAdmin && (
                       <Shield className="h-3 w-3 text-eco-primary" />
