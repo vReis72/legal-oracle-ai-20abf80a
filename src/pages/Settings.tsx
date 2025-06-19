@@ -12,21 +12,21 @@ const Settings: React.FC = () => {
   return (
     <div className="eco-container">
       <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-serif font-bold mb-2 text-eco-dark flex items-center gap-2">
-            <SettingsIcon className="h-8 w-8 text-eco-primary" />
+        <div className="mb-6 md:mb-8">
+          <h1 className="text-2xl md:text-3xl font-serif font-bold mb-2 text-eco-dark flex items-center gap-2">
+            <SettingsIcon className="h-6 w-6 md:h-8 md:w-8 text-eco-primary" />
             Configurações
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm md:text-base text-muted-foreground">
             Gerencie as configurações do sistema e suas informações pessoais
           </p>
         </div>
         
         {isAdmin ? (
           <Tabs defaultValue="personal" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="personal">Configurações Pessoais</TabsTrigger>
-              <TabsTrigger value="admin" className="flex items-center gap-2">
+            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 mb-6">
+              <TabsTrigger value="personal" className="text-sm">Configurações Pessoais</TabsTrigger>
+              <TabsTrigger value="admin" className="flex items-center gap-2 text-sm">
                 <Shield className="h-4 w-4" />
                 Administração
               </TabsTrigger>

@@ -48,7 +48,7 @@ const ChatInterface = () => {
 
   if (loadingApiKey) {
     return (
-      <Card className="w-full max-w-4xl mx-auto h-[600px] flex items-center justify-center">
+      <Card className="w-full max-w-4xl mx-auto h-[500px] md:h-[600px] flex items-center justify-center">
         <div className="flex items-center gap-2">
           <div className="h-4 w-4 animate-spin rounded-full border-2 border-eco-primary border-r-transparent" />
           Carregando...
@@ -58,10 +58,10 @@ const ChatInterface = () => {
   }
 
   return (
-    <Card className="w-full max-w-4xl mx-auto h-[600px] flex flex-col">
+    <Card className="w-full max-w-4xl mx-auto h-[500px] md:h-[600px] flex flex-col">
       <ChatHeader />
       
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-2 md:p-4 space-y-2 md:space-y-4">
         {messages.map((message) => (
           <ChatMessage
             key={message.id}

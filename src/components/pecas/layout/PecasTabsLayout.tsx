@@ -48,21 +48,26 @@ const PecasTabsLayout: React.FC<PecasTabsLayoutProps> = ({
 }) => (
   <div className="flex flex-col h-full">
     <Tabs defaultValue="criar" className="w-full">
-      <TabsList className="grid w-full grid-cols-2">
-        <TabsTrigger value="criar">Criar Peça Jurídica</TabsTrigger>
-        <TabsTrigger value="minhas">Minhas Peças</TabsTrigger>
+      <TabsList className="grid w-full grid-cols-2 mb-4">
+        <TabsTrigger value="criar" className="text-sm">Criar Peça Jurídica</TabsTrigger>
+        <TabsTrigger value="minhas" className="text-sm">Minhas Peças</TabsTrigger>
       </TabsList>
       <TabsContent value="criar" className="space-y-4 mt-2">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-span-1 space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-1 space-y-4">
             <TemplateList
               templates={templates}
               selectedTemplate={selectedTemplate}
               onSelect={onSelectTemplate}
             />
-            <TemplateDetails template={selectedTemplate} />
+            <div className="hidden lg:block">
+              <TemplateDetails template={selectedTemplate} />
+            </div>
           </div>
-          <div className="md:col-span-2">
+          <div className="lg:col-span-2">
+            <div className="lg:hidden mb-4">
+              <TemplateDetails template={selectedTemplate} />
+            </div>
             <PecaForm
               selectedTemplate={selectedTemplate}
               novaPeca={novaPeca}
@@ -76,8 +81,8 @@ const PecasTabsLayout: React.FC<PecasTabsLayoutProps> = ({
         </div>
       </TabsContent>
       <TabsContent value="minhas" className="mt-2">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[calc(100vh-16rem)]">
-          <div className="md:col-span-1">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-16rem)]">
+          <div className="lg:col-span-1">
             <PecaList
               pecas={pecas}
               templates={templates}
@@ -85,7 +90,7 @@ const PecasTabsLayout: React.FC<PecasTabsLayoutProps> = ({
               onSelect={onEditPeca}
             />
           </div>
-          <div className="md:col-span-2">
+          <div className="lg:col-span-2">
             <PecaViewer
               peca={selectedPeca}
               generatedContent={generatedContent}

@@ -63,21 +63,21 @@ const Documentos = () => {
 
   return (
     <div className="eco-container">
-      <div className="mb-6">
-        <h1 className="text-3xl font-serif font-bold mb-2 text-eco-dark">Documentos</h1>
-        <p className="text-muted-foreground mb-4">
+      <div className="mb-4 md:mb-6">
+        <h1 className="text-2xl md:text-3xl font-serif font-bold mb-2 text-eco-dark">Documentos</h1>
+        <p className="text-sm md:text-base text-muted-foreground mb-4">
           Analise e gerencie seus documentos jurídicos
         </p>
       </div>
 
-      <div className="grid gap-6">
+      <div className="grid gap-4 md:gap-6">
         <DocumentUploader onDocumentProcessed={handleDocumentProcessed} />
 
         {documents.length > 0 && (
           <Tabs defaultValue="view" className="w-full">
-            <TabsList className="mb-4">
-              <TabsTrigger value="view">Visualizar</TabsTrigger>
-              <TabsTrigger value="list">Lista de Documentos ({documents.length})</TabsTrigger>
+            <TabsList className="mb-4 w-full md:w-auto">
+              <TabsTrigger value="view" className="flex-1 md:flex-initial text-sm">Visualizar</TabsTrigger>
+              <TabsTrigger value="list" className="flex-1 md:flex-initial text-sm">Lista ({documents.length})</TabsTrigger>
             </TabsList>
             <TabsContent value="view">
               {selectedDocument ? (
@@ -86,8 +86,8 @@ const Documentos = () => {
                   onAnalysisComplete={handleAnalysisComplete}
                 />
               ) : (
-                <div className="text-center p-8 border rounded-lg">
-                  Selecione um documento da lista para visualizar
+                <div className="text-center p-6 md:p-8 border rounded-lg">
+                  <p className="text-sm md:text-base">Selecione um documento da lista para visualizar</p>
                 </div>
               )}
             </TabsContent>

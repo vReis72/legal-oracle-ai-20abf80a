@@ -94,6 +94,14 @@
 
   body {
     @apply bg-background text-foreground;
+    font-size: 14px;
+  }
+  
+  /* Responsive font sizes */
+  @media (min-width: 768px) {
+    body {
+      font-size: 16px;
+    }
   }
   
   h1, h2, h3, h4, h5, h6 {
@@ -107,14 +115,61 @@
 
 @layer components {
   .eco-card {
-    @apply rounded-lg border bg-card p-6 shadow-sm transition-all hover:shadow-md;
+    @apply rounded-lg border bg-card p-4 md:p-6 shadow-sm transition-all hover:shadow-md;
   }
   
   .eco-container {
-    @apply container mx-auto px-4 py-8;
+    @apply container mx-auto px-4 py-4 md:py-8;
   }
   
   .eco-section {
-    @apply my-8;
+    @apply my-4 md:my-8;
+  }
+  
+  /* Mobile-first responsive utilities */
+  .responsive-grid {
+    @apply grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3;
+  }
+  
+  .responsive-text {
+    @apply text-sm md:text-base;
+  }
+  
+  .responsive-heading {
+    @apply text-xl md:text-2xl lg:text-3xl;
+  }
+  
+  .responsive-button {
+    @apply px-3 py-2 text-sm md:px-4 md:py-2 md:text-base;
+  }
+  
+  /* Ensure content doesn't overflow on small screens */
+  .overflow-safe {
+    @apply overflow-hidden;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  
+  /* Mobile-friendly spacing */
+  .mobile-spacing {
+    @apply space-y-3 md:space-y-4 lg:space-y-6;
+  }
+}
+
+/* Ensure proper mobile viewport handling */
+@media (max-width: 640px) {
+  .container {
+    @apply px-4;
+  }
+  
+  /* Prevent horizontal scroll on mobile */
+  body {
+    overflow-x: hidden;
+  }
+  
+  /* Ensure touch targets are large enough */
+  button, a, input, select, textarea {
+    min-height: 44px;
+    min-width: 44px;
   }
 }
