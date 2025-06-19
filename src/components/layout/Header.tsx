@@ -11,6 +11,16 @@ const Header = () => {
   const { user, profile, signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
 
+  console.log('🏆 Header - Estado do auth:', {
+    user: !!user,
+    userEmail: user?.email,
+    profile: !!profile,
+    profileEmail: profile?.email,
+    profileIsAdmin: profile?.is_admin,
+    isAdmin,
+    fullName: profile?.full_name
+  });
+
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -24,6 +34,11 @@ const Header = () => {
 
   // Função para obter o nome de exibição
   const getDisplayName = () => {
+    console.log('🏷️ Calculando nome de exibição:', {
+      fullName: profile?.full_name,
+      email: user?.email
+    });
+    
     if (profile?.full_name && profile.full_name.trim()) {
       return profile.full_name;
     }
@@ -98,7 +113,7 @@ const Header = () => {
                       {getDisplayName()}
                     </span>
                     {isAdmin && (
-                      <Shield className="h-3 w-3 text-eco-primary" />
+                      <Shield className="h-3 w-3 text-eco-primary" title="Administrador" />
                     )}
                   </Button>
                 </DropdownMenuTrigger>
@@ -107,7 +122,12 @@ const Header = () => {
                     {user.email}
                     {isAdmin && (
                       <div className="text-xs text-eco-primary font-medium">
-                        Administrador
+                        ✅ Administrador
+                      </div>
+                    )}
+                    {!isAdmin && profile && (
+                      <div className="text-xs text-orange-600 font-medium">
+                        ⚠️ Não é admin (is_admin: {String(profile.is_admin)})
                       </div>
                     )}
                   </div>

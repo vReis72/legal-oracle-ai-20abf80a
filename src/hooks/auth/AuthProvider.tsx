@@ -29,14 +29,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Função para recarregar o perfil do usuário
   const refreshProfile = async (userId: string) => {
     try {
-      console.log('Recarregando perfil do usuário:', userId);
+      console.log('🔍 Carregando perfil do usuário:', userId);
       const userProfile = await fetchProfile(userId);
       if (userProfile) {
-        console.log('Perfil carregado:', userProfile);
+        console.log('✅ Perfil carregado com sucesso:', {
+          id: userProfile.id,
+          email: userProfile.email,
+          is_admin: userProfile.is_admin,
+          status: userProfile.status
+        });
         setProfile(userProfile);
+      } else {
+        console.log('❌ Nenhum perfil encontrado para o usuário:', userId);
       }
     } catch (error) {
-      console.error('Erro ao recarregar perfil:', error);
+      console.error('❌ Erro ao carregar perfil:', error);
     }
   };
 
@@ -46,16 +53,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
+        console.log('🔄 Auth state changed:', event, session?.user?.email);
         
         if (!mounted) return;
 
         if (event === 'SIGNED_OUT' || !session) {
+          console.log('🚪 Usuário deslogado');
           clearAuthState();
           setLoading(false);
           return;
         }
 
+        console.log('🔐 Usuário logado:', session.user.email);
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -64,11 +73,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setTimeout(async () => {
             if (mounted) {
               await refreshProfile(session.user.id);
+              setLoading(false);
             }
           }, 0);
+        } else {
+          setLoading(false);
         }
-        
-        setLoading(false);
       }
     );
 
@@ -76,7 +86,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!mounted) return;
       
-      console.log('Initial session:', session?.user?.email);
+      console.log('🎯 Sessão inicial:', session?.user?.email);
       
       if (!session) {
         clearAuthState();
@@ -88,10 +98,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       
       if (session?.user && mounted) {
-        refreshProfile(session.user.id);
+        refreshProfile(session.user.id).finally(() => {
+          if (mounted) {
+            setLoading(false);
+          }
+        });
+      } else {
+        setLoading(false);
       }
-      
-      setLoading(false);
     });
 
     return () => {
@@ -102,10 +116,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const isAdmin = Boolean(profile?.is_admin);
 
-  console.log('Auth Provider State:', {
+  console.log('🏠 Auth Provider State:', {
     user: !!user,
+    userEmail: user?.email,
     profile: !!profile,
+    profileEmail: profile?.email,
     isAdmin,
+    profileIsAdmin: profile?.is_admin,
     loading
   });
 
