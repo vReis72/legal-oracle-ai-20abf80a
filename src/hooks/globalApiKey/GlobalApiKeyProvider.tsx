@@ -13,13 +13,10 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   const { user, loading: authLoading } = useAuth();
 
   const fetchGlobalApiKey = async () => {
-    if (loading || initialized || authLoading || !user) {
-      return;
-    }
-    
+    // Não requer autenticação para buscar a chave
     try {
       setLoading(true);
-      console.log('Iniciando fetchGlobalApiKey para usuário autenticado...');
+      console.log('Buscando chave global...');
       
       const isConnected = await checkSupabaseConnection();
       if (!isConnected) {
@@ -30,9 +27,8 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      console.log('Usuário autenticado, buscando chave global...');
-      
       const apiKey = await fetchGlobalApiKeyFromDb();
+      console.log('Chave global obtida:', apiKey ? 'SIM' : 'NÃO');
       setGlobalApiKey(apiKey);
     } catch (error) {
       console.error('Erro inesperado ao buscar chave global:', error);
@@ -43,22 +39,12 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Reset state quando usuário faz logout
+  // Buscar chave independente do estado de autenticação
   useEffect(() => {
-    if (!user && !authLoading) {
-      console.log('Usuário não autenticado, resetando estado da chave global');
-      setGlobalApiKey(null);
-      setLoading(false);
-      setInitialized(false);
-    }
-  }, [user, authLoading]);
-
-  // Buscar chave quando usuário estiver autenticado
-  useEffect(() => {
-    if (user && !authLoading && !initialized) {
+    if (!initialized && !authLoading) {
       fetchGlobalApiKey();
     }
-  }, [user, authLoading, initialized]);
+  }, [initialized, authLoading]);
 
   const saveGlobalApiKey = async (key: string): Promise<boolean> => {
     try {
@@ -102,10 +88,8 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const refreshGlobalApiKey = async () => {
-    if (user) {
-      setInitialized(false);
-      await fetchGlobalApiKey();
-    }
+    setInitialized(false);
+    await fetchGlobalApiKey();
   };
 
   const hasValidGlobalKey = Boolean(
@@ -115,13 +99,12 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
     globalApiKey.length > 20
   );
 
-  console.log('Estado da chave global:', {
+  console.log('Estado da chave global FINAL:', {
     hasKey: !!globalApiKey,
     isValid: hasValidGlobalKey,
     loading,
     initialized,
-    userAuthenticated: !!user,
-    authLoading
+    keyLength: globalApiKey?.length
   });
 
   return (

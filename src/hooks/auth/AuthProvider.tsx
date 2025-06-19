@@ -31,9 +31,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log('🔄 AuthProvider: Carregando perfil para:', userId);
       const userProfile = await fetchProfile(userId);
       
-      console.log('🔄 AuthProvider: Perfil carregado:', userProfile);
-      setProfile(userProfile);
+      console.log('🔄 AuthProvider: Perfil carregado:', {
+        profile: userProfile,
+        isAdmin: userProfile?.is_admin,
+        status: userProfile?.status
+      });
       
+      setProfile(userProfile);
       return userProfile;
     } catch (error) {
       console.error('❌ AuthProvider: Erro ao carregar perfil:', error);
@@ -113,13 +117,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  // Calcular isAdmin de forma simples e direta
-  const isAdmin = profile?.is_admin === true;
+  // Calcular isAdmin de forma explícita e com logs
+  const isAdmin = Boolean(profile?.is_admin === true);
 
-  console.log('🏠 AuthProvider: Estado atual:', {
+  console.log('🏠 AuthProvider: Estado FINAL:', {
     hasUser: !!user,
     userEmail: user?.email,
     hasProfile: !!profile,
+    profileData: profile,
     profileIsAdmin: profile?.is_admin,
     calculatedIsAdmin: isAdmin,
     loading
