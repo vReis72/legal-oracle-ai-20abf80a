@@ -11,16 +11,15 @@ const Header = () => {
   const { user, profile, signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
 
-  console.log('🏆 Header - Estado completo:', {
+  console.log('🏆 Header - Estado de autenticação:', {
     user: !!user,
     userEmail: user?.email,
     profile: !!profile,
     profileEmail: profile?.email,
     profileFullName: profile?.full_name,
     profileIsAdmin: profile?.is_admin,
-    isAdmin,
-    profileStatus: profile?.status,
-    userMetadata: user?.user_metadata
+    calculatedIsAdmin: isAdmin,
+    profileStatus: profile?.status
   });
 
   const handleSignOut = async () => {
@@ -131,8 +130,9 @@ const Header = () => {
                     {profile ? (
                       <>
                         {isAdmin ? (
-                          <div className="text-xs text-eco-primary font-medium">
-                            ✅ Administrador
+                          <div className="text-xs text-eco-primary font-medium flex items-center gap-1">
+                            <Shield className="h-3 w-3" />
+                            Administrador
                           </div>
                         ) : (
                           <div className="text-xs text-gray-600">

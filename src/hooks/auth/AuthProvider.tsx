@@ -28,11 +28,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Função para recarregar o perfil do usuário
   const refreshProfile = async (userId: string) => {
     try {
-      console.log('🔄 AuthProvider: Iniciando carregamento do perfil para:', userId);
+      console.log('🔄 AuthProvider: Carregando perfil para:', userId);
       const userProfile = await fetchProfile(userId);
       
       if (userProfile) {
-        console.log('✅ AuthProvider: Perfil carregado com sucesso:', {
+        console.log('✅ AuthProvider: Perfil carregado:', {
           id: userProfile.id,
           email: userProfile.email,
           full_name: userProfile.full_name,
@@ -41,26 +41,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         });
         setProfile(userProfile);
       } else {
-        console.log('❌ AuthProvider: Perfil não encontrado, criando perfil básico');
-        // Se não conseguir carregar o perfil, criar um básico com os dados do usuário
-        const basicProfile: Profile = {
-          id: userId,
-          email: user?.email || '',
-          full_name: user?.user_metadata?.full_name || null,
-          company_name: null,
-          oab_number: null,
-          status: 'active',
-          is_admin: false,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          approved_at: null,
-          approved_by: null,
-          blocked_at: null,
-          blocked_by: null,
-          blocked_reason: null
-        };
-        console.log('📝 AuthProvider: Usando perfil básico:', basicProfile);
-        setProfile(basicProfile);
+        console.log('❌ AuthProvider: Perfil não encontrado');
+        setProfile(null);
       }
     } catch (error) {
       console.error('❌ AuthProvider: Erro ao carregar perfil:', error);
@@ -89,10 +71,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session.user);
         
         if (session.user && mounted) {
-          // Pequeno delay para garantir que o perfil foi criado
-          setTimeout(() => {
-            refreshProfile(session.user.id);
-          }, 500);
+          await refreshProfile(session.user.id);
         }
         
         setLoading(false);
@@ -115,9 +94,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session.user);
       
       if (session.user && mounted) {
-        setTimeout(() => {
-          refreshProfile(session.user.id);
-        }, 500);
+        await refreshProfile(session.user.id);
       }
       
       setLoading(false);
@@ -137,8 +114,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     hasProfile: !!profile,
     profileEmail: profile?.email,
     profileFullName: profile?.full_name,
-    isAdmin,
     profileIsAdmin: profile?.is_admin,
+    calculatedIsAdmin: isAdmin,
     loading
   });
 
