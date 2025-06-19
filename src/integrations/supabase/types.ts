@@ -9,29 +9,199 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      chat_conversations: {
+        Row: {
+          created_at: string | null
+          id: string
+          title: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_conversations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_messages: {
+        Row: {
+          content: string
+          conversation_id: string | null
+          created_at: string | null
+          id: string
+          role: string
+        }
+        Insert: {
+          content: string
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+          role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          analysis_conclusion: string | null
+          analysis_key_points: Json | null
+          analysis_summary: string | null
+          content: string
+          created_at: string | null
+          id: string
+          name: string
+          size: number
+          type: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          analysis_conclusion?: string | null
+          analysis_key_points?: Json | null
+          analysis_summary?: string | null
+          content: string
+          created_at?: string | null
+          id?: string
+          name: string
+          size: number
+          type: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          analysis_conclusion?: string | null
+          analysis_key_points?: Json | null
+          analysis_summary?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+          size?: number
+          type?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legal_documents: {
+        Row: {
+          category: string
+          content: string
+          created_at: string | null
+          fields_data: Json
+          id: string
+          template_name: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          category: string
+          content: string
+          created_at?: string | null
+          fields_data: Json
+          id?: string
+          template_name: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          category?: string
+          content?: string
+          created_at?: string | null
+          fields_data?: Json
+          id?: string
+          template_name?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_documents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
+          company_name: string | null
           created_at: string | null
           email: string
           full_name: string | null
           id: string
+          instagram_profile: string | null
           is_admin: boolean | null
+          oab_number: string | null
+          phone: string | null
+          status: string | null
           updated_at: string | null
         }
         Insert: {
+          company_name?: string | null
           created_at?: string | null
           email: string
           full_name?: string | null
           id: string
+          instagram_profile?: string | null
           is_admin?: boolean | null
+          oab_number?: string | null
+          phone?: string | null
+          status?: string | null
           updated_at?: string | null
         }
         Update: {
+          company_name?: string | null
           created_at?: string | null
           email?: string
           full_name?: string | null
           id?: string
+          instagram_profile?: string | null
           is_admin?: boolean | null
+          oab_number?: string | null
+          phone?: string | null
+          status?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -73,7 +243,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      admin_delete_user: {
+        Args: { target_user_id: string; admin_user_id: string }
+        Returns: boolean
+      }
+      check_is_admin: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
