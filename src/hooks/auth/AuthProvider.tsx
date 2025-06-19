@@ -15,6 +15,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { signIn, signUp, signOut: authSignOut } = useAuthActions();
 
   const clearAuthState = () => {
+    console.log('🧹 AuthProvider: Limpando estado de autenticação');
     setSession(null);
     setUser(null);
     setProfile(null);
@@ -28,11 +29,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Função para recarregar o perfil do usuário
   const refreshProfile = async (userId: string) => {
     try {
-      console.log('🔄 AuthProvider: Carregando perfil para:', userId);
+      console.log('🔄 AuthProvider: Iniciando refreshProfile para:', userId);
       const userProfile = await fetchProfile(userId);
       
       if (userProfile) {
-        console.log('✅ AuthProvider: Perfil carregado:', {
+        console.log('✅ AuthProvider: Perfil carregado com sucesso:', {
           id: userProfile.id,
           email: userProfile.email,
           full_name: userProfile.full_name,
@@ -41,7 +42,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         });
         setProfile(userProfile);
       } else {
-        console.log('❌ AuthProvider: Perfil não encontrado');
+        console.log('❌ AuthProvider: Nenhum perfil retornado');
         setProfile(null);
       }
     } catch (error) {
@@ -53,6 +54,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let mounted = true;
 
+    const initializeAuth = async () => {
+      try {
+        console.log('🎯 AuthProvider: Inicializando autenticação...');
+        
+        // Primeiro, verificar se já temos uma sessão
+        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('❌ AuthProvider: Erro ao obter sessão inicial:', error);
+        }
+        
+        if (initialSession && mounted) {
+          console.log('✅ AuthProvider: Sessão inicial encontrada:', initialSession.user.email);
+          setSession(initialSession);
+          setUser(initialSession.user);
+          await refreshProfile(initialSession.user.id);
+        } else {
+          console.log('🔍 AuthProvider: Nenhuma sessão inicial encontrada');
+        }
+        
+        if (mounted) {
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('💥 AuthProvider: Erro na inicialização:', error);
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    // Configurar listener de mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('🔄 AuthProvider: Auth state changed:', event, session?.user?.email);
@@ -66,39 +99,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
 
-        console.log('🔐 AuthProvider: Usuário logado:', session.user.email);
-        setSession(session);
-        setUser(session.user);
-        
-        if (session.user && mounted) {
-          await refreshProfile(session.user.id);
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          console.log('🔐 AuthProvider: Usuário logado/token atualizado:', session.user.email);
+          setSession(session);
+          setUser(session.user);
+          
+          if (session.user && mounted) {
+            await refreshProfile(session.user.id);
+          }
+          
+          setLoading(false);
         }
-        
-        setLoading(false);
       }
     );
 
-    // Get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!mounted) return;
-      
-      console.log('🎯 AuthProvider: Sessão inicial:', session?.user?.email);
-      
-      if (!session) {
-        clearAuthState();
-        setLoading(false);
-        return;
-      }
-      
-      setSession(session);
-      setUser(session.user);
-      
-      if (session.user && mounted) {
-        await refreshProfile(session.user.id);
-      }
-      
-      setLoading(false);
-    });
+    // Inicializar
+    initializeAuth();
 
     return () => {
       mounted = false;
@@ -108,7 +124,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const isAdmin = Boolean(profile?.is_admin);
 
-  console.log('🏠 AuthProvider State:', {
+  console.log('🏠 AuthProvider: Estado atual:', {
     hasUser: !!user,
     userEmail: user?.email,
     hasProfile: !!profile,
