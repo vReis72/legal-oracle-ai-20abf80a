@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { UserSettingsService } from '@/services/userSettingsService';
 import { LocalUserSettingsService } from '@/services/localUserSettingsService';
@@ -13,7 +14,7 @@ export const useUserSettings = () => {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const { setTheme } = useTheme();
+  const { setTheme, theme: currentTheme } = useTheme();
 
   const loadSettings = async () => {
     setIsLoading(true);
@@ -28,8 +29,9 @@ export const useUserSettings = () => {
       
       setSettings(userSettings);
 
-      // Aplica o tema salvo
-      if (userSettings?.theme) {
+      // Aplica o tema salvo apenas se for diferente do atual
+      if (userSettings?.theme && userSettings.theme !== currentTheme) {
+        console.log('Aplicando tema salvo:', userSettings.theme);
         setTheme(userSettings.theme);
       }
     } catch (error) {
@@ -50,6 +52,12 @@ export const useUserSettings = () => {
 
   const saveSettings = async (newSettings: Partial<UserSettingsUpdate>): Promise<boolean> => {
     try {
+      // Se estamos salvando um tema, aplica imediatamente
+      if (newSettings.theme && newSettings.theme !== currentTheme) {
+        console.log('Salvando e aplicando novo tema:', newSettings.theme);
+        setTheme(newSettings.theme);
+      }
+
       // Tenta salvar no Supabase primeiro
       let success = await UserSettingsService.saveSettings(TEMP_USER_ID, newSettings);
       
@@ -124,7 +132,7 @@ export const useUserSettings = () => {
     settings,
     isLoading,
     apiKey: settings?.openai_api_key || null,
-    theme: settings?.theme || 'light',
+    theme: settings?.theme || currentTheme,
     companyName: settings?.company_name || '',
     userName: settings?.user_name || '',
     userOab: settings?.user_oab || '',

@@ -22,8 +22,8 @@ const settingsSchema = z.object({
 type SettingsFormData = z.infer<typeof settingsSchema>;
 
 const SettingsForm: React.FC = () => {
-  const { settings, isLoading, saveSettings } = useUserSettings();
-  const { setTheme, theme: currentTheme } = useTheme();
+  const { settings, isLoading, updateTheme, updateCompanyInfo, updateUserInfo } = useUserSettings();
+  const { theme: currentTheme } = useTheme();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<SettingsFormData>({
@@ -39,19 +39,21 @@ const SettingsForm: React.FC = () => {
 
   useEffect(() => {
     if (settings) {
-      // Garante que apenas valores válidos sejam atribuídos ao tema
-      const validTheme = (settings.theme === 'light' || settings.theme === 'dark' || settings.theme === 'system') 
-        ? settings.theme 
-        : (currentTheme === 'light' || currentTheme === 'dark' || currentTheme === 'system') 
-          ? currentTheme 
-          : 'light';
+      // Usa o tema atual do contexto como fallback
+      const effectiveTheme = settings.theme || currentTheme;
+      
+      console.log('Carregando configurações no formulário:', {
+        settingsTheme: settings.theme,
+        currentTheme,
+        effectiveTheme
+      });
 
       form.reset({
         companyName: settings.company_name || '',
         userName: settings.user_name || '',
         userOab: settings.user_oab || '',
         contactEmail: settings.contact_email || '',
-        theme: validTheme,
+        theme: effectiveTheme,
       });
     }
   }, [settings, form, currentTheme]);
@@ -59,25 +61,21 @@ const SettingsForm: React.FC = () => {
   const onSubmit = async (data: SettingsFormData) => {
     setIsSubmitting(true);
     try {
-      // Primeiro aplica o tema imediatamente
+      console.log('Salvando configurações:', data);
+      
+      // Salva o tema primeiro (isso já aplica o tema via updateTheme)
       if (data.theme !== currentTheme) {
-        setTheme(data.theme);
+        await updateTheme(data.theme);
       }
 
-      // Depois salva as configurações (sem o campo apiKey)
-      const success = await saveSettings({
-        company_name: data.companyName,
-        user_name: data.userName,
-        user_oab: data.userOab,
-        contact_email: data.contactEmail,
-        theme: data.theme,
-      });
+      // Salva informações da empresa
+      if (data.companyName || data.contactEmail) {
+        await updateCompanyInfo(data.companyName || '', data.contactEmail);
+      }
 
-      if (!success) {
-        // Se falhou ao salvar, reverte o tema
-        if (data.theme !== currentTheme) {
-          setTheme(currentTheme);
-        }
+      // Salva informações do usuário
+      if (data.userName || data.userOab) {
+        await updateUserInfo(data.userName || '', data.userOab);
       }
     } finally {
       setIsSubmitting(false);
