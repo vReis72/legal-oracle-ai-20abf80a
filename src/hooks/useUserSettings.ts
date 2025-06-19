@@ -5,26 +5,27 @@ import { LocalUserSettingsService } from '@/services/localUserSettingsService';
 import { UserSettings, UserSettingsUpdate } from '@/types/userSettings';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from '@/providers/ThemeProvider';
-
-// Por enquanto vamos usar um ID fixo para o usuário
-// Quando implementarmos autenticação, isso virá do contexto de auth
-const TEMP_USER_ID = 'temp-user-001';
+import { useAuth } from '@/hooks/useAuth';
 
 export const useUserSettings = () => {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { setTheme, theme: currentTheme } = useTheme();
+  const { user, profile } = useAuth();
+
+  // Use user ID from auth context when available, fallback to temp ID
+  const userId = user?.id || 'temp-user-001';
 
   const loadSettings = async () => {
     setIsLoading(true);
     try {
       // Tenta carregar do Supabase primeiro
-      let userSettings = await UserSettingsService.getUserSettings(TEMP_USER_ID);
+      let userSettings = await UserSettingsService.getUserSettings(userId);
       
       // Se não conseguir do Supabase, tenta do localStorage
       if (!userSettings) {
-        userSettings = LocalUserSettingsService.getUserSettings(TEMP_USER_ID);
+        userSettings = LocalUserSettingsService.getUserSettings(userId);
       }
       
       setSettings(userSettings);
@@ -48,7 +49,7 @@ export const useUserSettings = () => {
 
   useEffect(() => {
     loadSettings();
-  }, []);
+  }, [userId]);
 
   const saveSettings = async (newSettings: Partial<UserSettingsUpdate>): Promise<boolean> => {
     try {
@@ -59,11 +60,11 @@ export const useUserSettings = () => {
       }
 
       // Tenta salvar no Supabase primeiro
-      let success = await UserSettingsService.saveSettings(TEMP_USER_ID, newSettings);
+      let success = await UserSettingsService.saveSettings(userId, newSettings);
       
       // Se falhar no Supabase, salva no localStorage
       if (!success) {
-        success = LocalUserSettingsService.saveSettings(TEMP_USER_ID, newSettings);
+        success = LocalUserSettingsService.saveSettings(userId, newSettings);
         if (success) {
           toast({
             title: "Configurações Salvas (Local)",
@@ -128,15 +129,24 @@ export const useUserSettings = () => {
            apiKey !== 'sk-adicione-uma-chave-valida-aqui';
   };
 
+  // Get user data from auth profile or settings, with fallbacks
+  const getUserName = (): string => {
+    return settings?.user_name || profile?.full_name || '';
+  };
+
+  const getUserEmail = (): string => {
+    return settings?.contact_email || user?.email || '';
+  };
+
   return {
     settings,
     isLoading,
     apiKey: settings?.openai_api_key || null,
     theme: settings?.theme || currentTheme,
     companyName: settings?.company_name || '',
-    userName: settings?.user_name || '',
+    userName: getUserName(),
     userOab: settings?.user_oab || '',
-    contactEmail: settings?.contact_email || '',
+    contactEmail: getUserEmail(),
     saveSettings,
     saveApiKey,
     removeApiKey,

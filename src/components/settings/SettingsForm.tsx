@@ -10,12 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUserSettings } from '@/hooks/useUserSettings';
 import { useTheme } from '@/providers/ThemeProvider';
+import { useAuth } from '@/hooks/useAuth';
 
 const settingsSchema = z.object({
   companyName: z.string().optional(),
-  userName: z.string().optional(),
+  userName: z.string().min(1, 'Nome é obrigatório'),
   userOab: z.string().optional(),
-  contactEmail: z.string().email('Email inválido').optional().or(z.literal('')),
+  contactEmail: z.string().email('Email inválido').min(1, 'Email é obrigatório'),
   theme: z.enum(['light', 'dark', 'system']),
 });
 
@@ -24,6 +25,7 @@ type SettingsFormData = z.infer<typeof settingsSchema>;
 const SettingsForm: React.FC = () => {
   const { settings, isLoading, updateTheme, updateCompanyInfo, updateUserInfo } = useUserSettings();
   const { theme: currentTheme } = useTheme();
+  const { user, profile } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<SettingsFormData>({
@@ -38,25 +40,31 @@ const SettingsForm: React.FC = () => {
   });
 
   useEffect(() => {
-    if (settings) {
+    if (settings || user || profile) {
       // Usa o tema atual do contexto como fallback
-      const effectiveTheme = settings.theme || currentTheme;
+      const effectiveTheme = settings?.theme || currentTheme;
+      
+      // Preenche com dados do perfil/auth como fallback
+      const userName = settings?.user_name || profile?.full_name || '';
+      const contactEmail = settings?.contact_email || user?.email || '';
       
       console.log('Carregando configurações no formulário:', {
-        settingsTheme: settings.theme,
+        settingsTheme: settings?.theme,
         currentTheme,
-        effectiveTheme
+        effectiveTheme,
+        userName,
+        contactEmail
       });
 
       form.reset({
-        companyName: settings.company_name || '',
-        userName: settings.user_name || '',
-        userOab: settings.user_oab || '',
-        contactEmail: settings.contact_email || '',
+        companyName: settings?.company_name || '',
+        userName,
+        userOab: settings?.user_oab || '',
+        contactEmail,
         theme: effectiveTheme,
       });
     }
-  }, [settings, form, currentTheme]);
+  }, [settings, form, currentTheme, user, profile]);
 
   const onSubmit = async (data: SettingsFormData) => {
     setIsSubmitting(true);
@@ -108,13 +116,16 @@ const SettingsForm: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="companyName"
+                name="userName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nome da Empresa</FormLabel>
+                    <FormLabel>Nome do Usuário *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Nome da sua empresa" {...field} />
+                      <Input placeholder="Seu nome completo" {...field} />
                     </FormControl>
+                    <FormDescription>
+                      Nome obtido do seu perfil de usuário
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -125,10 +136,13 @@ const SettingsForm: React.FC = () => {
                 name="contactEmail"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email de Contato</FormLabel>
+                    <FormLabel>Email de Contato *</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="contato@empresa.com" {...field} />
+                      <Input type="email" placeholder="seu@email.com" {...field} />
                     </FormControl>
+                    <FormDescription>
+                      Email obtido da sua conta de usuário
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -136,12 +150,12 @@ const SettingsForm: React.FC = () => {
 
               <FormField
                 control={form.control}
-                name="userName"
+                name="companyName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nome do Usuário</FormLabel>
+                    <FormLabel>Nome da Empresa</FormLabel>
                     <FormControl>
-                      <Input placeholder="Seu nome completo" {...field} />
+                      <Input placeholder="Nome da sua empresa" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
