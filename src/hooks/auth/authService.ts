@@ -4,19 +4,9 @@ import { Profile } from './types';
 
 export const fetchProfile = async (userId: string): Promise<Profile | null> => {
   try {
-    console.log('🔍 fetchProfile: Iniciando busca do perfil para userId:', userId);
+    console.log('🔍 fetchProfile: Buscando perfil para userId:', userId);
     
-    // Verificar se temos uma sessão ativa
-    const { data: { session } } = await supabase.auth.getSession();
-    console.log('🔐 fetchProfile: Sessão ativa:', !!session);
-    
-    if (!session) {
-      console.log('❌ fetchProfile: Sem sessão ativa');
-      return null;
-    }
-
-    // Buscar perfil diretamente da tabela profiles
-    console.log('📊 fetchProfile: Fazendo query na tabela profiles...');
+    // Buscar perfil diretamente
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -25,8 +15,6 @@ export const fetchProfile = async (userId: string): Promise<Profile | null> => {
 
     if (error) {
       console.error('❌ fetchProfile: Erro na query:', error);
-      console.error('❌ fetchProfile: Código do erro:', error.code);
-      console.error('❌ fetchProfile: Mensagem do erro:', error.message);
       return null;
     }
 
@@ -35,24 +23,23 @@ export const fetchProfile = async (userId: string): Promise<Profile | null> => {
       return null;
     }
 
-    console.log('✅ fetchProfile: Dados brutos do banco:', data);
-    console.log('✅ fetchProfile: is_admin no banco:', data.is_admin, typeof data.is_admin);
-    console.log('✅ fetchProfile: status no banco:', data.status, typeof data.status);
-    
-    // Garantir que o status seja um dos valores permitidos
-    const validStatus = ['pending', 'active', 'blocked'] as const;
-    const normalizedStatus = validStatus.includes(data.status as any) 
-      ? data.status as 'pending' | 'active' | 'blocked'
-      : 'active'; // fallback para 'active' se o status não for válido
+    console.log('✅ fetchProfile: Dados do banco:', {
+      id: data.id,
+      email: data.email,
+      full_name: data.full_name,
+      is_admin: data.is_admin,
+      status: data.status
+    });
 
+    // Criar perfil com dados corretos
     const profile: Profile = {
       id: data.id,
       email: data.email,
       full_name: data.full_name,
       company_name: data.company_name,
       oab_number: data.oab_number,
-      status: normalizedStatus,
-      is_admin: Boolean(data.is_admin), // Garantir que é boolean
+      status: data.status || 'active',
+      is_admin: data.is_admin === true, // Conversão explícita
       created_at: data.created_at,
       updated_at: data.updated_at,
       approved_at: data.approved_at,
@@ -62,7 +49,7 @@ export const fetchProfile = async (userId: string): Promise<Profile | null> => {
       blocked_reason: data.blocked_reason
     };
 
-    console.log('✅ fetchProfile: Perfil processado:', {
+    console.log('✅ fetchProfile: Perfil final criado:', {
       id: profile.id,
       email: profile.email,
       full_name: profile.full_name,

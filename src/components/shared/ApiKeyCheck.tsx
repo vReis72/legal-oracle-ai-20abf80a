@@ -21,19 +21,21 @@ const ApiKeyCheck: React.FC<ApiKeyCheckProps> = ({ children }) => {
   useEffect(() => {
     if (loading || authLoading) return;
     
+    // MUDANÇA: Apenas mostrar aviso, mas permitir uso do sistema
     if (!hasValidGlobalKey) {
       const timer = setTimeout(() => {
         setShowDialog(true);
-      }, 1000);
+      }, 2000); // Aumentar tempo para 2 segundos
       return () => clearTimeout(timer);
     } else {
       setShowDialog(false);
     }
   }, [hasValidGlobalKey, loading, authLoading]);
 
-  if (!hasValidGlobalKey && !loading && !authLoading) {
-    return (
-      <>
+  // MUDANÇA IMPORTANTE: Sempre renderizar children, mesmo sem chave válida
+  return (
+    <>
+      {!hasValidGlobalKey && !loading && !authLoading && (
         <Alert variant="destructive" className="mb-4">
           <Shield className="h-4 w-4" />
           <AlertTitle>Sistema não configurado</AlertTitle>
@@ -44,49 +46,48 @@ const ApiKeyCheck: React.FC<ApiKeyCheckProps> = ({ children }) => {
             }
           </AlertDescription>
         </Alert>
-        
-        {children}
-        
-        <Dialog open={showDialog} onOpenChange={setShowDialog}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>
-                {isAdmin ? "Configuração necessária" : "Sistema não configurado"}
-              </DialogTitle>
-              <DialogDescription>
-                {isAdmin 
-                  ? "Como administrador, você precisa configurar a chave API OpenAI global para que o sistema funcione para todos os usuários."
-                  : "A chave API OpenAI não foi configurada pelo administrador do sistema. Entre em contato com o suporte para que a chave seja configurada."
-                }
-              </DialogDescription>
-            </DialogHeader>
-            <div className="pt-4">
-              {isAdmin ? (
-                <Button 
-                  onClick={() => {
-                    navigate('/settings');
-                    setShowDialog(false);
-                  }}
-                  className="w-full bg-eco-primary hover:bg-eco-dark"
-                >
-                  Ir para Configurações
-                </Button>
-              ) : (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    Apenas administradores podem configurar a chave API global do sistema.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
-      </>
-    );
-  }
-
-  return <>{children}</>;
+      )}
+      
+      {children}
+      
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {isAdmin ? "Configuração necessária" : "Sistema não configurado"}
+            </DialogTitle>
+            <DialogDescription>
+              {isAdmin 
+                ? "Como administrador, você precisa configurar a chave API OpenAI global para que o sistema funcione para todos os usuários."
+                : "A chave API OpenAI não foi configurada pelo administrador do sistema. Entre em contato com o suporte para que a chave seja configurada."
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <div className="pt-4">
+            {isAdmin ? (
+              <Button 
+                onClick={() => {
+                  navigate('/settings');
+                  setShowDialog(false);
+                }}
+                className="w-full bg-eco-primary hover:bg-eco-dark"
+              >
+                Ir para Configurações
+              </Button>
+            ) : (
+              <Button 
+                onClick={() => setShowDialog(false)}
+                variant="outline"
+                className="w-full"
+              >
+                Entendi
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
 };
 
 export default ApiKeyCheck;

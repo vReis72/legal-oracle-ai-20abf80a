@@ -15,7 +15,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { signIn, signUp, signOut: authSignOut } = useAuthActions();
 
   const clearAuthState = () => {
-    console.log('🧹 AuthProvider: Limpando estado de autenticação');
+    console.log('🧹 AuthProvider: Limpando estado');
     setSession(null);
     setUser(null);
     setProfile(null);
@@ -26,52 +26,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await authSignOut();
   };
 
-  // Função para recarregar o perfil do usuário
-  const refreshProfile = async (userId: string) => {
+  const loadUserProfile = async (userId: string) => {
     try {
-      console.log('🔄 AuthProvider: Iniciando refreshProfile para:', userId);
+      console.log('🔄 AuthProvider: Carregando perfil para:', userId);
       const userProfile = await fetchProfile(userId);
       
-      if (userProfile) {
-        console.log('✅ AuthProvider: Perfil carregado com sucesso:', {
-          id: userProfile.id,
-          email: userProfile.email,
-          full_name: userProfile.full_name,
-          is_admin: userProfile.is_admin,
-          status: userProfile.status
-        });
-        setProfile(userProfile);
-      } else {
-        console.log('❌ AuthProvider: Nenhum perfil retornado');
-        setProfile(null);
-      }
+      console.log('🔄 AuthProvider: Perfil carregado:', userProfile);
+      setProfile(userProfile);
+      
+      return userProfile;
     } catch (error) {
       console.error('❌ AuthProvider: Erro ao carregar perfil:', error);
       setProfile(null);
+      return null;
     }
   };
 
   useEffect(() => {
     let mounted = true;
 
-    const initializeAuth = async () => {
+    const initAuth = async () => {
       try {
-        console.log('🎯 AuthProvider: Inicializando autenticação...');
+        console.log('🎯 AuthProvider: Inicializando...');
         
-        // Primeiro, verificar se já temos uma sessão
-        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
+        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error('❌ AuthProvider: Erro ao obter sessão inicial:', error);
+          console.error('❌ AuthProvider: Erro ao obter sessão:', error);
         }
         
-        if (initialSession && mounted) {
-          console.log('✅ AuthProvider: Sessão inicial encontrada:', initialSession.user.email);
-          setSession(initialSession);
-          setUser(initialSession.user);
-          await refreshProfile(initialSession.user.id);
+        if (currentSession && mounted) {
+          console.log('✅ AuthProvider: Sessão encontrada para:', currentSession.user.email);
+          setSession(currentSession);
+          setUser(currentSession.user);
+          
+          // Carregar perfil
+          await loadUserProfile(currentSession.user.id);
         } else {
-          console.log('🔍 AuthProvider: Nenhuma sessão inicial encontrada');
+          console.log('🔍 AuthProvider: Nenhuma sessão encontrada');
         }
         
         if (mounted) {
@@ -85,14 +77,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
-    // Configurar listener de mudanças de autenticação
+    // Configurar listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('🔄 AuthProvider: Auth state changed:', event, session?.user?.email);
+      async (event, newSession) => {
+        console.log('🔄 AuthProvider: Auth state changed:', event, newSession?.user?.email);
         
         if (!mounted) return;
 
-        if (event === 'SIGNED_OUT' || !session) {
+        if (event === 'SIGNED_OUT' || !newSession) {
           console.log('🚪 AuthProvider: Usuário deslogado');
           clearAuthState();
           setLoading(false);
@@ -100,12 +92,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
 
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          console.log('🔐 AuthProvider: Usuário logado/token atualizado:', session.user.email);
-          setSession(session);
-          setUser(session.user);
+          console.log('🔐 AuthProvider: Usuário logado:', newSession.user.email);
+          setSession(newSession);
+          setUser(newSession.user);
           
-          if (session.user && mounted) {
-            await refreshProfile(session.user.id);
+          if (newSession.user && mounted) {
+            await loadUserProfile(newSession.user.id);
           }
           
           setLoading(false);
@@ -113,8 +105,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // Inicializar
-    initializeAuth();
+    initAuth();
 
     return () => {
       mounted = false;
@@ -122,14 +113,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  const isAdmin = Boolean(profile?.is_admin);
+  // Calcular isAdmin de forma simples e direta
+  const isAdmin = profile?.is_admin === true;
 
   console.log('🏠 AuthProvider: Estado atual:', {
     hasUser: !!user,
     userEmail: user?.email,
     hasProfile: !!profile,
-    profileEmail: profile?.email,
-    profileFullName: profile?.full_name,
     profileIsAdmin: profile?.is_admin,
     calculatedIsAdmin: isAdmin,
     loading

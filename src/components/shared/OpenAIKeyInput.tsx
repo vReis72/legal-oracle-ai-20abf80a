@@ -13,44 +13,41 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
   buttonSize = "sm" 
 }) => {
   const { isKeyConfigured } = useApiKey();
-  const { isAdmin } = useAuth();
+  const { isAdmin, loading } = useAuth();
+
+  // Se ainda está carregando, não mostrar nada
+  if (loading) {
+    return null;
+  }
 
   // Se a chave já está configurada, não mostrar nada
   if (isKeyConfigured) {
     return null;
   }
 
-  // Se não é admin e não tem chave, mostrar aviso
-  if (!isAdmin && !isKeyConfigured) {
-    return (
-      <Alert variant="destructive" className="mb-4">
-        <Shield className="h-4 w-4" />
-        <AlertDescription>
-          <strong>Sistema não configurado.</strong><br />
-          A chave API OpenAI não foi configurada pelo administrador. 
-          Entre em contato com o suporte para que o sistema seja configurado adequadamente.
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  // Para admins sem chave configurada, mostrar aviso diferente
-  if (isAdmin && !isKeyConfigured) {
-    return (
-      <Alert variant="destructive" className="mb-4">
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          <strong>Configuração necessária.</strong><br />
-          Como administrador, você precisa configurar a chave API OpenAI global nas 
-          <a href="/settings" className="text-eco-primary hover:underline ml-1">
-            configurações administrativas
-          </a>.
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  return null;
+  // MUDANÇA IMPORTANTE: Permitir que qualquer usuário use o sistema quando a chave não está configurada
+  // Apenas mostrar diferentes mensagens para admin vs usuário comum
+  return (
+    <Alert variant="destructive" className="mb-4">
+      <AlertCircle className="h-4 w-4" />
+      <AlertDescription>
+        <strong>Sistema não configurado.</strong><br />
+        {isAdmin ? (
+          <>
+            Como administrador, você precisa configurar a chave API OpenAI global nas 
+            <a href="/settings" className="text-eco-primary hover:underline ml-1">
+              configurações administrativas
+            </a>.
+          </>
+        ) : (
+          <>
+            A chave API OpenAI não foi configurada pelo administrador. 
+            Entre em contato com o suporte para que o sistema seja configurado adequadamente.
+          </>
+        )}
+      </AlertDescription>
+    </Alert>
+  );
 };
 
 export default OpenAIKeyInput;
