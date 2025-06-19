@@ -19,7 +19,8 @@ const Header = () => {
     profileFullName: profile?.full_name,
     profileIsAdmin: profile?.is_admin,
     isAdmin,
-    profileStatus: profile?.status
+    profileStatus: profile?.status,
+    userMetadata: user?.user_metadata
   });
 
   const handleSignOut = async () => {
@@ -33,15 +34,25 @@ const Header = () => {
 
   // Função para obter o nome de exibição
   const getDisplayName = () => {
+    // Primeiro, tentar usar o full_name do perfil
     if (profile?.full_name && profile.full_name.trim()) {
-      console.log('📝 Usando full_name:', profile.full_name);
+      console.log('📝 Header: Usando full_name do perfil:', profile.full_name);
       return profile.full_name;
     }
+    
+    // Depois, tentar usar o full_name dos metadados do usuário
+    if (user?.user_metadata?.full_name && user.user_metadata.full_name.trim()) {
+      console.log('📝 Header: Usando full_name dos metadados:', user.user_metadata.full_name);
+      return user.user_metadata.full_name;
+    }
+    
+    // Por último, usar a parte antes do @ do email
     if (user?.email) {
       const emailName = user.email.split('@')[0];
-      console.log('📧 Usando email name:', emailName);
+      console.log('📧 Header: Usando nome do email:', emailName);
       return emailName;
     }
+    
     return 'Usuário';
   };
 
@@ -128,15 +139,15 @@ const Header = () => {
                             👤 Usuário
                           </div>
                         )}
-                        {profile.full_name && (
+                        {(profile.full_name || user.user_metadata?.full_name) && (
                           <div className="text-xs text-gray-500">
-                            {profile.full_name}
+                            {profile.full_name || user.user_metadata?.full_name}
                           </div>
                         )}
                       </>
                     ) : (
-                      <div className="text-xs text-red-600 font-medium">
-                        ⚠️ Carregando perfil...
+                      <div className="text-xs text-amber-600 font-medium">
+                        ⏳ Carregando perfil...
                       </div>
                     )}
                   </div>
