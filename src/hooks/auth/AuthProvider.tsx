@@ -26,6 +26,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await authSignOut();
   };
 
+  // Função para recarregar o perfil do usuário
+  const refreshProfile = async (userId: string) => {
+    try {
+      console.log('Recarregando perfil do usuário:', userId);
+      const userProfile = await fetchProfile(userId);
+      if (userProfile) {
+        console.log('Perfil carregado:', userProfile);
+        setProfile(userProfile);
+      }
+    } catch (error) {
+      console.error('Erro ao recarregar perfil:', error);
+    }
+  };
+
   useEffect(() => {
     let mounted = true;
 
@@ -49,10 +63,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Use setTimeout to avoid potential deadlock
           setTimeout(async () => {
             if (mounted) {
-              const userProfile = await fetchProfile(session.user.id);
-              if (mounted) {
-                setProfile(userProfile);
-              }
+              await refreshProfile(session.user.id);
             }
           }, 0);
         }
@@ -77,11 +88,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       
       if (session?.user && mounted) {
-        fetchProfile(session.user.id).then((profile) => {
-          if (mounted) {
-            setProfile(profile);
-          }
-        });
+        refreshProfile(session.user.id);
       }
       
       setLoading(false);
@@ -93,7 +100,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  const isAdmin = profile?.is_admin || false;
+  const isAdmin = Boolean(profile?.is_admin);
+
+  console.log('Auth Provider State:', {
+    user: !!user,
+    profile: !!profile,
+    isAdmin,
+    loading
+  });
 
   return (
     <AuthContext.Provider value={{

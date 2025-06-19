@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ApiKeyContextType } from './types/apiKeyTypes';
 import { isValidApiKey, getEnvironmentApiKey, PLACEHOLDER_TEXT } from './utils/apiKeyUtils';
 import { useUserSettings } from '@/hooks/useUserSettings';
+import { useGlobalApiKey } from '@/hooks/useGlobalApiKey';
 
 const ApiKeyContext = createContext<ApiKeyContextType | undefined>(undefined);
 
@@ -31,6 +32,9 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     isLoading: isLoadingSupabase 
   } = useUserSettings();
 
+  // Hook para chave global do admin
+  const { globalApiKey, hasValidGlobalKey } = useGlobalApiKey();
+
   // Função para atualizar o estado da chave baseado no localStorage
   const updateApiKeyFromStorage = () => {
     try {
@@ -53,7 +57,17 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   useEffect(() => {
     if (isLoadingSupabase) return; // Aguarda o Supabase carregar
 
-    // Prioridade 1: Chave do ambiente (Railway)
+    // Prioridade 1: Chave global do admin (se válida)
+    if (hasValidGlobalKey && globalApiKey) {
+      console.log("Usando chave API global do admin");
+      setApiKeyState(globalApiKey);
+      setIsEnvironmentKey(true);
+      setIsPlaceholderKey(false);
+      setIsLoading(false);
+      return;
+    }
+
+    // Prioridade 2: Chave do ambiente (Railway)
     const ENV_API_KEY = getEnvironmentApiKey();
     if (ENV_API_KEY && isValidApiKey(ENV_API_KEY)) {
       console.log("Usando chave API do ambiente (Railway)");
@@ -64,7 +78,7 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
       return;
     }
     
-    // Prioridade 2: Chave do Supabase (banco de dados)
+    // Prioridade 3: Chave do Supabase (banco de dados)
     if (supabaseApiKey && hasValidSupabaseKey()) {
       console.log("Usando chave API do Supabase");
       setApiKeyState(supabaseApiKey);
@@ -74,7 +88,7 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
       return;
     }
     
-    // Prioridade 3: Chave do localStorage (compatibilidade)
+    // Prioridade 4: Chave do localStorage (compatibilidade)
     if (hasApiKey()) {
       console.log("Usando chave API do localStorage");
       updateApiKeyFromStorage();
@@ -82,7 +96,7 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
       return;
     }
     
-    // Prioridade 4: Chave padrão (se fornecida)
+    // Prioridade 5: Chave padrão (se fornecida)
     if (DEFAULT_API_KEY && DEFAULT_API_KEY !== PLACEHOLDER_TEXT) {
       try {
         console.log("Configurando chave padrão...");
@@ -100,12 +114,12 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     }
     
     setIsLoading(false);
-  }, [isLoadingSupabase, supabaseApiKey, hasValidSupabaseKey]);
+  }, [isLoadingSupabase, supabaseApiKey, hasValidSupabaseKey, hasValidGlobalKey, globalApiKey]);
 
   // Escutar eventos de atualização da chave
   useEffect(() => {
     const handleApiKeyUpdate = () => {
-      if (!isEnvironmentKey && !hasValidSupabaseKey()) {
+      if (!isEnvironmentKey && !hasValidSupabaseKey() && !hasValidGlobalKey) {
         updateApiKeyFromStorage();
       }
     };
@@ -115,15 +129,17 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     return () => {
       window.removeEventListener('apikey_updated', handleApiKeyUpdate);
     };
-  }, [isEnvironmentKey, hasValidSupabaseKey]);
+  }, [isEnvironmentKey, hasValidSupabaseKey, hasValidGlobalKey]);
 
   const setApiKey = async (key: string) => {
-    // Não permitir sobrescrever a chave do ambiente
-    if (isEnvironmentKey) {
+    // Não permitir sobrescrever a chave do ambiente ou global
+    if (isEnvironmentKey || hasValidGlobalKey) {
       toast({
         variant: "warning",
         title: "Operação não permitida",
-        description: "Uma chave API já está configurada através de variáveis de ambiente (Railway).",
+        description: hasValidGlobalKey 
+          ? "Uma chave API global já está configurada pelo administrador."
+          : "Uma chave API já está configurada através de variáveis de ambiente (Railway).",
       });
       return;
     }
@@ -175,12 +191,14 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   };
 
   const resetApiKey = async () => {
-    // Não permitir remover a chave do ambiente
-    if (isEnvironmentKey) {
+    // Não permitir remover a chave do ambiente ou global
+    if (isEnvironmentKey || hasValidGlobalKey) {
       toast({
         variant: "warning",
         title: "Operação não permitida",
-        description: "Não é possível remover uma chave configurada através de variáveis de ambiente (Railway).",
+        description: hasValidGlobalKey
+          ? "Não é possível remover uma chave configurada pelo administrador."
+          : "Não é possível remover uma chave configurada através de variáveis de ambiente (Railway).",
       });
       return;
     }
@@ -213,6 +231,11 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   };
 
   const checkApiKey = (): boolean => {
+    // Se temos uma chave global válida, ela tem prioridade máxima
+    if (hasValidGlobalKey && isValidApiKey(globalApiKey)) {
+      return true;
+    }
+    
     // Se temos uma chave do ambiente, ela tem prioridade
     if (isEnvironmentKey && isValidApiKey(apiKey)) {
       return true;
@@ -235,12 +258,14 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     return null;
   }
 
-  const isKeyConfigured = (isEnvironmentKey && isValidApiKey(apiKey)) || 
+  const isKeyConfigured = (hasValidGlobalKey && isValidApiKey(globalApiKey)) ||
+                          (isEnvironmentKey && isValidApiKey(apiKey)) || 
                           (hasValidSupabaseKey() && isValidApiKey(supabaseApiKey)) ||
                           (apiKey !== null && apiKey !== PLACEHOLDER_TEXT && isValidApiKey(apiKey));
   
   console.log("Estado atual da API key:", isKeyConfigured ? "Configurada" : "Não configurada");
   console.log("Fonte da API key:", 
+    hasValidGlobalKey ? "Global (Admin)" :
     isEnvironmentKey ? "Ambiente (Railway)" : 
     hasValidSupabaseKey() ? "Supabase (Banco)" : 
     "Local Storage"
@@ -248,13 +273,13 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
 
   return (
     <ApiKeyContext.Provider value={{ 
-      apiKey: apiKey || supabaseApiKey, 
+      apiKey: globalApiKey || apiKey || supabaseApiKey, 
       setApiKey, 
       isKeyConfigured,
       checkApiKey,
       resetApiKey,
-      isPlaceholderKey,
-      isEnvironmentKey
+      isPlaceholderKey: !isKeyConfigured,
+      isEnvironmentKey: isEnvironmentKey || hasValidGlobalKey
     }}>
       {children}
     </ApiKeyContext.Provider>

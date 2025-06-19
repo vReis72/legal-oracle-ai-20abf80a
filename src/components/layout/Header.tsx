@@ -22,6 +22,17 @@ const Header = () => {
     }
   };
 
+  // Função para obter o nome de exibição
+  const getDisplayName = () => {
+    if (profile?.full_name && profile.full_name.trim()) {
+      return profile.full_name;
+    }
+    if (user?.email) {
+      return user.email.split('@')[0];
+    }
+    return 'Usuário';
+  };
+
   const NavLinks = () => (
     <>
       <Link 
@@ -84,7 +95,7 @@ const Header = () => {
                   <Button variant="ghost" size="sm" className="flex items-center space-x-1 md:space-x-2">
                     <User className="h-4 w-4" />
                     <span className="hidden sm:inline text-sm md:text-base">
-                      {profile?.full_name || user.email?.split('@')[0] || 'Usuário'}
+                      {getDisplayName()}
                     </span>
                     {isAdmin && (
                       <Shield className="h-3 w-3 text-eco-primary" />
