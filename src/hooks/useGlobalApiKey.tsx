@@ -15,11 +15,10 @@ const GlobalApiKeyContext = createContext<GlobalApiKeyContextType | undefined>(u
 
 export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   const [globalApiKey, setGlobalApiKey] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
   const { toast } = useToast();
 
-  // Verificar conectividade do Supabase
   const checkSupabaseConnection = async () => {
     try {
       console.log('Testando conexão com Supabase...');
@@ -37,32 +36,36 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const fetchGlobalApiKey = async () => {
-    if (loading || initialized) return;
+    if (loading && initialized) return;
     
     try {
       setLoading(true);
       console.log('Iniciando fetchGlobalApiKey...');
       
-      // Verificar conexão primeiro
       const isConnected = await checkSupabaseConnection();
       if (!isConnected) {
         console.error('Sem conexão com Supabase, cancelando busca da chave');
         setGlobalApiKey(null);
+        setLoading(false);
+        setInitialized(true);
         return;
       }
 
-      // Buscar o usuário atual
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
       if (userError) {
         console.error('Erro ao buscar usuário:', userError);
         setGlobalApiKey(null);
+        setLoading(false);
+        setInitialized(true);
         return;
       }
       
       if (!user) {
         console.log('Usuário não autenticado, não buscando chave global');
         setGlobalApiKey(null);
+        setLoading(false);
+        setInitialized(true);
         return;
       }
 
@@ -80,13 +83,11 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
           console.log('Tabela system_settings não existe');
         }
         setGlobalApiKey(null);
-        return;
+      } else {
+        const apiKey = data?.openai_api_key || null;
+        console.log('Chave global encontrada:', apiKey ? 'SIM' : 'NÃO');
+        setGlobalApiKey(apiKey);
       }
-
-      const apiKey = data?.openai_api_key || null;
-      console.log('Chave global encontrada:', apiKey ? 'SIM' : 'NÃO');
-      
-      setGlobalApiKey(apiKey);
     } catch (error) {
       console.error('Erro inesperado ao buscar chave global:', error);
       setGlobalApiKey(null);
@@ -96,7 +97,6 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Inicializar apenas uma vez
   useEffect(() => {
     if (!initialized) {
       fetchGlobalApiKey();
@@ -185,6 +185,13 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
     globalApiKey.startsWith('sk-') && 
     globalApiKey.length > 20
   );
+
+  console.log('Estado da chave global:', {
+    hasKey: !!globalApiKey,
+    isValid: hasValidGlobalKey,
+    loading,
+    initialized
+  });
 
   return (
     <GlobalApiKeyContext.Provider value={{
