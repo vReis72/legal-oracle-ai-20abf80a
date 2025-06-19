@@ -11,16 +11,15 @@ const Header = () => {
   const { user, profile, signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
 
-  console.log('🏆 Header - Estado do auth:', {
+  console.log('🏆 Header - Estado completo:', {
     user: !!user,
     userEmail: user?.email,
     profile: !!profile,
     profileEmail: profile?.email,
+    profileFullName: profile?.full_name,
     profileIsAdmin: profile?.is_admin,
-    profileIsAdminType: typeof profile?.is_admin,
     isAdmin,
-    fullName: profile?.full_name,
-    fullProfile: profile
+    profileStatus: profile?.status
   });
 
   const handleSignOut = async () => {
@@ -28,24 +27,20 @@ const Header = () => {
       await signOut();
       navigate('/auth');
     } catch (error) {
-      // Error handling is done in the signOut function
-      // Just navigate to auth page regardless
       navigate('/auth');
     }
   };
 
   // Função para obter o nome de exibição
   const getDisplayName = () => {
-    console.log('🏷️ Calculando nome de exibição:', {
-      fullName: profile?.full_name,
-      email: user?.email
-    });
-    
     if (profile?.full_name && profile.full_name.trim()) {
+      console.log('📝 Usando full_name:', profile.full_name);
       return profile.full_name;
     }
     if (user?.email) {
-      return user.email.split('@')[0];
+      const emailName = user.email.split('@')[0];
+      console.log('📧 Usando email name:', emailName);
+      return emailName;
     }
     return 'Usuário';
   };
@@ -122,19 +117,26 @@ const Header = () => {
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="px-2 py-1.5 text-sm text-muted-foreground">
                     {user.email}
-                    {isAdmin && (
-                      <div className="text-xs text-eco-primary font-medium">
-                        ✅ Administrador Detectado
-                      </div>
-                    )}
-                    {!isAdmin && profile && (
-                      <div className="text-xs text-orange-600 font-medium">
-                        ⚠️ Admin: {String(profile.is_admin)} (type: {typeof profile.is_admin})
-                      </div>
-                    )}
-                    {!profile && (
+                    {profile ? (
+                      <>
+                        {isAdmin ? (
+                          <div className="text-xs text-eco-primary font-medium">
+                            ✅ Administrador
+                          </div>
+                        ) : (
+                          <div className="text-xs text-gray-600">
+                            👤 Usuário
+                          </div>
+                        )}
+                        {profile.full_name && (
+                          <div className="text-xs text-gray-500">
+                            {profile.full_name}
+                          </div>
+                        )}
+                      </>
+                    ) : (
                       <div className="text-xs text-red-600 font-medium">
-                        ❌ Perfil não carregado
+                        ⚠️ Carregando perfil...
                       </div>
                     )}
                   </div>

@@ -21,7 +21,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    // Clear state first to prevent UI flashing
     clearAuthState();
     await authSignOut();
   };
@@ -29,19 +28,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Função para recarregar o perfil do usuário
   const refreshProfile = async (userId: string) => {
     try {
-      console.log('🔍 Carregando perfil do usuário:', userId);
+      console.log('🔄 Iniciando carregamento do perfil para:', userId);
       const userProfile = await fetchProfile(userId);
+      
       if (userProfile) {
-        console.log('✅ Perfil carregado com sucesso:', {
+        console.log('✅ Perfil carregado:', {
           id: userProfile.id,
           email: userProfile.email,
+          full_name: userProfile.full_name,
           is_admin: userProfile.is_admin,
-          status: userProfile.status,
-          fullDetails: userProfile
+          status: userProfile.status
         });
         setProfile(userProfile);
       } else {
-        console.log('❌ Nenhum perfil encontrado para o usuário:', userId);
+        console.log('❌ Perfil não encontrado');
         setProfile(null);
       }
     } catch (error) {
@@ -53,7 +53,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let mounted = true;
 
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('🔄 Auth state changed:', event, session?.user?.email);
@@ -69,14 +68,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         console.log('🔐 Usuário logado:', session.user.email);
         setSession(session);
-        setUser(session?.user ?? null);
+        setUser(session.user);
         
-        if (session?.user && mounted) {
-          await refreshProfile(session.user.id);
-          setLoading(false);
-        } else {
-          setLoading(false);
+        if (session.user && mounted) {
+          // Pequeno delay para garantir que o perfil foi criado
+          setTimeout(() => {
+            refreshProfile(session.user.id);
+          }, 500);
         }
+        
+        setLoading(false);
       }
     );
 
@@ -93,14 +94,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       
       setSession(session);
-      setUser(session?.user ?? null);
+      setUser(session.user);
       
-      if (session?.user && mounted) {
-        await refreshProfile(session.user.id);
-        setLoading(false);
-      } else {
-        setLoading(false);
+      if (session.user && mounted) {
+        setTimeout(() => {
+          refreshProfile(session.user.id);
+        }, 500);
       }
+      
+      setLoading(false);
     });
 
     return () => {
@@ -112,15 +114,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const isAdmin = Boolean(profile?.is_admin);
 
   console.log('🏠 Auth Provider State:', {
-    user: !!user,
+    hasUser: !!user,
     userEmail: user?.email,
-    profile: !!profile,
+    hasProfile: !!profile,
     profileEmail: profile?.email,
+    profileFullName: profile?.full_name,
     isAdmin,
     profileIsAdmin: profile?.is_admin,
-    profileType: typeof profile?.is_admin,
-    loading,
-    profileFull: profile
+    loading
   });
 
   return (

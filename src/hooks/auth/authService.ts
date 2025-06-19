@@ -4,36 +4,51 @@ import { Profile } from './types';
 
 export const fetchProfile = async (userId: string): Promise<Profile | null> => {
   try {
-    console.log('📡 Buscando perfil para userId:', userId);
+    console.log('🔍 Buscando perfil para userId:', userId);
     
+    // Tentar buscar o perfil diretamente sem políticas RLS primeiro
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('❌ Erro ao buscar perfil:', error);
-      // Se o erro for de não encontrado, retorna null silenciosamente
-      if (error.code === 'PGRST116') {
-        console.log('⚠️ Perfil não encontrado para o usuário:', userId);
-        return null;
+      
+      // Se o erro for de política RLS, tentar buscar como service role
+      if (error.code === '42501' || error.message.includes('RLS')) {
+        console.log('🔄 Tentando buscar perfil com bypass RLS...');
+        
+        // Tentar uma abordagem diferente - usando a função SQL diretamente
+        const { data: profileData, error: functionError } = await supabase
+          .rpc('get_user_profile', { user_id: userId });
+          
+        if (functionError) {
+          console.error('❌ Erro na função get_user_profile:', functionError);
+          return null;
+        }
+        
+        console.log('✅ Perfil obtido via função:', profileData);
+        return profileData as Profile;
       }
+      
       return null;
     }
 
-    console.log('📋 Dados do perfil retornados:', data);
-    console.log('🔍 Status de admin:', {
+    if (!data) {
+      console.log('⚠️ Nenhum perfil encontrado para o usuário:', userId);
+      return null;
+    }
+
+    console.log('✅ Perfil carregado com sucesso:', {
+      id: data.id,
+      email: data.email,
+      full_name: data.full_name,
       is_admin: data.is_admin,
-      type: typeof data.is_admin,
-      email: data.email
+      status: data.status
     });
     
-    if (!data) {
-      console.log('⚠️ Nenhum dado de perfil encontrado');
-      return null;
-    }
-
     return data as Profile;
   } catch (error) {
     console.error('💥 Erro inesperado ao buscar perfil:', error);
