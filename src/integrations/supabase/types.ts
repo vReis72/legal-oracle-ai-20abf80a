@@ -166,6 +166,11 @@ export type Database = {
       }
       profiles: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
+          blocked_at: string | null
+          blocked_by: string | null
+          blocked_reason: string | null
           company_name: string | null
           created_at: string | null
           email: string
@@ -179,6 +184,11 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          blocked_at?: string | null
+          blocked_by?: string | null
+          blocked_reason?: string | null
           company_name?: string | null
           created_at?: string | null
           email: string
@@ -192,6 +202,11 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          blocked_at?: string | null
+          blocked_by?: string | null
+          blocked_reason?: string | null
           company_name?: string | null
           created_at?: string | null
           email?: string
@@ -204,7 +219,22 @@ export type Database = {
           status?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_blocked_by_fkey"
+            columns: ["blocked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       system_settings: {
         Row: {
@@ -247,13 +277,22 @@ export type Database = {
         Args: { target_user_id: string; admin_user_id: string }
         Returns: boolean
       }
+      admin_update_user_status: {
+        Args: {
+          target_user_id: string
+          new_status: Database["public"]["Enums"]["user_status"]
+          admin_user_id: string
+          reason?: string
+        }
+        Returns: boolean
+      }
       check_is_admin: {
         Args: { user_id: string }
         Returns: boolean
       }
     }
     Enums: {
-      [_ in never]: never
+      user_status: "pending" | "active" | "blocked"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -368,6 +407,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      user_status: ["pending", "active", "blocked"],
+    },
   },
 } as const

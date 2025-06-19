@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Shield } from 'lucide-react';
 import GlobalApiKeySettings from './GlobalApiKeySettings';
+import UserManagement from './UserManagement';
 
 const AdminSettings: React.FC = () => {
   const { isAdmin } = useAuth();
@@ -31,6 +32,7 @@ const AdminSettings: React.FC = () => {
       </div>
 
       <GlobalApiKeySettings />
+      <UserManagement />
     </div>
   );
 };
