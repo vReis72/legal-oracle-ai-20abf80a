@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { sendChatMessage } from '@/services/chatService';
 import { useChatValidation } from './useChatValidation';
@@ -20,7 +20,7 @@ export const useChatOperations = () => {
     prepareConversationHistory 
   } = useMessageManager();
 
-  const handleSendMessage = async (e: React.FormEvent) => {
+  const handleSendMessage = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
     
@@ -75,12 +75,12 @@ export const useChatOperations = () => {
       console.log('🏁 Finalizando handleSendMessage');
       setIsLoading(false);
     }
-  };
+  }, [input, validateChatRequest, globalApiKey, addUserMessage, addAssistantMessage, prepareConversationHistory, toast]);
 
-  const handleRetry = () => {
+  const handleRetry = useCallback(() => {
     console.log('🔄 Retry solicitado - limpando erro');
     setError(null);
-  };
+  }, []);
 
   return {
     messages,

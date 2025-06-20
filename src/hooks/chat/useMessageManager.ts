@@ -1,5 +1,5 @@
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { ChatMessage } from './types';
 
 export const useMessageManager = () => {
@@ -13,15 +13,11 @@ export const useMessageManager = () => {
   ]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, []);
 
-  const addUserMessage = (content: string): ChatMessage => {
+  const addUserMessage = useCallback((content: string): ChatMessage => {
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
@@ -34,13 +30,15 @@ export const useMessageManager = () => {
     setMessages(prev => {
       const newMessages = [...prev, userMessage];
       console.log('📚 Total de mensagens após adicionar usuário:', newMessages.length);
+      // Scroll após a atualização do estado
+      setTimeout(() => scrollToBottom(), 100);
       return newMessages;
     });
 
     return userMessage;
-  };
+  }, [scrollToBottom]);
 
-  const addAssistantMessage = (content: string) => {
+  const addAssistantMessage = useCallback((content: string) => {
     const assistantMessage: ChatMessage = {
       id: (Date.now() + 1).toString(),
       role: 'assistant',
@@ -57,11 +55,13 @@ export const useMessageManager = () => {
     setMessages(prev => {
       const newMessages = [...prev, assistantMessage];
       console.log('📚 Total de mensagens após adicionar assistente:', newMessages.length);
+      // Scroll após a atualização do estado
+      setTimeout(() => scrollToBottom(), 100);
       return newMessages;
     });
-  };
+  }, [scrollToBottom]);
 
-  const prepareConversationHistory = (userMessage: ChatMessage): ChatMessage[] => {
+  const prepareConversationHistory = useCallback((userMessage: ChatMessage): ChatMessage[] => {
     const conversationHistory: ChatMessage[] = [
       {
         id: 'system',
@@ -81,13 +81,14 @@ export const useMessageManager = () => {
     });
 
     return conversationHistory;
-  };
+  }, [messages]);
 
   return {
     messages,
     messagesEndRef,
     addUserMessage,
     addAssistantMessage,
-    prepareConversationHistory
+    prepareConversationHistory,
+    scrollToBottom
   };
 };

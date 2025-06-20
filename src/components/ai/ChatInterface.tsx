@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React from 'react';
 import ChatMessage from './ChatMessage';
 import ChatInputForm from './ChatInputForm';
 import { useChat } from '@/hooks/use-chat';
@@ -14,18 +14,10 @@ const ChatInterface = () => {
     setInput, 
     handleSendMessage, 
     isLoading, 
-    isKeyConfigured 
+    isKeyConfigured,
+    messagesEndRef
   } = useChat();
   const { loading: loadingApiKey } = useGlobalApiKey();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
 
   if (loadingApiKey) {
     return (

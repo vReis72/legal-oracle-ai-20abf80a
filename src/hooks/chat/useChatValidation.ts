@@ -1,4 +1,5 @@
 
+import { useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useGlobalApiKey } from '@/hooks/useGlobalApiKey';
 import { useToast } from '@/hooks/use-toast';
@@ -68,8 +69,10 @@ export const useChatValidation = () => {
     return { isValid: true };
   };
 
-  // Sistema configurado apenas se temos usuário autenticado e chave válida
-  const isKeyConfigured = user && hasValidGlobalKey && !keyLoading && !authLoading;
+  // Usar useMemo para evitar recálculos desnecessários
+  const isKeyConfigured = useMemo(() => {
+    return user && hasValidGlobalKey && !keyLoading && !authLoading;
+  }, [user, hasValidGlobalKey, keyLoading, authLoading]);
 
   return {
     validateChatRequest,
