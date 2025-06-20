@@ -14,23 +14,34 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (authLoading) return;
 
+    let isMounted = true;
+
     const fetchApiKey = async () => {
       try {
-        console.log('🔑 Buscando chave API global...');
         const isConnected = await checkSupabaseConnection();
-        if (isConnected) {
+        if (isConnected && isMounted) {
           const apiKey = await fetchGlobalApiKeyFromDb();
-          setGlobalApiKey(apiKey);
+          if (isMounted) {
+            setGlobalApiKey(apiKey);
+          }
         }
       } catch (error) {
         console.error('Erro ao buscar chave API:', error);
-        setGlobalApiKey(null);
+        if (isMounted) {
+          setGlobalApiKey(null);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchApiKey();
+
+    return () => {
+      isMounted = false;
+    };
   }, [authLoading]);
 
   const saveGlobalApiKey = async (key: string): Promise<boolean> => {
