@@ -16,18 +16,7 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
 }) => {
   const { isAdmin, loading: authLoading } = useAuth();
   const { hasValidGlobalKey, refreshGlobalApiKey, loading: globalLoading } = useGlobalApiKey();
-  const { hasValidApiKey, isLoading: settingsLoading, apiKey } = useUserSettings();
-
-  console.log('🔑 OpenAIKeyInput: Estado atual:', {
-    hasValidGlobalKey,
-    hasValidUserKey: hasValidApiKey(),
-    isAdmin,
-    authLoading,
-    globalLoading,
-    settingsLoading,
-    forceOpen,
-    hasApiKey: !!apiKey
-  });
+  const { hasValidApiKey, isLoading: settingsLoading } = useUserSettings();
 
   // Se ainda está carregando, mostrar indicador
   if (authLoading || globalLoading || settingsLoading) {
@@ -35,7 +24,7 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
       <Alert className="mb-4">
         <RefreshCw className="h-4 w-4 animate-spin" />
         <AlertDescription>
-          Carregando configurações da chave API...
+          Verificando configurações da chave API...
         </AlertDescription>
       </Alert>
     );
@@ -50,7 +39,7 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
       <Alert className="mb-4">
         <CheckCircle className="h-4 w-4 text-green-500" />
         <AlertDescription>
-          <strong>Chave API OpenAI configurada com sucesso!</strong><br />
+          <strong>✅ Chave API OpenAI configurada com sucesso!</strong><br />
           O sistema está pronto para uso com IA.
         </AlertDescription>
       </Alert>
@@ -60,11 +49,11 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
   // Se não há chave configurada, mostrar aviso mas PERMITIR uso
   if (!hasAnyValidKey) {
     return (
-      <Alert variant="warning" className="mb-4">
-        <AlertCircle className="h-4 w-4" />
+      <Alert variant="default" className="mb-4 border-amber-200 bg-amber-50">
+        <AlertCircle className="h-4 w-4 text-amber-600" />
         <AlertDescription className="flex items-center justify-between">
           <div>
-            <strong>Sistema funcionando sem chave OpenAI configurada.</strong><br />
+            <strong>⚠️ Sistema funcionando sem chave OpenAI configurada.</strong><br />
             {isAdmin ? (
               <>
                 Como administrador, você pode configurar a chave API OpenAI global nas 

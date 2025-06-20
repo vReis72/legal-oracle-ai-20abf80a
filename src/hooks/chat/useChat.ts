@@ -34,11 +34,9 @@ export const useChat = () => {
     e.preventDefault();
     if (!input.trim()) return;
     
-    console.log('💬 useChat: Enviando mensagem com chave:', apiKey ? '***' + apiKey.slice(-4) : 'NENHUMA');
-    
     // Permite envio mesmo sem chave API configurada
     if (!apiKey) {
-      console.log('💬 useChat: Tentando enviar sem chave API');
+      console.log('💬 useChat: Enviando mensagem sem chave API - sistema funcionará com limitações');
     }
     
     const messageContent = input.trim();
@@ -81,11 +79,20 @@ export const useChat = () => {
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       console.error('💬 useChat: Erro ao enviar mensagem:', errorMessage);
       
-      toast({
-        variant: "destructive",
-        title: "Erro no Chat",
-        description: errorMessage,
-      });
+      // Se não há chave API, mostra erro mais amigável
+      if (!apiKey) {
+        toast({
+          variant: "destructive",
+          title: "Chave API não configurada",
+          description: "Para usar o chat com IA, é necessário configurar uma chave API OpenAI. Entre em contato com o administrador.",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Erro no Chat",
+          description: errorMessage,
+        });
+      }
     } finally {
       setIsLoading(false);
     }

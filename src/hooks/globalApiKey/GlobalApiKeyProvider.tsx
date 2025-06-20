@@ -2,6 +2,7 @@
 import { useState, ReactNode, useEffect } from 'react';
 import { GlobalApiKeyContext } from './GlobalApiKeyContext';
 import { fetchGlobalApiKeyFromDb, saveGlobalApiKeyToDb } from './globalApiKeyService';
+import { SettingsValidation } from '@/hooks/userSettings/settingsValidation';
 
 export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   const [globalApiKey, setGlobalApiKey] = useState<string | null>(null);
@@ -59,20 +60,10 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Usar a validação centralizada
   const hasValidGlobalKey = Boolean(
-    globalApiKey && 
-    globalApiKey.trim() !== '' && 
-    globalApiKey.startsWith('sk-') && 
-    globalApiKey.length > 20 &&
-    globalApiKey !== 'sk-adicione-uma-chave-valida-aqui'
+    globalApiKey && SettingsValidation.hasValidApiKey(globalApiKey)
   );
-
-  console.log('🔑 GlobalApiKeyProvider: Estado atual:', {
-    hasValidGlobalKey,
-    loading,
-    hasKey: !!globalApiKey,
-    keyPreview: globalApiKey ? '***' + globalApiKey.slice(-4) : null
-  });
 
   return (
     <GlobalApiKeyContext.Provider value={{
