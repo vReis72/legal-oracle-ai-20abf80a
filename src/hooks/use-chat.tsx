@@ -91,11 +91,14 @@ export const useChat = () => {
     
     console.log('✅ Todas as validações passaram, preparando mensagem do usuário');
     
+    // Capturar o input antes de limpar
+    const messageContent = input.trim();
+    
     // Add user message
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
-      content: input,
+      content: messageContent,
       timestamp: new Date()
     };
     
@@ -106,7 +109,7 @@ export const useChat = () => {
       console.log('📚 Total de mensagens após adicionar usuário:', newMessages.length);
       return newMessages;
     });
-    setInput('');
+    setInput(''); // Limpar o input imediatamente
     setIsLoading(true);
     setError(null);
     

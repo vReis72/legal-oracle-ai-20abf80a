@@ -8,9 +8,15 @@ import { useGlobalApiKey } from '@/hooks/useGlobalApiKey';
 import ChatHeader from './ChatHeader';
 
 const ChatInterface = () => {
-  const [input, setInput] = useState('');
-  const { hasValidGlobalKey, loading: loadingApiKey } = useGlobalApiKey();
-  const { handleSendMessage, isLoading, messages } = useChat();
+  const { 
+    messages, 
+    input, 
+    setInput, 
+    handleSendMessage, 
+    isLoading, 
+    isKeyConfigured 
+  } = useChat();
+  const { loading: loadingApiKey } = useGlobalApiKey();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -20,31 +26,6 @@ const ChatInterface = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
-  const onSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading || !hasValidGlobalKey) return;
-
-    const userMessage = input.trim();
-    setInput('');
-    
-    // Create a synthetic event for handleSendMessage
-    const syntheticEvent = {
-      ...e,
-      target: {
-        ...e.target,
-        elements: {
-          messageInput: { value: userMessage }
-        }
-      }
-    } as React.FormEvent;
-    
-    try {
-      await handleSendMessage(syntheticEvent);
-    } catch (error) {
-      console.error('Erro ao enviar mensagem:', error);
-    }
-  };
 
   if (loadingApiKey) {
     return (
@@ -74,9 +55,9 @@ const ChatInterface = () => {
       <ChatInputForm
         input={input}
         setInput={setInput}
-        handleSendMessage={onSendMessage}
+        handleSendMessage={handleSendMessage}
         isLoading={isLoading}
-        isKeyConfigured={hasValidGlobalKey}
+        isKeyConfigured={isKeyConfigured}
       />
     </Card>
   );
