@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { UserSettingsService } from '@/services/userSettingsService';
 import { LocalUserSettingsService } from '@/services/localUserSettingsService';
 import { UserSettings, UserSettingsUpdate } from '@/types/userSettings';
@@ -14,13 +14,20 @@ export const useUserSettings = () => {
   const { toast } = useToast();
   const { setTheme, theme: currentTheme } = useTheme();
   const { user, profile } = useAuth();
-
+  
+  // Use ref to prevent infinite loops
+  const loadedRef = useRef(false);
+  
   // Use user ID from auth context when available, fallback to temp ID
   const userId = user?.id || 'temp-user-001';
 
   const loadSettings = async () => {
+    if (loadedRef.current) return;
+    
     setIsLoading(true);
     try {
+      console.log('🔄 useUserSettings: Carregando configurações para:', userId);
+      
       // Tenta carregar do Supabase primeiro
       let userSettings = await UserSettingsService.getUserSettings(userId);
       
@@ -30,6 +37,7 @@ export const useUserSettings = () => {
       }
       
       setSettings(userSettings);
+      loadedRef.current = true;
 
       // Aplica o tema salvo apenas se for diferente do atual
       if (userSettings?.theme && userSettings.theme !== currentTheme) {
@@ -49,8 +57,15 @@ export const useUserSettings = () => {
   };
 
   useEffect(() => {
-    loadSettings();
-  }, [userId]);
+    if (!loadedRef.current) {
+      loadSettings();
+    }
+  }, [userId]); // Only depend on userId
+
+  // Reset loaded ref when user changes
+  useEffect(() => {
+    loadedRef.current = false;
+  }, [user?.id]);
 
   // Função para sincronizar dados com a tabela profiles
   const syncWithProfile = async (settingsData: Partial<UserSettingsUpdate>): Promise<boolean> => {
@@ -143,7 +158,9 @@ export const useUserSettings = () => {
       }
       
       if (success) {
-        await loadSettings(); // Recarrega as configurações
+        // Recarrega as configurações
+        loadedRef.current = false;
+        await loadSettings();
         return true;
       } else {
         toast({
@@ -202,6 +219,11 @@ export const useUserSettings = () => {
     return settings?.contact_email || user?.email || '';
   };
 
+  const reloadSettings = async () => {
+    loadedRef.current = false;
+    await loadSettings();
+  };
+
   return {
     settings,
     isLoading,
@@ -218,6 +240,6 @@ export const useUserSettings = () => {
     updateCompanyInfo,
     updateUserInfo,
     hasValidApiKey,
-    reloadSettings: loadSettings
+    reloadSettings
   };
 };
