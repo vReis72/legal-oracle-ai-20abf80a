@@ -9,34 +9,32 @@ import { validateApiKey, handleApiError } from './types';
  * @returns Analyzed content from OpenAI
  */
 export const analyzeWithOpenAI = async (text: string, apiKey: string): Promise<string> => {
+  console.log('🔬 OpenAI DocumentAnalysis: Iniciando análise');
+  console.log('🔑 OpenAI DocumentAnalysis: Chave API:', apiKey ? `${apiKey.substring(0, 10)}...${apiKey.slice(-4)}` : 'NENHUMA');
+  console.log('📄 OpenAI DocumentAnalysis: Tamanho do texto:', text.length);
+  
   validateApiKey(apiKey);
   
   if (!text || text.trim().length === 0) {
+    console.error('❌ OpenAI DocumentAnalysis: Texto vazio fornecido');
     throw new Error("Nenhum texto fornecido para análise.");
   }
 
   if (text.trim().length < 50) {
+    console.error('❌ OpenAI DocumentAnalysis: Texto muito curto');
     throw new Error("Texto fornecido é muito curto para análise significativa (menos de 50 caracteres).");
   }
 
-  console.log(`Enviando conteúdo para análise OpenAI (${text.length} caracteres)...`);
-  console.log("Primeiros 200 caracteres do texto enviado para análise:", text.substring(0, 200));
+  console.log('📤 OpenAI DocumentAnalysis: Preparando requisição para análise');
+  console.log('📝 OpenAI DocumentAnalysis: Primeiros 200 caracteres:', text.substring(0, 200));
   
-  try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'OpenAI-Beta': 'assistants=v1'
-      },
-      body: JSON.stringify({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: 'system',
-            content: `Você é um especialista em análise de documentos jurídicos brasileiros com vasta experiência em várias áreas do direito.
-            
+  const requestBody = {
+    model: "gpt-4o-mini",
+    messages: [
+      {
+        role: 'system',
+        content: `Você é um especialista em análise de documentos jurídicos brasileiros com vasta experiência em várias áreas do direito.
+        
 Sua tarefa é analisar com precisão APENAS o texto jurídico fornecido, sem adicionar informações externas ou fazer suposições que não estejam explicitamente presentes no documento.
 
 DIRETRIZES IMPORTANTES:
@@ -47,10 +45,10 @@ DIRETRIZES IMPORTANTES:
 - Identifique com precisão dispositivos legais, prazos, partes envolvidas e argumentos centrais do documento.
 - Quando houver citação de legislação, destaque os artigos e leis mencionados.
 - Seja técnico e jurídico na sua linguagem, mas mantenha clareza.`
-          },
-          {
-            role: 'user',
-            content: `Leia atentamente o texto a seguir, que foi extraído de um documento jurídico. Sua tarefa é:
+      },
+      {
+        role: 'user',
+        content: `Leia atentamente o texto a seguir, que foi extraído de um documento jurídico. Sua tarefa é:
 
 1. Gerar um resumo técnico e objetivo do conteúdo do documento, indicando de forma clara o que foi tratado.
 2. Listar os pontos-chave abordados no texto, especialmente aqueles que merecem atenção detalhada (ex.: dispositivos legais citados, decisões importantes, argumentos centrais, prazos, valores, partes envolvidas, etc.).
@@ -74,43 +72,91 @@ Estruture sua resposta com os seguintes títulos:
 **Conclusão/Parecer:**
 
 [escreva aqui]`
-          }
-        ],
-        temperature: 0.0,
-        max_tokens: 3000
-      }),
+      }
+    ],
+    temperature: 0.0,
+    max_tokens: 3000
+  };
+
+  console.log('📤 OpenAI DocumentAnalysis: Enviando requisição:', {
+    model: requestBody.model,
+    messageCount: requestBody.messages.length,
+    maxTokens: requestBody.max_tokens,
+    temperature: requestBody.temperature,
+    textLength: text.length
+  });
+  
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'OpenAI-Beta': 'assistants=v1'
+      },
+      body: JSON.stringify(requestBody),
     });
+
+    console.log('📥 OpenAI DocumentAnalysis: Status da resposta:', response.status);
+    console.log('📥 OpenAI DocumentAnalysis: Headers da resposta:', Object.fromEntries(response.headers.entries()));
 
     // Check for network errors
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ OpenAI DocumentAnalysis: Erro na resposta:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      });
       await handleApiError(response);
     }
 
-    const data = await response.json();
+    const responseText = await response.text();
+    console.log('📦 OpenAI DocumentAnalysis: Resposta bruta recebida (primeiros 200 chars):', responseText.substring(0, 200));
+
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('❌ OpenAI DocumentAnalysis: Erro ao fazer parse da resposta:', parseError);
+      console.error('❌ OpenAI DocumentAnalysis: Resposta que causou erro:', responseText);
+      throw new Error('Resposta inválida da API OpenAI - não é JSON válido');
+    }
+    
+    console.log('📊 OpenAI DocumentAnalysis: Dados da resposta:', {
+      hasChoices: !!data.choices,
+      choicesLength: data.choices?.length,
+      hasFirstChoice: !!data.choices?.[0],
+      hasMessage: !!data.choices?.[0]?.message,
+      hasContent: !!data.choices?.[0]?.message?.content,
+      usage: data.usage
+    });
     
     if (!data || !data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
-      console.error("Estrutura de resposta inválida:", data);
+      console.error('❌ OpenAI DocumentAnalysis: Estrutura de resposta inválida:', data);
       throw new Error("Resposta da API com estrutura inválida");
     }
     
     const content = data.choices[0]?.message?.content;
     
     if (!content) {
+      console.error('❌ OpenAI DocumentAnalysis: Conteúdo vazio na resposta:', data.choices[0]);
       throw new Error("Resposta vazia da API");
     }
     
-    console.log("Resposta da API OpenAI recebida com sucesso");
-    console.log("Amostra do conteúdo recebido:", content.substring(0, 150) + "...");
-    console.log("Total de caracteres na resposta:", content.length);
+    console.log('✅ OpenAI DocumentAnalysis: Análise concluída com sucesso');
+    console.log('📝 OpenAI DocumentAnalysis: Conteúdo da resposta (primeiros 150 chars):', content.substring(0, 150));
+    console.log('📈 OpenAI DocumentAnalysis: Tokens usados:', data.usage);
     
     return content;
   } catch (error) {
-    console.error("Falha na chamada da API OpenAI:", error);
+    console.error('💥 OpenAI DocumentAnalysis: Falha na chamada da API:', error);
     
     // Enhance error context
     if (error instanceof Error) {
       // Network-related errors
       if (error.message.includes('Failed to fetch') || error.message.includes('Network')) {
+        console.error('🌐 OpenAI DocumentAnalysis: Erro de rede detectado');
         throw new Error("Falha de conexão com a API OpenAI. Verifique sua conexão de internet.");
       }
       throw error;
