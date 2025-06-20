@@ -1,59 +1,45 @@
 
 import { useState, ReactNode, useEffect } from 'react';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
 import { GlobalApiKeyContext } from './GlobalApiKeyContext';
-import { checkSupabaseConnection, fetchGlobalApiKeyFromDb, saveGlobalApiKeyToDb } from './globalApiKeyService';
+import { fetchGlobalApiKeyFromDb, saveGlobalApiKeyToDb } from './globalApiKeyService';
 
 export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   const [globalApiKey, setGlobalApiKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-  const { user, loading: authLoading } = useAuth();
 
+  // Buscar a chave apenas uma vez na inicialização
   useEffect(() => {
-    if (authLoading) return;
-
-    let isMounted = true;
-
-    const fetchApiKey = async () => {
+    let mounted = true;
+    
+    const loadApiKey = async () => {
       try {
-        const isConnected = await checkSupabaseConnection();
-        if (isConnected && isMounted) {
-          const apiKey = await fetchGlobalApiKeyFromDb();
-          if (isMounted) {
-            setGlobalApiKey(apiKey);
-          }
+        const apiKey = await fetchGlobalApiKeyFromDb();
+        if (mounted) {
+          setGlobalApiKey(apiKey);
+          setLoading(false);
         }
       } catch (error) {
-        console.error('Erro ao buscar chave API:', error);
-        if (isMounted) {
+        console.error('Erro ao carregar chave API:', error);
+        if (mounted) {
           setGlobalApiKey(null);
-        }
-      } finally {
-        if (isMounted) {
           setLoading(false);
         }
       }
     };
 
-    fetchApiKey();
+    loadApiKey();
 
     return () => {
-      isMounted = false;
+      mounted = false;
     };
-  }, [authLoading]);
+  }, []); // Array vazio - executa apenas uma vez
 
   const saveGlobalApiKey = async (key: string): Promise<boolean> => {
     try {
-      if (!user) return false;
-      const success = await saveGlobalApiKeyToDb(key, user.id);
+      // Para este exemplo, vamos assumir que sempre temos um user ID válido
+      const success = await saveGlobalApiKeyToDb(key, 'system');
       if (success) {
         setGlobalApiKey(key);
-        toast({
-          title: "Sucesso",
-          description: "Chave API OpenAI salva com sucesso!",
-        });
       }
       return success;
     } catch (error) {

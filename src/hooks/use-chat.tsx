@@ -2,8 +2,6 @@
 import { useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { sendChatMessage } from '@/services/chatService';
-import { useAuth } from '@/hooks/useAuth';
-import { useGlobalApiKey } from '@/hooks/useGlobalApiKey';
 
 interface ChatMessage {
   id: string;
@@ -25,8 +23,6 @@ export const useChat = () => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const { user } = useAuth();
-  const { globalApiKey, hasValidGlobalKey } = useGlobalApiKey();
 
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
@@ -34,26 +30,15 @@ export const useChat = () => {
     }
   };
 
-  const isKeyConfigured = Boolean(user && hasValidGlobalKey && globalApiKey);
-
-  const handleSendMessage = async (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent, apiKey?: string) => {
     e.preventDefault();
     if (!input.trim()) return;
     
-    if (!user) {
-      toast({
-        variant: "destructive",
-        title: "Acesso negado",
-        description: "Você precisa estar logado para usar o chat.",
-      });
-      return;
-    }
-    
-    if (!hasValidGlobalKey || !globalApiKey) {
+    if (!apiKey) {
       toast({
         variant: "destructive",
         title: "Sistema não configurado",
-        description: "A chave API OpenAI não foi configurada pelo administrador.",
+        description: "A chave API OpenAI não foi configurada.",
       });
       return;
     }
@@ -83,7 +68,7 @@ export const useChat = () => {
         userMessage
       ];
       
-      const assistantResponse = await sendChatMessage(conversationHistory, globalApiKey);
+      const assistantResponse = await sendChatMessage(conversationHistory, apiKey);
       
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
@@ -112,7 +97,6 @@ export const useChat = () => {
     setInput,
     isLoading,
     messagesEndRef,
-    handleSendMessage,
-    isKeyConfigured
+    handleSendMessage
   };
 };

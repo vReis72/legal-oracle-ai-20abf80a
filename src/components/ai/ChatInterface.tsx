@@ -8,14 +8,13 @@ import { useGlobalApiKey } from '@/hooks/useGlobalApiKey';
 import ChatHeader from './ChatHeader';
 
 const ChatInterface = () => {
-  const { loading: loadingApiKey } = useGlobalApiKey();
+  const { loading: loadingApiKey, globalApiKey, hasValidGlobalKey } = useGlobalApiKey();
   const { 
     messages, 
     input, 
     setInput, 
     handleSendMessage, 
-    isLoading, 
-    isKeyConfigured,
+    isLoading,
     messagesEndRef
   } = useChat();
 
@@ -29,6 +28,10 @@ const ChatInterface = () => {
       </Card>
     );
   }
+
+  const onSendMessage = (e: React.FormEvent) => {
+    handleSendMessage(e, globalApiKey || undefined);
+  };
 
   return (
     <Card className="w-full max-w-4xl mx-auto h-[500px] md:h-[600px] flex flex-col">
@@ -47,9 +50,9 @@ const ChatInterface = () => {
       <ChatInputForm
         input={input}
         setInput={setInput}
-        handleSendMessage={handleSendMessage}
+        handleSendMessage={onSendMessage}
         isLoading={isLoading}
-        isKeyConfigured={isKeyConfigured}
+        isKeyConfigured={hasValidGlobalKey}
       />
     </Card>
   );
