@@ -2,7 +2,7 @@
 import React from 'react';
 import { User, Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ChatMessage as ChatMessageType } from '@/services/chatService';
+import { ChatMessage as ChatMessageType } from '@/hooks/chat/types';
 
 interface ChatMessageProps {
   message: ChatMessageType;
