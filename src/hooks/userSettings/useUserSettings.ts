@@ -91,11 +91,11 @@ export const useUserSettings = () => {
   }, [settings?.openai_api_key, globalApiKey, hasValidGlobalKey, globalLoading]);
 
   const hasValidApiKey = useCallback((): boolean => {
-    const effectiveKey = getEffectiveApiKey();
-    const isValid = !!effectiveKey && SettingsValidation.hasValidApiKey(effectiveKey);
+    const effectiveApiKey = getEffectiveApiKey();
+    const isValid = !!effectiveApiKey && SettingsValidation.hasValidApiKey(effectiveApiKey);
     
     console.log('🔑 useUserSettings: Validação final de chave:', {
-      effectiveKey: effectiveKey ? '***' + effectiveKey.slice(-4) : null,
+      effectiveKey: effectiveApiKey ? '***' + effectiveApiKey.slice(-4) : null,
       isValid
     });
     
@@ -120,7 +120,7 @@ export const useUserSettings = () => {
     hasSettings: !!settings,
     hasUserApiKey: !!settings?.openai_api_key,
     hasGlobalApiKey: !!globalApiKey,
-    effectiveApiKey: effectiveKey ? '***' + effectiveApiKey.slice(-4) : null,
+    effectiveApiKey: effectiveApiKey ? '***' + effectiveApiKey.slice(-4) : null,
     hasValidKey: hasValidApiKey(),
     userName: getUserName(),
     userEmail: getUserEmail()
