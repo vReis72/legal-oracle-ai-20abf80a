@@ -30,14 +30,16 @@ const ChatInterface = () => {
       <Card className="w-full max-w-4xl mx-auto h-[500px] md:h-[600px] flex items-center justify-center">
         <div className="flex items-center gap-2">
           <div className="h-4 w-4 animate-spin rounded-full border-2 border-eco-primary border-r-transparent" />
-          Carregando...
+          Carregando configurações...
         </div>
       </Card>
     );
   }
 
   const onSendMessage = async (e: React.FormEvent) => {
-    await handleSendMessage(e, apiKey || undefined);
+    const effectiveApiKey = apiKey || undefined;
+    console.log('💬 ChatInterface: Enviando mensagem com chave:', effectiveApiKey ? '***' + effectiveApiKey.slice(-4) : 'NENHUMA');
+    await handleSendMessage(e, effectiveApiKey);
   };
 
   return (

@@ -6,25 +6,29 @@ import { fetchGlobalApiKeyFromDb, saveGlobalApiKeyToDb } from './globalApiKeySer
 export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   const [globalApiKey, setGlobalApiKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   // Buscar a chave apenas uma vez na inicialização
   useEffect(() => {
+    if (hasLoaded) return;
+
     const loadApiKey = async () => {
       try {
         console.log('🔑 GlobalApiKeyProvider: Carregando chave...');
         const apiKey = await fetchGlobalApiKeyFromDb();
         setGlobalApiKey(apiKey);
-        console.log('🔑 GlobalApiKeyProvider: Chave carregada:', apiKey ? 'SIM' : 'NÃO');
+        console.log('🔑 GlobalApiKeyProvider: Chave carregada:', apiKey ? 'SIM (***' + apiKey.slice(-4) + ')' : 'NÃO');
       } catch (error) {
-        console.error('❌ Erro ao carregar chave API:', error);
+        console.error('❌ GlobalApiKeyProvider: Erro ao carregar chave API:', error);
         setGlobalApiKey(null);
       } finally {
         setLoading(false);
+        setHasLoaded(true);
       }
     };
 
     loadApiKey();
-  }, []); // Executa apenas uma vez
+  }, [hasLoaded]);
 
   const saveGlobalApiKey = async (key: string): Promise<boolean> => {
     try {
@@ -36,7 +40,7 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
       }
       return success;
     } catch (error) {
-      console.error('❌ Erro ao salvar chave:', error);
+      console.error('❌ GlobalApiKeyProvider: Erro ao salvar chave:', error);
       return false;
     }
   };
@@ -47,8 +51,9 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
     try {
       const apiKey = await fetchGlobalApiKeyFromDb();
       setGlobalApiKey(apiKey);
+      console.log('🔄 GlobalApiKeyProvider: Chave atualizada:', apiKey ? 'SIM' : 'NÃO');
     } catch (error) {
-      console.error('❌ Erro ao atualizar chave:', error);
+      console.error('❌ GlobalApiKeyProvider: Erro ao atualizar chave:', error);
     } finally {
       setLoading(false);
     }
@@ -58,13 +63,15 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
     globalApiKey && 
     globalApiKey.trim() !== '' && 
     globalApiKey.startsWith('sk-') && 
-    globalApiKey.length > 20
+    globalApiKey.length > 20 &&
+    globalApiKey !== 'sk-adicione-uma-chave-valida-aqui'
   );
 
   console.log('🔑 GlobalApiKeyProvider: Estado atual:', {
     hasValidGlobalKey,
     loading,
-    hasKey: !!globalApiKey
+    hasKey: !!globalApiKey,
+    keyPreview: globalApiKey ? '***' + globalApiKey.slice(-4) : null
   });
 
   return (

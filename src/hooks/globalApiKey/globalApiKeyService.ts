@@ -21,6 +21,13 @@ export const fetchGlobalApiKeyFromDb = async (): Promise<string | null> => {
   console.log('🔑 Buscando chave global do banco...');
   
   try {
+    // Primeiro testa a conexão
+    const isConnected = await checkSupabaseConnection();
+    if (!isConnected) {
+      console.log('❌ Supabase não está acessível, retornando null');
+      return null;
+    }
+
     const { data, error } = await supabase
       .from('system_settings')
       .select('openai_api_key')
@@ -48,6 +55,12 @@ export const saveGlobalApiKeyToDb = async (key: string, userId: string): Promise
   console.log('💾 Salvando chave global...');
   
   try {
+    // Validação básica da chave
+    if (!key || !key.startsWith('sk-') || key.length < 20) {
+      console.error('❌ Chave inválida fornecida');
+      return false;
+    }
+
     // Verificar se já existe configuração
     const { data: existing } = await supabase
       .from('system_settings')
