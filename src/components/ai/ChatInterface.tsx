@@ -4,11 +4,11 @@ import ChatMessage from './ChatMessage';
 import ChatInputForm from './ChatInputForm';
 import { useChat } from '@/hooks/chat/useChat';
 import { Card } from "@/components/ui/card";
-import { useGlobalApiKey } from '@/hooks/globalApiKey/GlobalApiKeyContext';
+import { useUserSettings } from '@/hooks/userSettings';
 import ChatHeader from './ChatHeader';
 
 const ChatInterface = () => {
-  const { loading: loadingApiKey, globalApiKey, hasValidGlobalKey } = useGlobalApiKey();
+  const { isLoading: settingsLoading, hasValidApiKey, apiKey } = useUserSettings();
   const { 
     messages, 
     input, 
@@ -18,7 +18,14 @@ const ChatInterface = () => {
     messagesEndRef
   } = useChat();
 
-  if (loadingApiKey) {
+  console.log('💬 ChatInterface: Estado atual:', {
+    settingsLoading,
+    hasValidKey: hasValidApiKey(),
+    hasApiKey: !!apiKey,
+    apiKeyPreview: apiKey ? '***' + apiKey.slice(-4) : null
+  });
+
+  if (settingsLoading) {
     return (
       <Card className="w-full max-w-4xl mx-auto h-[500px] md:h-[600px] flex items-center justify-center">
         <div className="flex items-center gap-2">
@@ -30,7 +37,7 @@ const ChatInterface = () => {
   }
 
   const onSendMessage = async (e: React.FormEvent) => {
-    await handleSendMessage(e, globalApiKey || undefined);
+    await handleSendMessage(e, apiKey || undefined);
   };
 
   return (
@@ -52,7 +59,7 @@ const ChatInterface = () => {
         setInput={setInput}
         handleSendMessage={onSendMessage}
         isLoading={isLoading}
-        isKeyConfigured={hasValidGlobalKey}
+        isKeyConfigured={hasValidApiKey()}
       />
     </Card>
   );

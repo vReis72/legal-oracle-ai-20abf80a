@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { UserSettingsUpdate } from '@/types/userSettings';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/providers/ThemeProvider';
+import { useGlobalApiKey } from '@/hooks/globalApiKey/GlobalApiKeyContext';
 import { useSettingsLoader } from './useSettingsLoader';
 import { useSettingsSaver } from './useSettingsSaver';
 import { SettingsValidation } from './settingsValidation';
@@ -10,6 +11,7 @@ import { SettingsValidation } from './settingsValidation';
 export const useUserSettings = () => {
   const { user, profile } = useAuth();
   const { theme: currentTheme } = useTheme();
+  const { globalApiKey, hasValidGlobalKey } = useGlobalApiKey();
   
   // Use user ID from auth context when available, fallback to temp ID
   const userId = user?.id || 'temp-user-001';
@@ -57,8 +59,37 @@ export const useUserSettings = () => {
     return saveSettings({ user_name: userName, user_oab: userOab });
   };
 
+  // Determina a chave API a ser usada (prioridade: usuário > global)
+  const getEffectiveApiKey = (): string | null => {
+    const userApiKey = settings?.openai_api_key;
+    console.log('🔑 useUserSettings: Determinando chave efetiva:', {
+      hasUserKey: !!userApiKey,
+      hasGlobalKey: !!globalApiKey,
+      userKeyValid: SettingsValidation.hasValidApiKey(userApiKey),
+      globalKeyValid: hasValidGlobalKey
+    });
+    
+    // Se o usuário tem uma chave válida, use ela
+    if (SettingsValidation.hasValidApiKey(userApiKey)) {
+      return userApiKey!;
+    }
+    
+    // Caso contrário, use a chave global se válida
+    if (hasValidGlobalKey && globalApiKey) {
+      return globalApiKey;
+    }
+    
+    return null;
+  };
+
   const hasValidApiKey = (): boolean => {
-    return SettingsValidation.hasValidApiKey(settings?.openai_api_key);
+    const effectiveKey = getEffectiveApiKey();
+    const isValid = SettingsValidation.hasValidApiKey(effectiveKey);
+    console.log('🔑 useUserSettings: Validação de chave:', {
+      effectiveKey: effectiveKey ? '***' + effectiveKey.slice(-4) : null,
+      isValid
+    });
+    return isValid;
   };
 
   const getUserName = (): string => {
@@ -69,11 +100,17 @@ export const useUserSettings = () => {
     return SettingsValidation.getUserEmail(settings, user);
   };
 
+  const effectiveApiKey = getEffectiveApiKey();
+
   console.log('🔄 useUserSettings: Estado atual:', {
     userId,
     isAuthenticated,
     isLoading,
     hasSettings: !!settings,
+    hasUserApiKey: !!settings?.openai_api_key,
+    hasGlobalApiKey: !!globalApiKey,
+    effectiveApiKey: effectiveApiKey ? '***' + effectiveApiKey.slice(-4) : null,
+    hasValidKey: hasValidApiKey(),
     userName: getUserName(),
     userEmail: getUserEmail()
   });
@@ -81,7 +118,7 @@ export const useUserSettings = () => {
   return {
     settings,
     isLoading,
-    apiKey: settings?.openai_api_key || null,
+    apiKey: effectiveApiKey,
     theme: settings?.theme || currentTheme,
     companyName: settings?.company_name || '',
     userName: getUserName(),
