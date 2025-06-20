@@ -1,10 +1,4 @@
-
-export interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  timestamp: Date;
-}
+import { ChatMessage } from '@/hooks/chat/types';
 
 export const sendChatMessage = async (messages: ChatMessage[], globalApiKey: string): Promise<string> => {
   console.log('🚀 ChatService: Iniciando envio para OpenAI');
