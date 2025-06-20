@@ -20,6 +20,8 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
   isLoading,
   isKeyConfigured
 }) => {
+  console.log('💬 ChatInputForm: Estado da chave:', { isKeyConfigured });
+
   return (
     <form onSubmit={handleSendMessage} className="p-3 md:p-4 border-t bg-background">
       <div className="flex gap-2 items-end">
@@ -29,7 +31,7 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
             onChange={(e) => setInput(e.target.value)}
             placeholder={
               isKeyConfigured 
-                ? "Digite sua dúvida sobre Direito e clique no ícone de envio ao lado..."
+                ? "Digite sua dúvida sobre Direito..."
                 : "Sistema desabilitado - aguarde configuração da chave API"
             }
             className="resize-none text-sm md:text-base"
@@ -41,7 +43,7 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
           type="submit" 
           variant="ghost"
           disabled={isLoading || !input.trim() || !isKeyConfigured} 
-          className="p-2 hover:bg-transparent flex-shrink-0 transition-all duration-300"
+          className="p-2 hover:bg-transparent flex-shrink-0"
         >
           <Send 
             className={`h-8 w-8 md:h-12 md:w-12 ${
@@ -58,8 +60,7 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
         <Alert variant="destructive" className="mt-2">
           <AlertTriangle className="h-4 w-4 md:h-5 md:w-5" />
           <AlertDescription className="text-sm">
-            ❌ Sistema desabilitado. Nenhuma chave API encontrada na tabela system_settings. 
-            Entre em contato com o administrador para configurar uma chave global.
+            ❌ Sistema desabilitado. Configure uma chave API na tabela system_settings.
           </AlertDescription>
         </Alert>
       )}

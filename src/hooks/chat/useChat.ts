@@ -34,13 +34,12 @@ export const useChat = () => {
     e.preventDefault();
     if (!input.trim()) return;
     
-    // Bloqueia se não há chave API
     if (!apiKey) {
-      console.log('❌ useChat: Bloqueando envio - sem chave API configurada');
+      console.log('❌ Sem chave API');
       toast({
         variant: "destructive",
         title: "Sistema desabilitado",
-        description: "Nenhuma chave API encontrada na tabela system_settings. Entre em contato com o administrador.",
+        description: "Configure uma chave API na tabela system_settings.",
       });
       return;
     }
@@ -63,14 +62,14 @@ export const useChat = () => {
         {
           id: 'system',
           role: 'system' as const,
-          content: 'Você é um assistente especializado em direito brasileiro. Forneça respostas precisas e concisas sobre legislação, jurisprudência e consultas relacionadas ao direito.',
+          content: 'Você é um assistente especializado em direito brasileiro.',
           timestamp: new Date()
         },
         ...messages.slice(-6),
         userMessage
       ];
       
-      console.log('💬 useChat: Enviando mensagem para OpenAI...');
+      console.log('💬 Enviando para OpenAI...');
       const assistantResponse = await sendChatMessage(conversationHistory, apiKey);
       
       const assistantMessage: ChatMessage = {
@@ -84,7 +83,7 @@ export const useChat = () => {
       setTimeout(scrollToBottom, 100);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-      console.error('💬 useChat: Erro ao enviar mensagem:', errorMessage);
+      console.error('💬 Erro:', errorMessage);
       
       toast({
         variant: "destructive",

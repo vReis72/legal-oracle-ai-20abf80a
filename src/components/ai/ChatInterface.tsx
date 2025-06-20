@@ -18,9 +18,9 @@ const ChatInterface = () => {
     messagesEndRef
   } = useChat();
 
-  console.log('💬 ChatInterface: Estado da chave global:', {
+  console.log('💬 ChatInterface: Estado:', {
     loading,
-    hasValidKey: hasValidGlobalKey,
+    hasValidGlobalKey,
     hasApiKey: !!globalApiKey
   });
 
@@ -29,20 +29,19 @@ const ChatInterface = () => {
       <Card className="w-full max-w-4xl mx-auto h-[500px] md:h-[600px] flex items-center justify-center">
         <div className="flex items-center gap-2">
           <div className="h-4 w-4 animate-spin rounded-full border-2 border-eco-primary border-r-transparent" />
-          Verificando configurações na tabela system_settings...
+          Verificando configurações...
         </div>
       </Card>
     );
   }
 
   const onSendMessage = async (e: React.FormEvent) => {
-    // Só permite envio se há chave válida na tabela system_settings
     if (!hasValidGlobalKey) {
-      console.log('❌ Tentativa de envio bloqueada - sem chave API válida');
+      console.log('❌ Bloqueado - sem chave API');
       return;
     }
     
-    console.log('💬 Enviando mensagem com chave da tabela system_settings');
+    console.log('💬 Enviando mensagem...');
     await handleSendMessage(e, globalApiKey || undefined);
   };
 
