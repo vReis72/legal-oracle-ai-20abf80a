@@ -9,38 +9,83 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   const [globalApiKey, setGlobalApiKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
 
-  const fetchGlobalApiKey = async () => {
+  const fetchGlobalApiKey = async (attempt = 1) => {
     try {
-      console.log('🚀 Iniciando busca da chave global...');
+      console.log(`🚀 [Tentativa ${attempt}] Iniciando busca da chave global...`);
+      console.log('🔐 Estado da autenticação:', { 
+        authLoading, 
+        hasUser: !!user, 
+        userEmail: user?.email 
+      });
       
       const isConnected = await checkSupabaseConnection();
       if (!isConnected) {
-        console.error('❌ Sem conexão com Supabase, cancelando busca da chave');
+        console.error('❌ Sem conexão com Supabase, tentando novamente em 2s...');
+        if (attempt < 3) {
+          setTimeout(() => fetchGlobalApiKey(attempt + 1), 2000);
+          return;
+        }
         setGlobalApiKey(null);
         return;
       }
 
       const apiKey = await fetchGlobalApiKeyFromDb();
-      console.log('📊 Resultado da busca:', apiKey ? 'CHAVE ENCONTRADA' : 'NENHUMA CHAVE');
+      console.log(`📊 [Tentativa ${attempt}] Resultado da busca:`, {
+        hasKey: !!apiKey,
+        keyLength: apiKey?.length,
+        keyPreview: apiKey ? `${apiKey.substring(0, 7)}...${apiKey.slice(-4)}` : 'NENHUMA'
+      });
+      
       setGlobalApiKey(apiKey);
+      setRetryCount(0);
     } catch (error) {
-      console.error('💥 Erro inesperado ao buscar chave global:', error);
+      console.error(`💥 [Tentativa ${attempt}] Erro ao buscar chave global:`, error);
+      
+      if (attempt < 3) {
+        console.log(`🔄 Tentando novamente em 2s... (tentativa ${attempt + 1}/3)`);
+        setTimeout(() => fetchGlobalApiKey(attempt + 1), 2000);
+        return;
+      }
+      
       setGlobalApiKey(null);
+      toast({
+        variant: "destructive",
+        title: "Erro ao carregar configurações",
+        description: "Não foi possível carregar a chave API global. Algumas funcionalidades podem estar limitadas.",
+      });
     } finally {
       setLoading(false);
       setInitialized(true);
     }
   };
 
-  // Buscar chave independente do estado de autenticação
+  // Aguardar autenticação completar antes de buscar chave
   useEffect(() => {
-    if (!initialized) {
+    console.log('🎯 GlobalApiKeyProvider: Effect triggered', {
+      authLoading,
+      initialized,
+      hasUser: !!user
+    });
+
+    // Só inicializar quando a autenticação estiver completa (não loading)
+    if (!authLoading && !initialized) {
+      console.log('✅ Autenticação completa, iniciando busca da chave...');
       fetchGlobalApiKey();
     }
-  }, [initialized]);
+  }, [authLoading, initialized]);
+
+  // Retry automático quando o usuário for carregado (caso inicial tenha falhado)
+  useEffect(() => {
+    if (user && !globalApiKey && retryCount < 2 && initialized) {
+      console.log('🔄 Usuário carregado, tentando buscar chave novamente...');
+      setRetryCount(prev => prev + 1);
+      setTimeout(() => fetchGlobalApiKey(), 1000);
+    }
+  }, [user, globalApiKey, retryCount, initialized]);
 
   const saveGlobalApiKey = async (key: string): Promise<boolean> => {
     try {
@@ -54,6 +99,11 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
 
+      console.log('💾 Salvando chave global...', {
+        userEmail: user.email,
+        keyLength: key.length
+      });
+
       const success = await saveGlobalApiKeyToDb(key, user.id);
       
       if (!success) {
@@ -66,6 +116,7 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
       }
 
       setGlobalApiKey(key);
+      console.log('✅ Chave salva e estado atualizado');
       
       toast({
         title: "Sucesso",
@@ -84,8 +135,10 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const refreshGlobalApiKey = async () => {
+    console.log('🔄 Forçando refresh da chave global...');
     setInitialized(false);
     setLoading(true);
+    setRetryCount(0);
     await fetchGlobalApiKey();
   };
 
@@ -101,8 +154,10 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
     isValid: hasValidGlobalKey,
     loading,
     initialized,
+    authLoading,
     keyLength: globalApiKey?.length,
-    keyPreview: globalApiKey ? `${globalApiKey.substring(0, 7)}...${globalApiKey.slice(-4)}` : 'NENHUMA'
+    keyPreview: globalApiKey ? `${globalApiKey.substring(0, 7)}...${globalApiKey.slice(-4)}` : 'NENHUMA',
+    retryCount
   });
 
   return (

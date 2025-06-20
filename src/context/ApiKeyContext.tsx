@@ -14,13 +14,20 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   
-  // Apenas usar a chave global do admin
-  const { globalApiKey, hasValidGlobalKey } = useGlobalApiKey();
+  const { globalApiKey, hasValidGlobalKey, loading: globalLoading } = useGlobalApiKey();
 
   useEffect(() => {
-    // Simples: apenas esperar a chave global carregar
-    setIsLoading(false);
-  }, [globalApiKey]);
+    console.log('🔑 ApiKeyContext: Estado atualizado', {
+      globalLoading,
+      hasValidGlobalKey,
+      hasGlobalKey: !!globalApiKey
+    });
+
+    // Só parar de carregar quando o global key provider terminar
+    if (!globalLoading) {
+      setIsLoading(false);
+    }
+  }, [globalApiKey, hasValidGlobalKey, globalLoading]);
 
   // Funções simplificadas - apenas para admins
   const setApiKey = async (key: string) => {
@@ -40,16 +47,27 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   };
 
   const checkApiKey = (): boolean => {
-    return hasValidGlobalKey;
+    const result = hasValidGlobalKey;
+    console.log('🔍 ApiKeyContext.checkApiKey chamado:', {
+      result,
+      hasValidGlobalKey,
+      hasKey: !!globalApiKey
+    });
+    return result;
   };
 
   if (isLoading) {
+    console.log('⏳ ApiKeyContext ainda carregando...');
     return null;
   }
 
   const isKeyConfigured = hasValidGlobalKey;
   
-  console.log("Estado da API key:", isKeyConfigured ? "Configurada pelo admin" : "Não configurada");
+  console.log("🔑 ApiKeyContext: Estado final:", {
+    isKeyConfigured: isKeyConfigured ? "Configurada pelo admin" : "Não configurada",
+    hasValidGlobalKey,
+    globalApiKey: globalApiKey ? `${globalApiKey.substring(0, 7)}...` : 'null'
+  });
 
   return (
     <ApiKeyContext.Provider value={{ 
@@ -58,8 +76,8 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
       isKeyConfigured,
       checkApiKey,
       resetApiKey,
-      isPlaceholderKey: false, // Nunca é placeholder no novo sistema
-      isEnvironmentKey: hasValidGlobalKey // Se tem chave global, é "do ambiente"
+      isPlaceholderKey: false,
+      isEnvironmentKey: hasValidGlobalKey
     }}>
       {children}
     </ApiKeyContext.Provider>
