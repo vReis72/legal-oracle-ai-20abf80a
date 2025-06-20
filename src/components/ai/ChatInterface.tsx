@@ -29,8 +29,8 @@ const ChatInterface = () => {
     );
   }
 
-  const onSendMessage = (e: React.FormEvent) => {
-    handleSendMessage(e, globalApiKey || undefined);
+  const onSendMessage = async (e: React.FormEvent) => {
+    await handleSendMessage(e, globalApiKey || undefined);
   };
 
   return (
