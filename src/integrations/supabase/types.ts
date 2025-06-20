@@ -268,6 +268,45 @@ export type Database = {
           },
         ]
       }
+      user_settings: {
+        Row: {
+          company_name: string | null
+          contact_email: string | null
+          created_at: string | null
+          id: string
+          openai_api_key: string | null
+          theme: string | null
+          updated_at: string | null
+          user_id: string
+          user_name: string | null
+          user_oab: string | null
+        }
+        Insert: {
+          company_name?: string | null
+          contact_email?: string | null
+          created_at?: string | null
+          id?: string
+          openai_api_key?: string | null
+          theme?: string | null
+          updated_at?: string | null
+          user_id: string
+          user_name?: string | null
+          user_oab?: string | null
+        }
+        Update: {
+          company_name?: string | null
+          contact_email?: string | null
+          created_at?: string | null
+          id?: string
+          openai_api_key?: string | null
+          theme?: string | null
+          updated_at?: string | null
+          user_id?: string
+          user_name?: string | null
+          user_oab?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

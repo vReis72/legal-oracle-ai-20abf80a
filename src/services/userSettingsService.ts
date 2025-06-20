@@ -6,19 +6,13 @@ export class UserSettingsService {
   
   static async getUserSettings(userId: string): Promise<UserSettings | null> {
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('user_settings')
         .select('*')
         .eq('user_id', userId)
         .single();
 
       if (error) {
-        // Se a tabela não existir (código 42P01), retorna null silenciosamente
-        if (error.code === '42P01') {
-          console.log('Tabela user_settings não existe no Supabase, usando localStorage');
-          return null;
-        }
-        
         // Para outros erros, apenas loga
         if (error.code !== 'PGRST116') { // PGRST116 = no rows returned
           console.error('Erro ao buscar configurações do usuário:', error);
@@ -40,7 +34,7 @@ export class UserSettingsService {
       
       if (existing) {
         // Atualiza a configuração existente
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from('user_settings')
           .update({ 
             ...settings,
@@ -49,17 +43,12 @@ export class UserSettingsService {
           .eq('user_id', userId);
 
         if (error) {
-          // Se a tabela não existir, falha silenciosamente
-          if (error.code === '42P01') {
-            console.log('Tabela user_settings não existe, salvando apenas no localStorage');
-            return false;
-          }
           console.error('Erro ao atualizar configurações:', error);
           return false;
         }
       } else {
         // Cria nova configuração
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from('user_settings')
           .insert({
             user_id: userId,
@@ -67,11 +56,6 @@ export class UserSettingsService {
           });
 
         if (error) {
-          // Se a tabela não existir, falha silenciosamente
-          if (error.code === '42P01') {
-            console.log('Tabela user_settings não existe, salvando apenas no localStorage');
-            return false;
-          }
           console.error('Erro ao criar configuração:', error);
           return false;
         }

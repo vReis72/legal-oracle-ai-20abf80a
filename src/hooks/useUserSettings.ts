@@ -24,8 +24,8 @@ export const useUserSettings = () => {
       // Tenta carregar do Supabase primeiro
       let userSettings = await UserSettingsService.getUserSettings(userId);
       
-      // Se não conseguir do Supabase, tenta do localStorage
-      if (!userSettings) {
+      // Se não conseguir do Supabase, tenta do localStorage como fallback
+      if (!userSettings && !user?.id) {
         userSettings = LocalUserSettingsService.getUserSettings(userId);
       }
       
@@ -109,31 +109,35 @@ export const useUserSettings = () => {
         setTheme(newSettings.theme);
       }
 
-      // Tenta salvar no Supabase primeiro
-      let success = await UserSettingsService.saveSettings(userId, newSettings);
-      
-      // Se falhar no Supabase, salva no localStorage
-      if (!success) {
+      let success = false;
+
+      // Se o usuário está autenticado, salva no Supabase
+      if (user?.id) {
+        success = await UserSettingsService.saveSettings(userId, newSettings);
+        
+        if (success) {
+          // Sincroniza com a tabela profiles
+          const profileSyncSuccess = await syncWithProfile(newSettings);
+          
+          if (profileSyncSuccess) {
+            toast({
+              title: "Sucesso",
+              description: "Configurações salvas e sincronizadas com sucesso!",
+            });
+          } else {
+            toast({
+              title: "Parcialmente Salvo",
+              description: "Configurações salvas, mas houve um problema na sincronização do perfil.",
+            });
+          }
+        }
+      } else {
+        // Se não está autenticado, salva no localStorage
         success = LocalUserSettingsService.saveSettings(userId, newSettings);
         if (success) {
           toast({
             title: "Configurações Salvas (Local)",
-            description: "Suas configurações foram salvas localmente. Para sincronizar com o banco, execute a migration do Supabase.",
-          });
-        }
-      } else {
-        // Se salvou com sucesso no Supabase, sincroniza com a tabela profiles
-        const profileSyncSuccess = await syncWithProfile(newSettings);
-        
-        if (profileSyncSuccess) {
-          toast({
-            title: "Sucesso",
-            description: "Configurações salvas e sincronizadas com sucesso!",
-          });
-        } else {
-          toast({
-            title: "Parcialmente Salvo",
-            description: "Configurações salvas, mas houve um problema na sincronização do perfil.",
+            description: "Suas configurações foram salvas localmente. Faça login para sincronizar com o banco.",
           });
         }
       }
