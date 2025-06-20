@@ -1,10 +1,9 @@
 
 import React from 'react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, RefreshCw, CheckCircle } from 'lucide-react';
+import { CheckCircle, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useGlobalApiKey } from '@/hooks/globalApiKey/GlobalApiKeyContext';
-import { useUserSettings } from '@/hooks/userSettings';
 import { Button } from "@/components/ui/button";
 import { OpenAIKeyInputProps } from './types/openAIKeyInputTypes';
 
@@ -16,74 +15,66 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
 }) => {
   const { isAdmin, loading: authLoading } = useAuth();
   const { hasValidGlobalKey, refreshGlobalApiKey, loading: globalLoading } = useGlobalApiKey();
-  const { hasValidApiKey, isLoading: settingsLoading } = useUserSettings();
 
   // Se ainda está carregando, mostrar indicador
-  if (authLoading || globalLoading || settingsLoading) {
+  if (authLoading || globalLoading) {
     return (
       <Alert className="mb-4">
         <RefreshCw className="h-4 w-4 animate-spin" />
         <AlertDescription>
-          Verificando configurações da chave API...
+          Verificando chave API na tabela system_settings...
         </AlertDescription>
       </Alert>
     );
   }
 
-  // Verifica se há alguma chave válida disponível (global ou do usuário)
-  const hasAnyValidKey = hasValidGlobalKey || hasValidApiKey();
-
-  // Se há chave válida e não é forçado, mostrar confirmação
-  if (hasAnyValidKey && !forceOpen) {
+  // Se há chave válida na tabela system_settings, sistema habilitado
+  if (hasValidGlobalKey && !forceOpen) {
     return (
-      <Alert className="mb-4">
+      <Alert className="mb-4 border-green-200 bg-green-50">
         <CheckCircle className="h-4 w-4 text-green-500" />
         <AlertDescription>
-          <strong>✅ Chave API OpenAI configurada com sucesso!</strong><br />
-          O sistema está pronto para uso com IA.
+          <strong>✅ Sistema habilitado!</strong><br />
+          Chave API encontrada na tabela system_settings. Ferramenta pronta para uso.
         </AlertDescription>
       </Alert>
     );
   }
 
-  // Se não há chave configurada, mostrar aviso mas PERMITIR uso
-  if (!hasAnyValidKey) {
-    return (
-      <Alert variant="default" className="mb-4 border-amber-200 bg-amber-50">
-        <AlertCircle className="h-4 w-4 text-amber-600" />
-        <AlertDescription className="flex items-center justify-between">
-          <div>
-            <strong>⚠️ Sistema funcionando sem chave OpenAI configurada.</strong><br />
-            {isAdmin ? (
-              <>
-                Como administrador, você pode configurar a chave API OpenAI global nas 
-                <a href="/settings" className="text-eco-primary hover:underline ml-1">
-                  configurações administrativas
-                </a> para melhorar o desempenho.
-              </>
-            ) : (
-              <>
-                O administrador ainda não configurou a chave API OpenAI. 
-                O sistema funcionará, mas pode ter limitações.
-              </>
-            )}
-          </div>
-          {isAdmin && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={refreshGlobalApiKey}
-              disabled={globalLoading}
-            >
-              {globalLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : 'Recarregar'}
-            </Button>
+  // Se não há chave na tabela, sistema desabilitado
+  return (
+    <Alert variant="destructive" className="mb-4">
+      <AlertTriangle className="h-4 w-4" />
+      <AlertDescription className="flex items-center justify-between">
+        <div>
+          <strong>❌ Sistema desabilitado</strong><br />
+          {isAdmin ? (
+            <>
+              Nenhuma chave API encontrada na tabela system_settings. Configure uma chave nas 
+              <a href="/settings" className="text-eco-primary hover:underline ml-1">
+                configurações administrativas
+              </a> para habilitar o sistema.
+            </>
+          ) : (
+            <>
+              O administrador precisa configurar uma chave API OpenAI na tabela system_settings 
+              para habilitar o sistema.
+            </>
           )}
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  return null;
+        </div>
+        {isAdmin && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={refreshGlobalApiKey}
+            disabled={globalLoading}
+          >
+            {globalLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : 'Verificar'}
+          </Button>
+        )}
+      </AlertDescription>
+    </Alert>
+  );
 };
 
 export default OpenAIKeyInput;

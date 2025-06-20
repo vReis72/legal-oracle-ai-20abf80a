@@ -34,9 +34,15 @@ export const useChat = () => {
     e.preventDefault();
     if (!input.trim()) return;
     
-    // Permite envio mesmo sem chave API configurada
+    // Bloqueia se não há chave API
     if (!apiKey) {
-      console.log('💬 useChat: Enviando mensagem sem chave API - sistema funcionará com limitações');
+      console.log('❌ useChat: Bloqueando envio - sem chave API configurada');
+      toast({
+        variant: "destructive",
+        title: "Sistema desabilitado",
+        description: "Nenhuma chave API encontrada na tabela system_settings. Entre em contato com o administrador.",
+      });
+      return;
     }
     
     const messageContent = input.trim();
@@ -64,6 +70,7 @@ export const useChat = () => {
         userMessage
       ];
       
+      console.log('💬 useChat: Enviando mensagem para OpenAI...');
       const assistantResponse = await sendChatMessage(conversationHistory, apiKey);
       
       const assistantMessage: ChatMessage = {
@@ -79,20 +86,11 @@ export const useChat = () => {
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       console.error('💬 useChat: Erro ao enviar mensagem:', errorMessage);
       
-      // Se não há chave API, mostra erro mais amigável
-      if (!apiKey) {
-        toast({
-          variant: "destructive",
-          title: "Chave API não configurada",
-          description: "Para usar o chat com IA, é necessário configurar uma chave API OpenAI. Entre em contato com o administrador.",
-        });
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Erro no Chat",
-          description: errorMessage,
-        });
-      }
+      toast({
+        variant: "destructive",
+        title: "Erro no Chat",
+        description: errorMessage,
+      });
     } finally {
       setIsLoading(false);
     }

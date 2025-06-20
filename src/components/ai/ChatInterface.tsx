@@ -4,11 +4,11 @@ import ChatMessage from './ChatMessage';
 import ChatInputForm from './ChatInputForm';
 import { useChat } from '@/hooks/chat/useChat';
 import { Card } from "@/components/ui/card";
-import { useUserSettings } from '@/hooks/userSettings';
+import { useGlobalApiKey } from '@/hooks/globalApiKey/GlobalApiKeyContext';
 import ChatHeader from './ChatHeader';
 
 const ChatInterface = () => {
-  const { isLoading: settingsLoading, hasValidApiKey, apiKey } = useUserSettings();
+  const { hasValidGlobalKey, globalApiKey, loading } = useGlobalApiKey();
   const { 
     messages, 
     input, 
@@ -18,28 +18,32 @@ const ChatInterface = () => {
     messagesEndRef
   } = useChat();
 
-  console.log('💬 ChatInterface: Estado atual:', {
-    settingsLoading,
-    hasValidKey: hasValidApiKey(),
-    hasApiKey: !!apiKey,
-    apiKeyPreview: apiKey ? '***' + apiKey.slice(-4) : null
+  console.log('💬 ChatInterface: Estado da chave global:', {
+    loading,
+    hasValidKey: hasValidGlobalKey,
+    hasApiKey: !!globalApiKey
   });
 
-  if (settingsLoading) {
+  if (loading) {
     return (
       <Card className="w-full max-w-4xl mx-auto h-[500px] md:h-[600px] flex items-center justify-center">
         <div className="flex items-center gap-2">
           <div className="h-4 w-4 animate-spin rounded-full border-2 border-eco-primary border-r-transparent" />
-          Carregando configurações...
+          Verificando configurações na tabela system_settings...
         </div>
       </Card>
     );
   }
 
   const onSendMessage = async (e: React.FormEvent) => {
-    const effectiveApiKey = apiKey || undefined;
-    console.log('💬 ChatInterface: Enviando mensagem com chave:', effectiveApiKey ? '***' + effectiveApiKey.slice(-4) : 'NENHUMA');
-    await handleSendMessage(e, effectiveApiKey);
+    // Só permite envio se há chave válida na tabela system_settings
+    if (!hasValidGlobalKey) {
+      console.log('❌ Tentativa de envio bloqueada - sem chave API válida');
+      return;
+    }
+    
+    console.log('💬 Enviando mensagem com chave da tabela system_settings');
+    await handleSendMessage(e, globalApiKey || undefined);
   };
 
   return (
@@ -61,7 +65,7 @@ const ChatInterface = () => {
         setInput={setInput}
         handleSendMessage={onSendMessage}
         isLoading={isLoading}
-        isKeyConfigured={hasValidApiKey()}
+        isKeyConfigured={hasValidGlobalKey}
       />
     </Card>
   );

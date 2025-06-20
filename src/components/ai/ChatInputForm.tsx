@@ -27,33 +27,38 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Digite sua dúvida sobre Direito e clique no ícone de envio ao lado..."
+            placeholder={
+              isKeyConfigured 
+                ? "Digite sua dúvida sobre Direito e clique no ícone de envio ao lado..."
+                : "Sistema desabilitado - aguarde configuração da chave API"
+            }
             className="resize-none text-sm md:text-base"
             rows={2}
+            disabled={!isKeyConfigured}
           />
         </div>
         <Button 
           type="submit" 
           variant="ghost"
-          disabled={isLoading || !input.trim()} 
+          disabled={isLoading || !input.trim() || !isKeyConfigured} 
           className="p-2 hover:bg-transparent flex-shrink-0 transition-all duration-300"
         >
           <Send 
             className={`h-8 w-8 md:h-12 md:w-12 ${
               isKeyConfigured 
-                ? 'text-eco-primary' 
-                : 'text-amber-500'
-            } hover:scale-110 transition-transform duration-300 ease-in-out`} 
+                ? 'text-eco-primary hover:scale-110' 
+                : 'text-gray-400'
+            } transition-transform duration-300 ease-in-out`} 
             strokeWidth={2.5} 
           />
         </Button>
       </div>
       
       {!isKeyConfigured && (
-        <Alert variant="default" className="mt-2 border-amber-200 bg-amber-50">
-          <AlertTriangle className="h-4 w-4 md:h-5 md:w-5 text-amber-600" />
+        <Alert variant="destructive" className="mt-2">
+          <AlertTriangle className="h-4 w-4 md:h-5 md:w-5" />
           <AlertDescription className="text-sm">
-            ⚠️ A chave API OpenAI não foi configurada. O sistema funcionará mas pode ter limitações. 
+            ❌ Sistema desabilitado. Nenhuma chave API encontrada na tabela system_settings. 
             Entre em contato com o administrador para configurar uma chave global.
           </AlertDescription>
         </Alert>
