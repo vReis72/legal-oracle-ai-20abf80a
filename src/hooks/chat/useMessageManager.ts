@@ -1,5 +1,5 @@
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import { ChatMessage } from './types';
 
 export const useMessageManager = () => {
@@ -13,13 +13,13 @@ export const useMessageManager = () => {
   ]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = useCallback(() => {
+  const scrollToBottom = () => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, []);
+  };
 
-  const addUserMessage = useCallback((content: string): ChatMessage => {
+  const addUserMessage = (content: string): ChatMessage => {
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
@@ -27,23 +27,12 @@ export const useMessageManager = () => {
       timestamp: new Date()
     };
     
-    console.log('📨 Mensagem do usuário criada:', userMessage);
-    
-    setMessages(prev => {
-      const newMessages = [...prev, userMessage];
-      console.log('📚 Total de mensagens após adicionar usuário:', newMessages.length);
-      return newMessages;
-    });
-
-    // Schedule scroll after state update
-    requestAnimationFrame(() => {
-      scrollToBottom();
-    });
-
+    setMessages(prev => [...prev, userMessage]);
+    setTimeout(scrollToBottom, 100);
     return userMessage;
-  }, [scrollToBottom]);
+  };
 
-  const addAssistantMessage = useCallback((content: string) => {
+  const addAssistantMessage = (content: string) => {
     const assistantMessage: ChatMessage = {
       id: (Date.now() + 1).toString(),
       role: 'assistant',
@@ -51,45 +40,22 @@ export const useMessageManager = () => {
       timestamp: new Date()
     };
     
-    console.log('🤖 Mensagem do assistente criada:', {
-      id: assistantMessage.id,
-      contentLength: assistantMessage.content.length,
-      role: assistantMessage.role
-    });
-    
-    setMessages(prev => {
-      const newMessages = [...prev, assistantMessage];
-      console.log('📚 Total de mensagens após adicionar assistente:', newMessages.length);
-      return newMessages;
-    });
+    setMessages(prev => [...prev, assistantMessage]);
+    setTimeout(scrollToBottom, 100);
+  };
 
-    // Schedule scroll after state update
-    requestAnimationFrame(() => {
-      scrollToBottom();
-    });
-  }, [scrollToBottom]);
-
-  const prepareConversationHistory = useCallback((userMessage: ChatMessage): ChatMessage[] => {
-    const conversationHistory: ChatMessage[] = [
+  const prepareConversationHistory = (userMessage: ChatMessage): ChatMessage[] => {
+    return [
       {
         id: 'system',
         role: 'system',
-        content: 'Você é um assistente especializado em direito brasileiro. Forneça respostas precisas e concisas sobre legislação, jurisprudência e consultas relacionadas ao direito. Cite leis, decisões judiciais e documentos pertinentes quando possível.',
+        content: 'Você é um assistente especializado em direito brasileiro. Forneça respostas precisas e concisas sobre legislação, jurisprudência e consultas relacionadas ao direito.',
         timestamp: new Date()
       },
       ...messages.slice(-6),
       userMessage
     ];
-    
-    console.log('📚 Histórico da conversa preparado:', {
-      totalMessages: conversationHistory.length,
-      systemMessage: !!conversationHistory.find(m => m.role === 'system'),
-      userMessages: conversationHistory.filter(m => m.role === 'user').length,
-      assistantMessages: conversationHistory.filter(m => m.role === 'assistant').length
-    });
-
-    return conversationHistory;
-  }, [messages]);
+  };
 
   return {
     messages,
