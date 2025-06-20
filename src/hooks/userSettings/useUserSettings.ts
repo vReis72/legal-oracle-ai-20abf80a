@@ -26,13 +26,13 @@ export const useUserSettings = () => {
   const { saveSettings } = useSettingsSaver(userId, isAuthenticated, reloadSettings);
 
   useEffect(() => {
-    if (!settings) {
-      loadSettings();
-    }
-  }, [userId, loadSettings, settings]);
+    console.log('🔄 useUserSettings: Iniciando carregamento para userId:', userId);
+    loadSettings();
+  }, [userId, loadSettings]);
 
   // Reset loader when user changes
   useEffect(() => {
+    console.log('🔄 useUserSettings: Resetando loader para novo usuário:', user?.id);
     resetLoader();
   }, [user?.id, resetLoader]);
 
@@ -68,6 +68,15 @@ export const useUserSettings = () => {
   const getUserEmail = (): string => {
     return SettingsValidation.getUserEmail(settings, user);
   };
+
+  console.log('🔄 useUserSettings: Estado atual:', {
+    userId,
+    isAuthenticated,
+    isLoading,
+    hasSettings: !!settings,
+    userName: getUserName(),
+    userEmail: getUserEmail()
+  });
 
   return {
     settings,
