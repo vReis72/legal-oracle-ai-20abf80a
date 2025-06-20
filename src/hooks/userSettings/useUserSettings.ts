@@ -71,7 +71,8 @@ export const useUserSettings = () => {
       hasGlobalKey: !!globalApiKey,
       userKeyValid: userApiKey ? SettingsValidation.hasValidApiKey(userApiKey) : false,
       globalKeyValid: hasValidGlobalKey,
-      globalLoading
+      globalLoading,
+      settingsLoaded: !!settings
     });
     
     // Se o usuário tem uma chave válida, use ela
@@ -88,19 +89,21 @@ export const useUserSettings = () => {
     
     console.log('🔑 useUserSettings: Nenhuma chave válida encontrada');
     return null;
-  }, [settings?.openai_api_key, globalApiKey, hasValidGlobalKey, globalLoading]);
+  }, [settings?.openai_api_key, globalApiKey, hasValidGlobalKey, globalLoading, settings]);
 
   const hasValidApiKey = useCallback((): boolean => {
     const effectiveApiKey = getEffectiveApiKey();
     const isValid = !!effectiveApiKey && SettingsValidation.hasValidApiKey(effectiveApiKey);
     
     console.log('🔑 useUserSettings: Validação final de chave:', {
-      effectiveKey: effectiveApiKey ? '***' + effectiveApiKey.slice(-4) : null,
-      isValid
+      effectiveApiKey: effectiveApiKey ? '***' + effectiveApiKey.slice(-4) : null,
+      isValid,
+      globalValid: hasValidGlobalKey,
+      userValid: settings?.openai_api_key ? SettingsValidation.hasValidApiKey(settings.openai_api_key) : false
     });
     
     return isValid;
-  }, [getEffectiveApiKey]);
+  }, [getEffectiveApiKey, hasValidGlobalKey, settings?.openai_api_key]);
 
   const getUserName = useCallback((): string => {
     return SettingsValidation.getUserName(settings, profile);

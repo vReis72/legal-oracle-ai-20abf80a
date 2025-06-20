@@ -7,12 +7,17 @@ export class SettingsValidation {
     }
 
     const trimmedKey = apiKey.trim();
-    const isValid = trimmedKey !== '' && 
+    
+    // Validação mais robusta
+    const isValid = trimmedKey.length > 0 && 
            trimmedKey.startsWith('sk-') && 
-           trimmedKey.length > 20 &&
-           trimmedKey !== 'sk-adicione-uma-chave-valida-aqui';
+           trimmedKey.length >= 40 && // Chaves OpenAI têm pelo menos 40 caracteres
+           trimmedKey !== 'sk-adicione-uma-chave-valida-aqui' &&
+           !trimmedKey.includes('placeholder') &&
+           !trimmedKey.includes('example');
 
     console.log('🔑 SettingsValidation: Validando chave:', {
+      hasKey: !!apiKey,
       keyLength: trimmedKey.length,
       startsWithSk: trimmedKey.startsWith('sk-'),
       isNotPlaceholder: trimmedKey !== 'sk-adicione-uma-chave-valida-aqui',

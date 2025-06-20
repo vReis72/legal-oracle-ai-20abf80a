@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useGlobalApiKey } from '@/hooks/globalApiKey/GlobalApiKeyContext';
 import { useUserSettings } from '@/hooks/userSettings';
@@ -16,7 +16,7 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
 }) => {
   const { isAdmin, loading: authLoading } = useAuth();
   const { hasValidGlobalKey, refreshGlobalApiKey, loading: globalLoading } = useGlobalApiKey();
-  const { hasValidApiKey, isLoading: settingsLoading } = useUserSettings();
+  const { hasValidApiKey, isLoading: settingsLoading, apiKey } = useUserSettings();
 
   console.log('🔑 OpenAIKeyInput: Estado atual:', {
     hasValidGlobalKey,
@@ -25,7 +25,8 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
     authLoading,
     globalLoading,
     settingsLoading,
-    forceOpen
+    forceOpen,
+    hasApiKey: !!apiKey
   });
 
   // Se ainda está carregando, mostrar indicador
@@ -43,9 +44,17 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
   // Verifica se há alguma chave válida disponível (global ou do usuário)
   const hasAnyValidKey = hasValidGlobalKey || hasValidApiKey();
 
-  // Se há chave válida e não é forçado, não mostrar nada
+  // Se há chave válida e não é forçado, mostrar confirmação
   if (hasAnyValidKey && !forceOpen) {
-    return null;
+    return (
+      <Alert className="mb-4">
+        <CheckCircle className="h-4 w-4 text-green-500" />
+        <AlertDescription>
+          <strong>Chave API OpenAI configurada com sucesso!</strong><br />
+          O sistema está pronto para uso com IA.
+        </AlertDescription>
+      </Alert>
+    );
   }
 
   // Se não há chave configurada, mostrar aviso mas PERMITIR uso
