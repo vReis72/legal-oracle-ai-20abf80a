@@ -8,8 +8,6 @@ import { useGlobalApiKey } from '@/hooks/useGlobalApiKey';
 import ChatHeader from './ChatHeader';
 
 const ChatInterface = () => {
-  console.log('🔄 ChatInterface: Componente renderizando');
-  
   const { loading: loadingApiKey } = useGlobalApiKey();
   const { 
     messages, 
@@ -21,16 +19,7 @@ const ChatInterface = () => {
     messagesEndRef
   } = useChat();
 
-  console.log('📊 ChatInterface: Estados', {
-    loadingApiKey,
-    messagesCount: messages.length,
-    inputLength: input.length,
-    isLoading,
-    isKeyConfigured
-  });
-
   if (loadingApiKey) {
-    console.log('⏳ ChatInterface: Carregando API Key');
     return (
       <Card className="w-full max-w-4xl mx-auto h-[500px] md:h-[600px] flex items-center justify-center">
         <div className="flex items-center gap-2">
@@ -40,8 +29,6 @@ const ChatInterface = () => {
       </Card>
     );
   }
-
-  console.log('✅ ChatInterface: Renderizando interface completa');
 
   return (
     <Card className="w-full max-w-4xl mx-auto h-[500px] md:h-[600px] flex flex-col">
