@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Document } from '@/types/document';
 import DocumentProgressBar from './DocumentProgressBar';
@@ -8,7 +7,7 @@ import DocumentSummary from './DocumentSummary';
 import DocumentKeyPoints from './DocumentKeyPoints';
 import DocumentConclusion from './DocumentConclusion';
 import { useDocumentAnalysis } from '@/hooks/document/useDocumentAnalysis';
-import { useApiKey } from '@/context/ApiKeyContext';
+import { useGlobalApiKey } from '@/hooks/globalApiKey/GlobalApiKeyContext';
 import ErrorMessage from '../ai/ErrorMessage'; 
 
 interface DocumentAnalyzerProps {
@@ -20,15 +19,15 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
   document, 
   onAnalysisComplete
 }) => {
-  // Obter a chave API do contexto em vez de receber como prop
-  const { apiKey } = useApiKey();
+  // Usar o novo sistema de chave API global
+  const { globalApiKey } = useGlobalApiKey();
   
   const {
     isAnalyzing,
     progress,
     analysisError,
     processDocument
-  } = useDocumentAnalysis(document, onAnalysisComplete, apiKey);
+  } = useDocumentAnalysis(document, onAnalysisComplete, globalApiKey);
 
   // Adicionar log para depuração do conteúdo do documento
   useEffect(() => {
