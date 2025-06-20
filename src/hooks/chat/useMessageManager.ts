@@ -14,7 +14,9 @@ export const useMessageManager = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   }, []);
 
   const addUserMessage = useCallback((content: string): ChatMessage => {
@@ -30,9 +32,12 @@ export const useMessageManager = () => {
     setMessages(prev => {
       const newMessages = [...prev, userMessage];
       console.log('📚 Total de mensagens após adicionar usuário:', newMessages.length);
-      // Scroll após a atualização do estado
-      setTimeout(() => scrollToBottom(), 100);
       return newMessages;
+    });
+
+    // Schedule scroll after state update
+    requestAnimationFrame(() => {
+      scrollToBottom();
     });
 
     return userMessage;
@@ -55,9 +60,12 @@ export const useMessageManager = () => {
     setMessages(prev => {
       const newMessages = [...prev, assistantMessage];
       console.log('📚 Total de mensagens após adicionar assistente:', newMessages.length);
-      // Scroll após a atualização do estado
-      setTimeout(() => scrollToBottom(), 100);
       return newMessages;
+    });
+
+    // Schedule scroll after state update
+    requestAnimationFrame(() => {
+      scrollToBottom();
     });
   }, [scrollToBottom]);
 

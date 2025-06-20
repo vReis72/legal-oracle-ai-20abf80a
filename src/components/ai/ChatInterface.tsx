@@ -17,8 +17,10 @@ const ChatInterface = () => {
     isKeyConfigured,
     messagesEndRef
   } = useChat();
+  
   const { loading: loadingApiKey } = useGlobalApiKey();
 
+  // Early return for loading state
   if (loadingApiKey) {
     return (
       <Card className="w-full max-w-4xl mx-auto h-[500px] md:h-[600px] flex items-center justify-center">
