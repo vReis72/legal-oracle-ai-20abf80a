@@ -1,10 +1,9 @@
 
 import React from 'react';
-import { useApiKey } from '@/context/ApiKeyContext';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useGlobalApiKey } from '@/hooks/useGlobalApiKey';
+import { useGlobalApiKey } from '@/hooks/globalApiKey/GlobalApiKeyContext';
 import { Button } from "@/components/ui/button";
 import { OpenAIKeyInputProps } from './types/openAIKeyInputTypes';
 
@@ -14,12 +13,11 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
   buttonVariant = "outline", 
   buttonSize = "sm" 
 }) => {
-  const { isKeyConfigured } = useApiKey();
   const { isAdmin, loading } = useAuth();
-  const { refreshGlobalApiKey, loading: globalLoading } = useGlobalApiKey();
+  const { hasValidGlobalKey, refreshGlobalApiKey, loading: globalLoading } = useGlobalApiKey();
 
   console.log('🔑 OpenAIKeyInput: Estado atual:', {
-    isKeyConfigured,
+    hasValidGlobalKey,
     isAdmin,
     loading,
     globalLoading,
@@ -39,12 +37,12 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
   }
 
   // Se a chave já está configurada e não é forçado, não mostrar nada
-  if (isKeyConfigured && !forceOpen) {
+  if (hasValidGlobalKey && !forceOpen) {
     return null;
   }
 
   // Se não há chave configurada, mostrar aviso mas PERMITIR uso
-  if (!isKeyConfigured) {
+  if (!hasValidGlobalKey) {
     return (
       <Alert variant="warning" className="mb-4">
         <AlertCircle className="h-4 w-4" />

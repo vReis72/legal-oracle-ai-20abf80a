@@ -2,9 +2,9 @@
 import React from 'react';
 import ChatMessage from './ChatMessage';
 import ChatInputForm from './ChatInputForm';
-import { useChat } from '@/hooks/use-chat';
+import { useChat } from '@/hooks/chat/useChat';
 import { Card } from "@/components/ui/card";
-import { useGlobalApiKey } from '@/hooks/useGlobalApiKey';
+import { useGlobalApiKey } from '@/hooks/globalApiKey/GlobalApiKeyContext';
 import ChatHeader from './ChatHeader';
 
 const ChatInterface = () => {
