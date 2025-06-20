@@ -35,8 +35,8 @@ export const useUserSettings = () => {
 
   // Reset loader when user changes
   useEffect(() => {
-    if (user?.id !== userId.replace('temp-user-', '')) {
-      console.log('🔄 useUserSettings: Resetando loader para novo usuário:', user?.id);
+    if (user?.id && userId.startsWith('temp-user-')) {
+      console.log('🔄 useUserSettings: Resetando loader para usuário autenticado:', user?.id);
       resetLoader();
     }
   }, [user?.id, resetLoader, userId]);
@@ -64,28 +64,24 @@ export const useUserSettings = () => {
 
   // Determina a chave API a ser usada (prioridade: usuário > global)
   const getEffectiveApiKey = useCallback((): string | null => {
-    // Se ainda está carregando a global, espera
-    if (globalLoading) {
-      return null;
-    }
-
     const userApiKey = settings?.openai_api_key;
+    
     console.log('🔑 useUserSettings: Determinando chave efetiva:', {
       hasUserKey: !!userApiKey,
       hasGlobalKey: !!globalApiKey,
-      userKeyValid: SettingsValidation.hasValidApiKey(userApiKey),
+      userKeyValid: userApiKey ? SettingsValidation.hasValidApiKey(userApiKey) : false,
       globalKeyValid: hasValidGlobalKey,
       globalLoading
     });
     
     // Se o usuário tem uma chave válida, use ela
-    if (SettingsValidation.hasValidApiKey(userApiKey)) {
+    if (userApiKey && SettingsValidation.hasValidApiKey(userApiKey)) {
       console.log('🔑 useUserSettings: Usando chave do usuário');
-      return userApiKey!;
+      return userApiKey;
     }
     
     // Caso contrário, use a chave global se válida
-    if (hasValidGlobalKey && globalApiKey) {
+    if (hasValidGlobalKey && globalApiKey && SettingsValidation.hasValidApiKey(globalApiKey)) {
       console.log('🔑 useUserSettings: Usando chave global');
       return globalApiKey;
     }
@@ -96,11 +92,13 @@ export const useUserSettings = () => {
 
   const hasValidApiKey = useCallback((): boolean => {
     const effectiveKey = getEffectiveApiKey();
-    const isValid = SettingsValidation.hasValidApiKey(effectiveKey);
-    console.log('🔑 useUserSettings: Validação de chave:', {
+    const isValid = !!effectiveKey && SettingsValidation.hasValidApiKey(effectiveKey);
+    
+    console.log('🔑 useUserSettings: Validação final de chave:', {
       effectiveKey: effectiveKey ? '***' + effectiveKey.slice(-4) : null,
       isValid
     });
+    
     return isValid;
   }, [getEffectiveApiKey]);
 
@@ -115,14 +113,14 @@ export const useUserSettings = () => {
   const effectiveApiKey = getEffectiveApiKey();
   const isLoadingAny = isLoading || globalLoading;
 
-  console.log('🔄 useUserSettings: Estado atual:', {
+  console.log('🔄 useUserSettings: Estado final:', {
     userId,
     isAuthenticated,
     isLoading: isLoadingAny,
     hasSettings: !!settings,
     hasUserApiKey: !!settings?.openai_api_key,
     hasGlobalApiKey: !!globalApiKey,
-    effectiveApiKey: effectiveApiKey ? '***' + effectiveApiKey.slice(-4) : null,
+    effectiveApiKey: effectiveKey ? '***' + effectiveApiKey.slice(-4) : null,
     hasValidKey: hasValidApiKey(),
     userName: getUserName(),
     userEmail: getUserEmail()

@@ -1,21 +1,24 @@
 
 export class SettingsValidation {
   static hasValidApiKey(apiKey?: string | null): boolean {
-    console.log('🔑 SettingsValidation: Validando chave API:', {
-      hasKey: !!apiKey,
-      keyLength: apiKey?.length,
-      startsWithSk: apiKey?.startsWith('sk-'),
-      isNotPlaceholder: apiKey !== 'sk-adicione-uma-chave-valida-aqui'
+    if (!apiKey) {
+      console.log('🔑 SettingsValidation: Chave não fornecida ou nula');
+      return false;
+    }
+
+    const trimmedKey = apiKey.trim();
+    const isValid = trimmedKey !== '' && 
+           trimmedKey.startsWith('sk-') && 
+           trimmedKey.length > 20 &&
+           trimmedKey !== 'sk-adicione-uma-chave-valida-aqui';
+
+    console.log('🔑 SettingsValidation: Validando chave:', {
+      keyLength: trimmedKey.length,
+      startsWithSk: trimmedKey.startsWith('sk-'),
+      isNotPlaceholder: trimmedKey !== 'sk-adicione-uma-chave-valida-aqui',
+      isValid
     });
 
-    const isValid = apiKey !== null && 
-           apiKey !== undefined &&
-           apiKey.trim() !== '' && 
-           apiKey.startsWith('sk-') && 
-           apiKey.length > 20 &&
-           apiKey !== 'sk-adicione-uma-chave-valida-aqui';
-
-    console.log('🔑 SettingsValidation: Resultado da validação:', isValid);
     return isValid;
   }
 

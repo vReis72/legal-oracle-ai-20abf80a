@@ -20,6 +20,8 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
   isLoading,
   isKeyConfigured
 }) => {
+  console.log('💬 ChatInputForm: Estado da chave:', { isKeyConfigured });
+
   return (
     <form onSubmit={handleSendMessage} className="p-3 md:p-4 border-t bg-background">
       <div className="flex gap-2 items-end">
@@ -35,11 +37,15 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
         <Button 
           type="submit" 
           variant="ghost"
-          disabled={isLoading || !input.trim() || !isKeyConfigured} 
+          disabled={isLoading || !input.trim()} 
           className="p-2 hover:bg-transparent flex-shrink-0 transition-all duration-300"
         >
           <Send 
-            className={`h-8 w-8 md:h-12 md:w-12 ${isKeyConfigured ? 'text-eco-primary' : 'text-gray-400'} hover:scale-110 transition-transform duration-300 ease-in-out`} 
+            className={`h-8 w-8 md:h-12 md:w-12 ${
+              isKeyConfigured 
+                ? 'text-eco-primary' 
+                : 'text-gray-400'
+            } hover:scale-110 transition-transform duration-300 ease-in-out`} 
             strokeWidth={2.5} 
           />
         </Button>
@@ -49,7 +55,8 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
         <Alert variant="destructive" className="mt-2">
           <AlertTriangle className="h-4 w-4 md:h-5 md:w-5" />
           <AlertDescription className="text-sm">
-            A chave API OpenAI não foi configurada pelo administrador do sistema. Entre em contato com o suporte para configurar o sistema.
+            A chave API OpenAI não foi configurada. O sistema funcionará mas pode ter limitações. 
+            Entre em contato com o administrador para configurar uma chave global.
           </AlertDescription>
         </Alert>
       )}
