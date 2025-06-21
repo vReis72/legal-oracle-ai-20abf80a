@@ -20,14 +20,6 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
 
         if (error) {
           console.error('❌ Erro ao verificar chave:', error);
-          // Se for erro de RLS, vamos tentar novamente após um pequeno delay
-          if (error.code === '42501' || error.message.includes('permission')) {
-            console.log('🔄 Erro de permissão detectado, tentando novamente em 1s...');
-            setTimeout(() => {
-              checkApiKey();
-            }, 1000);
-            return;
-          }
           setGlobalApiKey(null);
         } else {
           const apiKey = data?.openai_api_key || null;
@@ -112,13 +104,17 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Verificação super simples: existe chave? = sistema habilitado
-  const hasValidGlobalKey = !!globalApiKey;
+  // Validação mais robusta da chave
+  const hasValidGlobalKey = !!(globalApiKey && 
+    globalApiKey.trim().length > 0 && 
+    globalApiKey.startsWith('sk-') && 
+    globalApiKey.length >= 40);
 
   console.log('🔑 Estado atual GlobalApiKeyProvider:', {
     loading,
     hasValidGlobalKey,
-    keyLength: globalApiKey?.length || 0
+    keyLength: globalApiKey?.length || 0,
+    keyStart: globalApiKey?.substring(0, 7) || 'N/A'
   });
 
   return (

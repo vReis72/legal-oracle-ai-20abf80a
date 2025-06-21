@@ -2,6 +2,7 @@
 export class SettingsValidation {
   static hasValidApiKey(apiKey?: string | null): boolean {
     if (!apiKey) {
+      console.log('🔑 SettingsValidation: Chave não fornecida');
       return false;
     }
 
@@ -15,6 +16,13 @@ export class SettingsValidation {
            !trimmedKey.includes('placeholder') &&
            !trimmedKey.includes('example') &&
            !trimmedKey.includes('your-api-key');
+
+    console.log('🔑 SettingsValidation: Validação da chave:', {
+      comprimento: trimmedKey.length,
+      comecaComSk: trimmedKey.startsWith('sk-'),
+      isValid,
+      primeiros: trimmedKey.substring(0, 10)
+    });
 
     return isValid;
   }

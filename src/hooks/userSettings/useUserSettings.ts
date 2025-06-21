@@ -60,17 +60,27 @@ export const useUserSettings = () => {
 
   // Determina a chave API a ser usada (apenas a global agora)
   const getEffectiveApiKey = useCallback((): string | null => {
+    console.log('🔑 useUserSettings: Verificando chave efetiva:', {
+      globalApiKey: globalApiKey ? `${globalApiKey.substring(0, 7)}...` : 'null',
+      hasValidGlobalKey,
+      isValid: SettingsValidation.hasValidApiKey(globalApiKey)
+    });
+
     // Usa apenas a chave global se válida
     if (hasValidGlobalKey && globalApiKey && SettingsValidation.hasValidApiKey(globalApiKey)) {
+      console.log('✅ useUserSettings: Chave global válida encontrada');
       return globalApiKey;
     }
     
+    console.log('❌ useUserSettings: Nenhuma chave válida encontrada');
     return null;
   }, [globalApiKey, hasValidGlobalKey]);
 
   const hasValidApiKey = useCallback((): boolean => {
     const effectiveApiKey = getEffectiveApiKey();
-    return !!effectiveApiKey && SettingsValidation.hasValidApiKey(effectiveApiKey);
+    const isValid = !!effectiveApiKey && SettingsValidation.hasValidApiKey(effectiveApiKey);
+    console.log('🔑 useUserSettings: hasValidApiKey resultado:', isValid);
+    return isValid;
   }, [getEffectiveApiKey]);
 
   const getUserName = useCallback((): string => {
@@ -90,7 +100,8 @@ export const useUserSettings = () => {
     hasSettings: !!settings,
     isLoading: isLoadingAny,
     hasValidApiKey: hasValidApiKey(),
-    hasGlobalKey: hasValidGlobalKey
+    hasGlobalKey: hasValidGlobalKey,
+    effectiveApiKey: effectiveApiKey ? `${effectiveApiKey.substring(0, 7)}...` : 'null'
   });
 
   return {

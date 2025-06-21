@@ -14,13 +14,14 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
   buttonSize = "sm" 
 }) => {
   const { isAdmin, loading: authLoading } = useAuth();
-  const { hasValidGlobalKey, refreshGlobalApiKey, loading: globalLoading } = useGlobalApiKey();
+  const { hasValidGlobalKey, refreshGlobalApiKey, loading: globalLoading, globalApiKey } = useGlobalApiKey();
 
   console.log('🔑 OpenAIKeyInput: Estado atual:', {
     authLoading,
     globalLoading,
     hasValidGlobalKey,
-    isAdmin
+    isAdmin,
+    globalApiKey: globalApiKey ? `${globalApiKey.substring(0, 7)}...` : 'null'
   });
 
   if (authLoading || globalLoading) {
@@ -40,7 +41,7 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
         <CheckCircle className="h-4 w-4 text-green-500" />
         <AlertDescription>
           <strong>✅ Sistema habilitado!</strong><br />
-          Chave API configurada na tabela system_settings.
+          Chave API configurada e válida ({globalApiKey?.substring(0, 7)}...).
         </AlertDescription>
       </Alert>
     );
@@ -54,11 +55,11 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
           <strong>❌ Sistema desabilitado</strong><br />
           {isAdmin ? (
             <>
-              Nenhuma chave API encontrada na tabela system_settings. 
+              Nenhuma chave API encontrada ou chave inválida. 
               Configure nas <a href="/settings" className="text-eco-primary hover:underline ml-1">configurações</a>.
             </>
           ) : (
-            'Aguarde o administrador configurar uma chave API.'
+            'Aguarde o administrador configurar uma chave API válida.'
           )}
         </div>
         <div className="flex gap-2 ml-4">
