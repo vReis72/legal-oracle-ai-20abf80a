@@ -12,8 +12,6 @@ export interface UserSettingsContextType {
   userOab: string;
   contactEmail: string;
   saveSettings: (settings: Partial<UserSettings>) => Promise<boolean>;
-  saveApiKey: (key: string) => Promise<boolean>;
-  removeApiKey: () => Promise<boolean>;
   updateTheme: (theme: 'light' | 'dark' | 'system') => Promise<boolean>;
   updateCompanyInfo: (companyName: string, contactEmail?: string) => Promise<boolean>;
   updateUserInfo: (userName: string, userOab?: string) => Promise<boolean>;

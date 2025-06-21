@@ -40,14 +40,6 @@ export const useUserSettings = () => {
   }, [user?.id, resetLoader, userId]);
 
   // Convenience methods
-  const saveApiKey = useCallback(async (key: string): Promise<boolean> => {
-    return saveSettings({ openai_api_key: key });
-  }, [saveSettings]);
-
-  const removeApiKey = useCallback(async (): Promise<boolean> => {
-    return saveSettings({ openai_api_key: null });
-  }, [saveSettings]);
-
   const updateTheme = useCallback(async (theme: 'light' | 'dark' | 'system'): Promise<boolean> => {
     return saveSettings({ theme });
   }, [saveSettings]);
@@ -60,22 +52,15 @@ export const useUserSettings = () => {
     return saveSettings({ user_name: userName, user_oab: userOab });
   }, [saveSettings]);
 
-  // Determina a chave API a ser usada (prioridade: usuário > global)
+  // Determina a chave API a ser usada (apenas a global agora)
   const getEffectiveApiKey = useCallback((): string | null => {
-    const userApiKey = settings?.openai_api_key;
-    
-    // Se o usuário tem uma chave válida, use ela
-    if (userApiKey && SettingsValidation.hasValidApiKey(userApiKey)) {
-      return userApiKey;
-    }
-    
-    // Caso contrário, use a chave global se válida
+    // Usa apenas a chave global se válida
     if (hasValidGlobalKey && globalApiKey && SettingsValidation.hasValidApiKey(globalApiKey)) {
       return globalApiKey;
     }
     
     return null;
-  }, [settings?.openai_api_key, globalApiKey, hasValidGlobalKey]);
+  }, [globalApiKey, hasValidGlobalKey]);
 
   const hasValidApiKey = useCallback((): boolean => {
     const effectiveApiKey = getEffectiveApiKey();
@@ -103,8 +88,6 @@ export const useUserSettings = () => {
     userOab: settings?.user_oab || '',
     contactEmail: getUserEmail(),
     saveSettings,
-    saveApiKey,
-    removeApiKey,
     updateTheme,
     updateCompanyInfo,
     updateUserInfo,

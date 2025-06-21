@@ -274,7 +274,6 @@ export type Database = {
           contact_email: string | null
           created_at: string | null
           id: string
-          openai_api_key: string | null
           theme: string | null
           updated_at: string | null
           user_id: string
@@ -286,7 +285,6 @@ export type Database = {
           contact_email?: string | null
           created_at?: string | null
           id?: string
-          openai_api_key?: string | null
           theme?: string | null
           updated_at?: string | null
           user_id: string
@@ -298,7 +296,6 @@ export type Database = {
           contact_email?: string | null
           created_at?: string | null
           id?: string
-          openai_api_key?: string | null
           theme?: string | null
           updated_at?: string | null
           user_id?: string
