@@ -16,13 +16,13 @@ import {
  * 
  * @param document Documento a ser analisado
  * @param onAnalysisComplete Callback chamado quando a análise é concluída
- * @param apiKey Chave da API OpenAI
+ * @param getApiKey Função que retorna a chave da API OpenAI
  * @returns Hook para gerenciar o estado e análise de documentos
  */
 export const useDocumentAnalysis = (
   document: Document,
   onAnalysisComplete: (analyzedDocument: Document) => void,
-  apiKey: string | null
+  getApiKey: () => Promise<string | null>
 ) => {
   const [documentContent] = useState<string>(document.content || '');
   const {
@@ -41,6 +41,9 @@ export const useDocumentAnalysis = (
    * Processa o documento utilizando a API OpenAI
    */
   const processDocument = async () => {
+    // Get the API key
+    const apiKey = await getApiKey();
+    
     if (!apiKey) {
       setAnalysisError("Chave da API OpenAI não configurada. Configure nas configurações.");
       return;
