@@ -14,13 +14,21 @@ export const useSettingsLoader = (userId: string) => {
   
   const hasLoadedRef = useRef(false);
   const lastUserIdRef = useRef<string | null>(null);
+  const isLoadingRef = useRef(false);
 
   const loadSettings = useCallback(async () => {
     console.log('🔄 useSettingsLoader: Tentando carregar configurações', {
       userId,
       hasLoaded: hasLoadedRef.current,
-      lastUserId: lastUserIdRef.current
+      lastUserId: lastUserIdRef.current,
+      isLoadingNow: isLoadingRef.current
     });
+
+    // Evitar múltiplas chamadas simultâneas
+    if (isLoadingRef.current) {
+      console.log('🔄 useSettingsLoader: Já está carregando, ignorando...');
+      return;
+    }
 
     // Se já carregou para este usuário, não recarregar
     if (hasLoadedRef.current && lastUserIdRef.current === userId) {
@@ -28,7 +36,9 @@ export const useSettingsLoader = (userId: string) => {
       return;
     }
     
+    isLoadingRef.current = true;
     setIsLoading(true);
+    
     try {
       console.log('🔄 useSettingsLoader: Carregando configurações para:', userId);
       
@@ -58,6 +68,7 @@ export const useSettingsLoader = (userId: string) => {
         description: "Não foi possível carregar as configurações do usuário.",
       });
     } finally {
+      isLoadingRef.current = false;
       setIsLoading(false);
     }
   }, [userId, currentTheme, setTheme, toast]);
@@ -66,6 +77,7 @@ export const useSettingsLoader = (userId: string) => {
     console.log('🔄 useSettingsLoader: Forçando recarregamento');
     hasLoadedRef.current = false;
     lastUserIdRef.current = null;
+    isLoadingRef.current = false;
     await loadSettings();
   }, [loadSettings]);
 
@@ -73,6 +85,7 @@ export const useSettingsLoader = (userId: string) => {
     console.log('🔄 useSettingsLoader: Resetando loader');
     hasLoadedRef.current = false;
     lastUserIdRef.current = null;
+    isLoadingRef.current = false;
     setSettings(null);
   }, []);
 

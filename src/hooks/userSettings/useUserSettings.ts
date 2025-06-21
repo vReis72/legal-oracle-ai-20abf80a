@@ -27,14 +27,16 @@ export const useUserSettings = () => {
 
   const { saveSettings } = useSettingsSaver(userId, isAuthenticated, reloadSettings);
 
-  // Carrega configurações quando o userId muda
+  // Carrega configurações quando o userId muda (apenas uma vez)
   useEffect(() => {
+    console.log('🎯 useUserSettings: useEffect disparado', { userId, isAuthenticated });
     loadSettings();
   }, [userId, loadSettings]);
 
   // Reset loader when user changes
   useEffect(() => {
     if (user?.id && userId.startsWith('temp-user-')) {
+      console.log('🎯 useUserSettings: Resetando loader para usuário real');
       resetLoader();
     }
   }, [user?.id, resetLoader, userId]);
@@ -77,6 +79,15 @@ export const useUserSettings = () => {
 
   const effectiveApiKey = getEffectiveApiKey();
   const isLoadingAny = isLoading || globalLoading;
+
+  console.log('🎯 useUserSettings: Estado final', {
+    userId,
+    isAuthenticated,
+    hasSettings: !!settings,
+    isLoading: isLoadingAny,
+    hasValidApiKey: hasValidApiKey(),
+    hasGlobalKey: hasValidGlobalKey
+  });
 
   return {
     settings,
