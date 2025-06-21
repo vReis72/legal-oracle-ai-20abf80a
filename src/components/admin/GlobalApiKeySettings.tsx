@@ -70,16 +70,33 @@ const GlobalApiKeySettings: React.FC = () => {
     setIsUpdating(true);
     
     try {
-      const { error } = await supabase
+      // First check if there's an existing setting
+      const { data: existing } = await supabase
         .from('system_settings')
-        .upsert({ 
-          id: 1, 
-          openai_api_key: newApiKey,
-          updated_at: new Date().toISOString()
-        });
+        .select('id')
+        .limit(1)
+        .maybeSingle();
 
-      if (error) {
-        throw error;
+      if (existing) {
+        // Update existing record
+        const { error } = await supabase
+          .from('system_settings')
+          .update({ 
+            openai_api_key: newApiKey,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existing.id);
+
+        if (error) throw error;
+      } else {
+        // Insert new record
+        const { error } = await supabase
+          .from('system_settings')
+          .insert({ 
+            openai_api_key: newApiKey
+          });
+
+        if (error) throw error;
       }
 
       setGlobalApiKey(newApiKey);
