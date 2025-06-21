@@ -15,7 +15,7 @@ const Settings: React.FC = () => {
         <h1 className="text-3xl font-bold mb-8">Configurações</h1>
         
         <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-3' : 'grid-cols-2'}`}>
             <TabsTrigger value="general">Geral</TabsTrigger>
             <TabsTrigger value="storage">Storage</TabsTrigger>
             {isAdmin && <TabsTrigger value="admin">Admin</TabsTrigger>}
