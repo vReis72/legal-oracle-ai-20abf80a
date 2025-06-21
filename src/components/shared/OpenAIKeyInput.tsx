@@ -16,19 +16,12 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
   const { isAdmin, loading: authLoading } = useAuth();
   const { hasValidGlobalKey, refreshGlobalApiKey, loading: globalLoading } = useGlobalApiKey();
 
-  console.log('🔑 OpenAIKeyInput: Estado atual:', {
-    authLoading,
-    globalLoading,
-    hasValidGlobalKey,
-    isAdmin
-  });
-
   if (authLoading || globalLoading) {
     return (
       <Alert className="mb-4">
         <RefreshCw className="h-4 w-4 animate-spin" />
         <AlertDescription>
-          Verificando configurações...
+          Carregando...
         </AlertDescription>
       </Alert>
     );
@@ -40,7 +33,7 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
         <CheckCircle className="h-4 w-4 text-green-500" />
         <AlertDescription>
           <strong>✅ Sistema habilitado!</strong><br />
-          Chave API configurada na tabela system_settings.
+          Chave API configurada.
         </AlertDescription>
       </Alert>
     );
@@ -54,7 +47,7 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
           <strong>❌ Sistema desabilitado</strong><br />
           {isAdmin ? (
             <>
-              Nenhuma chave API encontrada na tabela system_settings. 
+              Nenhuma chave API encontrada. 
               Configure nas <a href="/settings" className="text-eco-primary hover:underline ml-1">configurações</a>.
             </>
           ) : (

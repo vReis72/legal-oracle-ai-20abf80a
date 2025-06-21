@@ -20,8 +20,6 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
   isLoading,
   isKeyConfigured
 }) => {
-  console.log('💬 ChatInputForm: Estado da chave:', { isKeyConfigured });
-
   return (
     <form onSubmit={handleSendMessage} className="p-3 md:p-4 border-t bg-background">
       <div className="flex gap-2 items-end">
@@ -32,7 +30,7 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
             placeholder={
               isKeyConfigured 
                 ? "Digite sua dúvida sobre Direito..."
-                : "Sistema desabilitado - aguarde configuração da chave API"
+                : "Sistema desabilitado - configure uma chave API"
             }
             className="resize-none text-sm md:text-base"
             rows={2}
@@ -60,7 +58,7 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
         <Alert variant="destructive" className="mt-2">
           <AlertTriangle className="h-4 w-4 md:h-5 md:w-5" />
           <AlertDescription className="text-sm">
-            ❌ Sistema desabilitado. Configure uma chave API na tabela system_settings.
+            ❌ Sistema desabilitado. Configure uma chave API.
           </AlertDescription>
         </Alert>
       )}

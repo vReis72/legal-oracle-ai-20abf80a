@@ -8,43 +8,38 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+    
     const checkApiKey = async () => {
       try {
-        console.log('🔍 Verificando chave API na system_settings...');
-        
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('system_settings')
           .select('openai_api_key')
           .limit(1)
           .maybeSingle();
 
-        if (error) {
-          console.error('❌ Erro ao verificar chave:', error);
-          setGlobalApiKey(null);
-        } else {
-          const apiKey = data?.openai_api_key || null;
-          setGlobalApiKey(apiKey);
-          console.log('🔑 Resultado da verificação:', {
-            temChave: !!apiKey,
-            tamanho: apiKey?.length || 0,
-            primeiros: apiKey?.substring(0, 10) || 'N/A'
-          });
+        if (isMounted) {
+          setGlobalApiKey(data?.openai_api_key || null);
+          setLoading(false);
         }
       } catch (error) {
-        console.error('💥 Erro inesperado:', error);
-        setGlobalApiKey(null);
-      } finally {
-        setLoading(false);
+        console.error('❌ Erro ao verificar chave:', error);
+        if (isMounted) {
+          setGlobalApiKey(null);
+          setLoading(false);
+        }
       }
     };
 
     checkApiKey();
+    
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const saveGlobalApiKey = async (key: string): Promise<boolean> => {
     try {
-      console.log('💾 Salvando chave API...');
-      
       const { data: existing } = await supabase
         .from('system_settings')
         .select('id')
@@ -65,15 +60,12 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (result.error) {
-        console.error('❌ Erro ao salvar:', result.error);
         return false;
       }
 
       setGlobalApiKey(key);
-      console.log('✅ Chave salva com sucesso');
       return true;
     } catch (error) {
-      console.error('💥 Erro ao salvar:', error);
       return false;
     }
   };
@@ -87,9 +79,7 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
         .limit(1)
         .maybeSingle();
       
-      const apiKey = data?.openai_api_key || null;
-      setGlobalApiKey(apiKey);
-      console.log('🔄 Chave atualizada:', !!apiKey);
+      setGlobalApiKey(data?.openai_api_key || null);
     } catch (error) {
       console.error('❌ Erro ao atualizar:', error);
     } finally {
@@ -97,14 +87,7 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Verificação super simples: existe chave? = sistema habilitado
   const hasValidGlobalKey = !!globalApiKey;
-
-  console.log('🔑 Estado atual GlobalApiKeyProvider:', {
-    loading,
-    hasValidGlobalKey,
-    keyLength: globalApiKey?.length || 0
-  });
 
   return (
     <GlobalApiKeyContext.Provider value={{

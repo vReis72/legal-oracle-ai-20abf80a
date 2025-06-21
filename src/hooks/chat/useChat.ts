@@ -32,17 +32,7 @@ export const useChat = () => {
 
   const handleSendMessage = async (e: React.FormEvent, apiKey?: string) => {
     e.preventDefault();
-    if (!input.trim()) return;
-    
-    if (!apiKey) {
-      console.log('❌ Sem chave API');
-      toast({
-        variant: "destructive",
-        title: "Sistema desabilitado",
-        description: "Configure uma chave API na tabela system_settings.",
-      });
-      return;
-    }
+    if (!input.trim() || !apiKey) return;
     
     const messageContent = input.trim();
     const userMessage: ChatMessage = {
@@ -69,7 +59,6 @@ export const useChat = () => {
         userMessage
       ];
       
-      console.log('💬 Enviando para OpenAI...');
       const assistantResponse = await sendChatMessage(conversationHistory, apiKey);
       
       const assistantMessage: ChatMessage = {
@@ -83,7 +72,6 @@ export const useChat = () => {
       setTimeout(scrollToBottom, 100);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-      console.error('💬 Erro:', errorMessage);
       
       toast({
         variant: "destructive",
