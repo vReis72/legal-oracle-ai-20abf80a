@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Document } from '@/types/document';
 import DocumentProgressBar from './DocumentProgressBar';
@@ -8,7 +7,7 @@ import DocumentSummary from './DocumentSummary';
 import DocumentKeyPoints from './DocumentKeyPoints';
 import DocumentConclusion from './DocumentConclusion';
 import { useDocumentAnalysis } from '@/hooks/document/useDocumentAnalysis';
-import { supabase } from '@/integrations/supabase/client';
+import { useGlobalApiKey } from '@/hooks/globalApiKey/GlobalApiKeyContext';
 import ErrorMessage from '../ai/ErrorMessage'; 
 
 interface DocumentAnalyzerProps {
@@ -20,28 +19,15 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
   document, 
   onAnalysisComplete
 }) => {
-  // Get API key from system settings
-  const getApiKey = async (): Promise<string | null> => {
-    try {
-      const { data } = await supabase
-        .from('system_settings')
-        .select('openai_api_key')
-        .limit(1)
-        .maybeSingle();
-
-      return data?.openai_api_key || null;
-    } catch (error) {
-      console.error('Erro ao buscar chave API:', error);
-      return null;
-    }
-  };
+  // Usar o novo sistema de chave API global
+  const { globalApiKey } = useGlobalApiKey();
   
   const {
     isAnalyzing,
     progress,
     analysisError,
     processDocument
-  } = useDocumentAnalysis(document, onAnalysisComplete, getApiKey);
+  } = useDocumentAnalysis(document, onAnalysisComplete, globalApiKey);
 
   // Adicionar log para depuração do conteúdo do documento
   useEffect(() => {

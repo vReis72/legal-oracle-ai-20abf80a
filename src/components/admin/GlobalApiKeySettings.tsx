@@ -1,44 +1,19 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useGlobalApiKey } from '@/hooks/useGlobalApiKey';
 import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { Key, Shield, AlertTriangle, Check } from 'lucide-react';
 
 const GlobalApiKeySettings: React.FC = () => {
   const [newApiKey, setNewApiKey] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
-  const [globalApiKey, setGlobalApiKey] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { globalApiKey, hasValidGlobalKey, saveGlobalApiKey, loading } = useGlobalApiKey();
   const { isAdmin } = useAuth();
-  const { toast } = useToast();
-
-  const loadGlobalApiKey = async () => {
-    try {
-      const { data } = await supabase
-        .from('system_settings')
-        .select('openai_api_key')
-        .limit(1)
-        .maybeSingle();
-
-      setGlobalApiKey(data?.openai_api_key || null);
-    } catch (error) {
-      console.error('Erro ao carregar chave API global:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (isAdmin) {
-      loadGlobalApiKey();
-    }
-  }, [isAdmin]);
 
   if (!isAdmin) {
     return (
@@ -59,66 +34,20 @@ const GlobalApiKeySettings: React.FC = () => {
     }
 
     if (!newApiKey.startsWith('sk-')) {
-      toast({
-        variant: "destructive",
-        title: "Chave inválida",
-        description: "A chave API deve começar com 'sk-'",
-      });
       return;
     }
 
     setIsUpdating(true);
     
     try {
-      // First check if there's an existing setting
-      const { data: existing } = await supabase
-        .from('system_settings')
-        .select('id')
-        .limit(1)
-        .maybeSingle();
-
-      if (existing) {
-        // Update existing record
-        const { error } = await supabase
-          .from('system_settings')
-          .update({ 
-            openai_api_key: newApiKey,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existing.id);
-
-        if (error) throw error;
-      } else {
-        // Insert new record
-        const { error } = await supabase
-          .from('system_settings')
-          .insert({ 
-            openai_api_key: newApiKey
-          });
-
-        if (error) throw error;
+      const success = await saveGlobalApiKey(newApiKey);
+      if (success) {
+        setNewApiKey('');
       }
-
-      setGlobalApiKey(newApiKey);
-      setNewApiKey('');
-      
-      toast({
-        title: "Chave salva",
-        description: "Chave API global configurada com sucesso",
-      });
-    } catch (error) {
-      console.error('Erro ao salvar chave:', error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Erro ao salvar a chave API",
-      });
     } finally {
       setIsUpdating(false);
     }
   };
-
-  const hasValidGlobalKey = globalApiKey && globalApiKey.startsWith('sk-');
 
   if (loading) {
     return (

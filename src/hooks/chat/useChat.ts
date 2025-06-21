@@ -2,7 +2,6 @@
 import { useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { sendChatMessage } from '@/services/chatService';
-import { supabase } from '@/integrations/supabase/client';
 
 interface ChatMessage {
   id: string;
@@ -31,31 +30,16 @@ export const useChat = () => {
     }
   };
 
-  const getApiKey = async (): Promise<string | null> => {
-    try {
-      const { data } = await supabase
-        .from('system_settings')
-        .select('openai_api_key')
-        .limit(1)
-        .maybeSingle();
-
-      return data?.openai_api_key || null;
-    } catch (error) {
-      console.error('Erro ao buscar chave API:', error);
-      return null;
-    }
-  };
-
-  const handleSendMessage = async (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent, apiKey?: string) => {
     e.preventDefault();
     if (!input.trim()) return;
     
-    const apiKey = await getApiKey();
     if (!apiKey) {
+      console.log('❌ Sem chave API');
       toast({
         variant: "destructive",
-        title: "Chave API não configurada",
-        description: "Configure uma chave OpenAI nas configurações para usar o chat.",
+        title: "Sistema desabilitado",
+        description: "Configure uma chave API na tabela system_settings.",
       });
       return;
     }
@@ -85,6 +69,7 @@ export const useChat = () => {
         userMessage
       ];
       
+      console.log('💬 Enviando para OpenAI...');
       const assistantResponse = await sendChatMessage(conversationHistory, apiKey);
       
       const assistantMessage: ChatMessage = {
@@ -98,6 +83,7 @@ export const useChat = () => {
       setTimeout(scrollToBottom, 100);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      console.error('💬 Erro:', errorMessage);
       
       toast({
         variant: "destructive",

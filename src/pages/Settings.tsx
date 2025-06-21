@@ -1,40 +1,46 @@
 
 import React from 'react';
-import SettingsForm from '@/components/settings/SettingsForm';
-import StorageManager from '@/components/settings/StorageManager';
-import GlobalApiKeySettings from '@/components/admin/GlobalApiKeySettings';
 import { useAuth } from '@/hooks/useAuth';
+import SettingsForm from '@/components/settings/SettingsForm';
+import AdminSettings from '@/components/admin/AdminSettings';
+import { Settings as SettingsIcon, Shield } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Settings: React.FC = () => {
   const { isAdmin } = useAuth();
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <div className="eco-container">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Configurações</h1>
+        <div className="mb-6 md:mb-8">
+          <h1 className="text-2xl md:text-3xl font-serif font-bold mb-2 text-eco-dark flex items-center gap-2">
+            <SettingsIcon className="h-6 w-6 md:h-8 md:w-8 text-eco-primary" />
+            Configurações
+          </h1>
+          <p className="text-sm md:text-base text-muted-foreground">
+            Gerencie as configurações do sistema e suas informações pessoais
+          </p>
+        </div>
         
-        <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-3' : 'grid-cols-2'}`}>
-            <TabsTrigger value="general">Geral</TabsTrigger>
-            <TabsTrigger value="storage">Storage</TabsTrigger>
-            {isAdmin && <TabsTrigger value="admin">Admin</TabsTrigger>}
-          </TabsList>
-          
-          <TabsContent value="general">
-            <SettingsForm />
-          </TabsContent>
-          
-          <TabsContent value="storage">
-            <StorageManager />
-          </TabsContent>
-          
-          {isAdmin && (
-            <TabsContent value="admin">
-              <GlobalApiKeySettings />
+        {isAdmin ? (
+          <Tabs defaultValue="personal" className="w-full">
+            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 mb-6">
+              <TabsTrigger value="personal" className="text-sm">Configurações Pessoais</TabsTrigger>
+              <TabsTrigger value="admin" className="flex items-center gap-2 text-sm">
+                <Shield className="h-4 w-4" />
+                Administração
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="personal" className="mt-6">
+              <SettingsForm />
             </TabsContent>
-          )}
-        </Tabs>
+            <TabsContent value="admin" className="mt-6">
+              <AdminSettings />
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <SettingsForm />
+        )}
       </div>
     </div>
   );
