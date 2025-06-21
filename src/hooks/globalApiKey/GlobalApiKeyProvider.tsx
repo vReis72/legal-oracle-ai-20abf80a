@@ -1,42 +1,28 @@
 
-import { useState, ReactNode, useEffect } from 'react';
+import { useState, ReactNode } from 'react';
 import { GlobalApiKeyContext } from './GlobalApiKeyContext';
 import { supabase } from '@/integrations/supabase/client';
 
 export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   const [globalApiKey, setGlobalApiKey] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    let isMounted = true;
-    
-    const checkApiKey = async () => {
-      try {
-        const { data } = await supabase
-          .from('system_settings')
-          .select('openai_api_key')
-          .limit(1)
-          .maybeSingle();
+  const fetchApiKey = async (): Promise<string | null> => {
+    try {
+      const { data } = await supabase
+        .from('system_settings')
+        .select('openai_api_key')
+        .limit(1)
+        .maybeSingle();
 
-        if (isMounted) {
-          setGlobalApiKey(data?.openai_api_key || null);
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error('❌ Erro ao verificar chave:', error);
-        if (isMounted) {
-          setGlobalApiKey(null);
-          setLoading(false);
-        }
-      }
-    };
-
-    checkApiKey();
-    
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+      const key = data?.openai_api_key || null;
+      setGlobalApiKey(key);
+      return key;
+    } catch (error) {
+      console.error('Erro ao buscar chave:', error);
+      return null;
+    }
+  };
 
   const saveGlobalApiKey = async (key: string): Promise<boolean> => {
     try {
@@ -59,12 +45,11 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
           .insert({ openai_api_key: key });
       }
 
-      if (result.error) {
-        return false;
+      if (!result.error) {
+        setGlobalApiKey(key);
+        return true;
       }
-
-      setGlobalApiKey(key);
-      return true;
+      return false;
     } catch (error) {
       return false;
     }
@@ -72,28 +57,15 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
 
   const refreshGlobalApiKey = async () => {
     setLoading(true);
-    try {
-      const { data } = await supabase
-        .from('system_settings')
-        .select('openai_api_key')
-        .limit(1)
-        .maybeSingle();
-      
-      setGlobalApiKey(data?.openai_api_key || null);
-    } catch (error) {
-      console.error('❌ Erro ao atualizar:', error);
-    } finally {
-      setLoading(false);
-    }
+    await fetchApiKey();
+    setLoading(false);
   };
-
-  const hasValidGlobalKey = !!globalApiKey;
 
   return (
     <GlobalApiKeyContext.Provider value={{
       globalApiKey,
       loading,
-      hasValidGlobalKey,
+      hasValidGlobalKey: false, // Sempre false para não fazer verificações
       saveGlobalApiKey,
       refreshGlobalApiKey
     }}>

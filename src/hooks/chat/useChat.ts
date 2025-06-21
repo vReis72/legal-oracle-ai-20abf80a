@@ -2,6 +2,7 @@
 import { useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { sendChatMessage } from '@/services/chatService';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ChatMessage {
   id: string;
@@ -30,9 +31,35 @@ export const useChat = () => {
     }
   };
 
-  const handleSendMessage = async (e: React.FormEvent, apiKey?: string) => {
+  const getApiKey = async (): Promise<string | null> => {
+    try {
+      const { data } = await supabase
+        .from('system_settings')
+        .select('openai_api_key')
+        .limit(1)
+        .maybeSingle();
+
+      return data?.openai_api_key || null;
+    } catch (error) {
+      console.error('Erro ao buscar chave API:', error);
+      return null;
+    }
+  };
+
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || !apiKey) return;
+    if (!input.trim()) return;
+    
+    // Buscar chave API apenas quando necessário
+    const apiKey = await getApiKey();
+    if (!apiKey) {
+      toast({
+        variant: "destructive",
+        title: "Chave API não configurada",
+        description: "Configure uma chave OpenAI nas configurações para usar o chat.",
+      });
+      return;
+    }
     
     const messageContent = input.trim();
     const userMessage: ChatMessage = {
