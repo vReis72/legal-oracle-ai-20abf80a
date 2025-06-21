@@ -1,5 +1,5 @@
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import { UserSettingsUpdate } from '@/types/userSettings';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/providers/ThemeProvider';
@@ -14,7 +14,7 @@ export const useUserSettings = () => {
   const { globalApiKey, hasValidGlobalKey, loading: globalLoading } = useGlobalApiKey();
   
   // Use user ID from auth context when available, fallback to temp ID
-  const userId = user?.id || 'temp-user-001';
+  const userId = useMemo(() => user?.id || 'temp-user-001', [user?.id]);
   const isAuthenticated = !!user?.id;
 
   const {
@@ -27,13 +27,17 @@ export const useUserSettings = () => {
 
   const { saveSettings } = useSettingsSaver(userId, isAuthenticated, reloadSettings);
 
-  // Carrega configurações quando o userId muda (apenas uma vez)
+  // Carrega configurações apenas quando necessário
   useEffect(() => {
     console.log('🎯 useUserSettings: useEffect disparado', { userId, isAuthenticated });
-    loadSettings();
-  }, [userId, loadSettings]);
+    
+    // Só carrega se não está em loading global e o userId mudou de fato
+    if (!globalLoading) {
+      loadSettings();
+    }
+  }, [userId, globalLoading]); // Removido loadSettings da dependência
 
-  // Reset loader when user changes
+  // Reset loader when user changes from temp to real
   useEffect(() => {
     if (user?.id && userId.startsWith('temp-user-')) {
       console.log('🎯 useUserSettings: Resetando loader para usuário real');

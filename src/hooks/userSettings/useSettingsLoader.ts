@@ -10,7 +10,7 @@ export const useSettingsLoader = (userId: string) => {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { setTheme, theme: currentTheme } = useTheme();
+  const { setTheme } = useTheme();
   
   const hasLoadedRef = useRef(false);
   const lastUserIdRef = useRef<string | null>(null);
@@ -55,8 +55,8 @@ export const useSettingsLoader = (userId: string) => {
       hasLoadedRef.current = true;
       lastUserIdRef.current = userId;
 
-      // Aplica o tema salvo apenas se for diferente do atual
-      if (userSettings?.theme && userSettings.theme !== currentTheme) {
+      // Aplica o tema salvo apenas se existir
+      if (userSettings?.theme) {
         console.log('Aplicando tema salvo:', userSettings.theme);
         setTheme(userSettings.theme);
       }
@@ -71,7 +71,7 @@ export const useSettingsLoader = (userId: string) => {
       isLoadingRef.current = false;
       setIsLoading(false);
     }
-  }, [userId, currentTheme, setTheme, toast]);
+  }, [userId, setTheme, toast]); // Removido currentTheme da dependência
 
   const reloadSettings = useCallback(async () => {
     console.log('🔄 useSettingsLoader: Forçando recarregamento');
