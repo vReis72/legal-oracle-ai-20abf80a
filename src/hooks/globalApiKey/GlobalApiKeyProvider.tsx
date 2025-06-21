@@ -20,6 +20,14 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
 
         if (error) {
           console.error('❌ Erro ao verificar chave:', error);
+          // Se for erro de RLS, vamos tentar novamente após um pequeno delay
+          if (error.code === '42501' || error.message.includes('permission')) {
+            console.log('🔄 Erro de permissão detectado, tentando novamente em 1s...');
+            setTimeout(() => {
+              checkApiKey();
+            }, 1000);
+            return;
+          }
           setGlobalApiKey(null);
         } else {
           const apiKey = data?.openai_api_key || null;
@@ -81,17 +89,24 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   const refreshGlobalApiKey = async () => {
     setLoading(true);
     try {
-      const { data } = await supabase
+      console.log('🔄 Forçando atualização da chave...');
+      const { data, error } = await supabase
         .from('system_settings')
         .select('openai_api_key')
         .limit(1)
         .maybeSingle();
       
-      const apiKey = data?.openai_api_key || null;
-      setGlobalApiKey(apiKey);
-      console.log('🔄 Chave atualizada:', !!apiKey);
+      if (error) {
+        console.error('❌ Erro ao atualizar:', error);
+        setGlobalApiKey(null);
+      } else {
+        const apiKey = data?.openai_api_key || null;
+        setGlobalApiKey(apiKey);
+        console.log('🔄 Chave atualizada:', !!apiKey);
+      }
     } catch (error) {
       console.error('❌ Erro ao atualizar:', error);
+      setGlobalApiKey(null);
     } finally {
       setLoading(false);
     }

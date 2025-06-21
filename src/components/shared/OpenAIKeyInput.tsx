@@ -50,7 +50,7 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
     <Alert variant="destructive" className="mb-4">
       <AlertTriangle className="h-4 w-4" />
       <AlertDescription className="flex items-center justify-between">
-        <div>
+        <div className="flex-1">
           <strong>❌ Sistema desabilitado</strong><br />
           {isAdmin ? (
             <>
@@ -61,7 +61,7 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
             'Aguarde o administrador configurar uma chave API.'
           )}
         </div>
-        {isAdmin && (
+        <div className="flex gap-2 ml-4">
           <Button 
             variant="outline" 
             size="sm" 
@@ -70,7 +70,16 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
           >
             {globalLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : 'Verificar'}
           </Button>
-        )}
+          {isAdmin && (
+            <Button 
+              variant="default" 
+              size="sm" 
+              onClick={() => window.location.href = '/settings'}
+            >
+              Configurar
+            </Button>
+          )}
+        </div>
       </AlertDescription>
     </Alert>
   );
