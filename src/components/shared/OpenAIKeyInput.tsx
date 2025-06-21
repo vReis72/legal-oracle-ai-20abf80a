@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle, AlertTriangle } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 const OpenAIKeyInput: React.FC = () => {

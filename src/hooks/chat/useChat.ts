@@ -50,7 +50,6 @@ export const useChat = () => {
     e.preventDefault();
     if (!input.trim()) return;
     
-    // Buscar chave API apenas quando necessário
     const apiKey = await getApiKey();
     if (!apiKey) {
       toast({
