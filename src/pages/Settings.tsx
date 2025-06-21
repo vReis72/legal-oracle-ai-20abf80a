@@ -1,6 +1,5 @@
 
 import React from 'react';
-import Layout from '@/components/layout/Layout';
 import SettingsForm from '@/components/settings/SettingsForm';
 import StorageManager from '@/components/settings/StorageManager';
 import GlobalApiKeySettings from '@/components/admin/GlobalApiKeySettings';
@@ -11,35 +10,33 @@ const Settings: React.FC = () => {
   const { isAdmin } = useAuth();
 
   return (
-    <Layout>
-      <div className="container mx-auto py-8 px-4">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold mb-8">Configurações</h1>
+    <div className="container mx-auto py-8 px-4">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold mb-8">Configurações</h1>
+        
+        <Tabs defaultValue="general" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="general">Geral</TabsTrigger>
+            <TabsTrigger value="storage">Storage</TabsTrigger>
+            {isAdmin && <TabsTrigger value="admin">Admin</TabsTrigger>}
+          </TabsList>
           
-          <Tabs defaultValue="general" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="general">Geral</TabsTrigger>
-              <TabsTrigger value="storage">Storage</TabsTrigger>
-              {isAdmin && <TabsTrigger value="admin">Admin</TabsTrigger>}
-            </TabsList>
-            
-            <TabsContent value="general">
-              <SettingsForm />
+          <TabsContent value="general">
+            <SettingsForm />
+          </TabsContent>
+          
+          <TabsContent value="storage">
+            <StorageManager />
+          </TabsContent>
+          
+          {isAdmin && (
+            <TabsContent value="admin">
+              <GlobalApiKeySettings />
             </TabsContent>
-            
-            <TabsContent value="storage">
-              <StorageManager />
-            </TabsContent>
-            
-            {isAdmin && (
-              <TabsContent value="admin">
-                <GlobalApiKeySettings />
-              </TabsContent>
-            )}
-          </Tabs>
-        </div>
+          )}
+        </Tabs>
       </div>
-    </Layout>
+    </div>
   );
 };
 
