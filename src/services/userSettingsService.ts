@@ -68,6 +68,36 @@ export class UserSettingsService {
     }
   }
 
+  static async createDefaultSettings(userId: string, profileData?: any): Promise<boolean> {
+    try {
+      console.log('🆕 Criando configurações padrão para usuário:', userId);
+      
+      const defaultSettings = {
+        user_id: userId,
+        user_name: profileData?.full_name || '',
+        contact_email: profileData?.email || '',
+        company_name: profileData?.company_name || '',
+        user_oab: profileData?.oab_number || '',
+        theme: 'light' as const
+      };
+
+      const { error } = await supabase
+        .from('user_settings')
+        .insert(defaultSettings);
+
+      if (error) {
+        console.error('Erro ao criar configurações padrão:', error);
+        return false;
+      }
+
+      console.log('✅ Configurações padrão criadas com sucesso');
+      return true;
+    } catch (error) {
+      console.error('Erro inesperado ao criar configurações padrão:', error);
+      return false;
+    }
+  }
+
   static async updateTheme(userId: string, theme: 'light' | 'dark' | 'system'): Promise<boolean> {
     return this.saveSettings(userId, { theme });
   }

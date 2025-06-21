@@ -29,13 +29,13 @@ export const useUserSettings = () => {
 
   // Carrega configurações apenas quando necessário
   useEffect(() => {
-    console.log('🎯 useUserSettings: useEffect disparado', { userId, isAuthenticated });
+    console.log('🎯 useUserSettings: useEffect disparado', { userId, isAuthenticated, globalLoading });
     
-    // Só carrega se não está em loading global e o userId mudou de fato
-    if (!globalLoading) {
+    // Só carrega se não está em loading global
+    if (!globalLoading && userId) {
       loadSettings();
     }
-  }, [userId, globalLoading]); // Removido loadSettings da dependência
+  }, [userId, globalLoading, loadSettings]);
 
   // Reset loader when user changes from temp to real
   useEffect(() => {

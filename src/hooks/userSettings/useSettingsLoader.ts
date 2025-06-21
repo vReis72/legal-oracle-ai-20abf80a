@@ -45,7 +45,26 @@ export const useSettingsLoader = (userId: string) => {
       // Tenta carregar do Supabase primeiro
       let userSettings = await UserSettingsService.getUserSettings(userId);
       
-      // Se não conseguir do Supabase, tenta do localStorage como fallback
+      // Se não existe configuração e é um usuário real (não temp), criar configuração padrão
+      if (!userSettings && !userId.startsWith('temp-user-')) {
+        console.log('🆕 useSettingsLoader: Criando configurações padrão para usuário:', userId);
+        
+        const defaultSettings = {
+          user_name: '',
+          contact_email: '',
+          company_name: '',
+          user_oab: '',
+          theme: 'light' as const
+        };
+        
+        const success = await UserSettingsService.saveSettings(userId, defaultSettings);
+        if (success) {
+          userSettings = await UserSettingsService.getUserSettings(userId);
+          console.log('✅ useSettingsLoader: Configurações padrão criadas com sucesso');
+        }
+      }
+      
+      // Se ainda não conseguir do Supabase, tenta do localStorage como fallback
       if (!userSettings && !userId.startsWith('temp-user-')) {
         console.log('🔄 useSettingsLoader: Tentando fallback para localStorage');
         userSettings = LocalUserSettingsService.getUserSettings(userId);
@@ -71,7 +90,7 @@ export const useSettingsLoader = (userId: string) => {
       isLoadingRef.current = false;
       setIsLoading(false);
     }
-  }, [userId, setTheme, toast]); // Removido currentTheme da dependência
+  }, [userId, setTheme, toast]);
 
   const reloadSettings = useCallback(async () => {
     console.log('🔄 useSettingsLoader: Forçando recarregamento');
