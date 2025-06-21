@@ -117,7 +117,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  // Calcular isAdmin de forma explícita e com logs
+  // Calcular isAdmin de forma mais robusta e com logs detalhados
   const isAdmin = Boolean(profile?.is_admin === true);
 
   console.log('🏠 AuthProvider: Estado FINAL:', {

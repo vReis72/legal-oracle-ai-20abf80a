@@ -9,7 +9,7 @@ import { useSettingsSaver } from './useSettingsSaver';
 import { SettingsValidation } from './settingsValidation';
 
 export const useUserSettings = () => {
-  const { user, profile } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const { theme: currentTheme } = useTheme();
   const { globalApiKey, hasValidGlobalKey, loading: globalLoading } = useGlobalApiKey();
   
@@ -19,7 +19,7 @@ export const useUserSettings = () => {
 
   const {
     settings,
-    isLoading,
+    isLoading: settingsLoading,
     loadSettings,
     reloadSettings,
     resetLoader
@@ -27,15 +27,20 @@ export const useUserSettings = () => {
 
   const { saveSettings } = useSettingsSaver(userId, isAuthenticated, reloadSettings);
 
-  // Carrega configurações apenas quando necessário
+  // Carrega configurações apenas quando necessário e evita loops
   useEffect(() => {
-    console.log('🎯 useUserSettings: useEffect disparado', { userId, isAuthenticated, globalLoading });
-    
-    // Só carrega se não está em loading global
-    if (!globalLoading && userId) {
+    // Só carrega se auth não está em loading e temos userId válido
+    if (!authLoading && !globalLoading && userId && !settingsLoading) {
+      console.log('🎯 useUserSettings: Carregando configurações', { 
+        userId, 
+        isAuthenticated, 
+        authLoading, 
+        globalLoading,
+        settingsLoading 
+      });
       loadSettings();
     }
-  }, [userId, globalLoading, loadSettings]);
+  }, [userId, isAuthenticated, authLoading, globalLoading, loadSettings, settingsLoading]);
 
   // Reset loader when user changes from temp to real
   useEffect(() => {
@@ -92,7 +97,7 @@ export const useUserSettings = () => {
   }, [settings, user]);
 
   const effectiveApiKey = getEffectiveApiKey();
-  const isLoadingAny = isLoading || globalLoading;
+  const isLoadingAny = authLoading || globalLoading || settingsLoading;
 
   console.log('🎯 useUserSettings: Estado final', {
     userId,
