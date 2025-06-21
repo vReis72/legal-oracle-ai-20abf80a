@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { UserSettings, UserSettingsInsert, UserSettingsUpdate } from '@/types/userSettings';
 
@@ -6,6 +5,8 @@ export class UserSettingsService {
   
   static async getUserSettings(userId: string): Promise<UserSettings | null> {
     try {
+      console.log('🔍 UserSettingsService: Buscando configurações para usuário:', userId);
+      
       const { data, error } = await supabase
         .from('user_settings')
         .select('*')
@@ -13,22 +14,26 @@ export class UserSettingsService {
         .single();
 
       if (error) {
-        // Para outros erros, apenas loga
         if (error.code !== 'PGRST116') { // PGRST116 = no rows returned
-          console.error('Erro ao buscar configurações do usuário:', error);
+          console.error('❌ UserSettingsService: Erro ao buscar configurações:', error);
+        } else {
+          console.log('ℹ️ UserSettingsService: Nenhuma configuração encontrada para usuário:', userId);
         }
         return null;
       }
 
+      console.log('✅ UserSettingsService: Configurações encontradas:', data);
       return data as UserSettings;
     } catch (error) {
-      console.error('Erro inesperado ao buscar configurações:', error);
+      console.error('❌ UserSettingsService: Erro inesperado ao buscar configurações:', error);
       return null;
     }
   }
 
   static async saveSettings(userId: string, settings: Partial<UserSettingsUpdate>): Promise<boolean> {
     try {
+      console.log('💾 UserSettingsService: Salvando configurações para usuário:', userId, settings);
+      
       // Primeiro verifica se já existe configuração para este usuário
       const existing = await this.getUserSettings(userId);
       
@@ -43,9 +48,11 @@ export class UserSettingsService {
           .eq('user_id', userId);
 
         if (error) {
-          console.error('Erro ao atualizar configurações:', error);
+          console.error('❌ UserSettingsService: Erro ao atualizar configurações:', error);
           return false;
         }
+        
+        console.log('✅ UserSettingsService: Configurações atualizadas com sucesso');
       } else {
         // Cria nova configuração
         const { error } = await supabase
@@ -56,14 +63,16 @@ export class UserSettingsService {
           });
 
         if (error) {
-          console.error('Erro ao criar configuração:', error);
+          console.error('❌ UserSettingsService: Erro ao criar configuração:', error);
           return false;
         }
+        
+        console.log('✅ UserSettingsService: Nova configuração criada com sucesso');
       }
 
       return true;
     } catch (error) {
-      console.error('Erro inesperado ao salvar configurações:', error);
+      console.error('❌ UserSettingsService: Erro inesperado ao salvar configurações:', error);
       return false;
     }
   }

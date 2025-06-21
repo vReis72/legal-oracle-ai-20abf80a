@@ -44,29 +44,11 @@ export const useSettingsLoader = (userId: string) => {
       
       // Tenta carregar do Supabase primeiro
       let userSettings = await UserSettingsService.getUserSettings(userId);
+      console.log('🔄 useSettingsLoader: Configurações carregadas do Supabase:', userSettings);
       
-      // Se não existe configuração e é um usuário real (não temp), criar configuração padrão
-      if (!userSettings && !userId.startsWith('temp-user-')) {
-        console.log('🆕 useSettingsLoader: Criando configurações padrão para usuário:', userId);
-        
-        const defaultSettings = {
-          user_name: '',
-          contact_email: '',
-          company_name: '',
-          user_oab: '',
-          theme: 'light' as const
-        };
-        
-        const success = await UserSettingsService.saveSettings(userId, defaultSettings);
-        if (success) {
-          userSettings = await UserSettingsService.getUserSettings(userId);
-          console.log('✅ useSettingsLoader: Configurações padrão criadas com sucesso');
-        }
-      }
-      
-      // Se ainda não conseguir do Supabase, tenta do localStorage como fallback
-      if (!userSettings && !userId.startsWith('temp-user-')) {
-        console.log('🔄 useSettingsLoader: Tentando fallback para localStorage');
+      // Se não conseguir do Supabase, tenta do localStorage como fallback para usuários temporários
+      if (!userSettings && userId.startsWith('temp-user-')) {
+        console.log('🔄 useSettingsLoader: Tentando fallback para localStorage (usuário temporário)');
         userSettings = LocalUserSettingsService.getUserSettings(userId);
       }
       
@@ -76,7 +58,7 @@ export const useSettingsLoader = (userId: string) => {
 
       // Aplica o tema salvo apenas se existir
       if (userSettings?.theme) {
-        console.log('Aplicando tema salvo:', userSettings.theme);
+        console.log('🎨 useSettingsLoader: Aplicando tema salvo:', userSettings.theme);
         setTheme(userSettings.theme);
       }
     } catch (error) {
