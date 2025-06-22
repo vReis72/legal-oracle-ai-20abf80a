@@ -1,9 +1,7 @@
 
 import { useCallback } from 'react';
 import { UserSettingsUpdate } from '@/types/userSettings';
-import { UserSettingsService } from '@/services/userSettingsService';
 import { LocalUserSettingsService } from '@/services/localUserSettingsService';
-import { ProfileSyncService } from './profileSyncService';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from '@/providers/ThemeProvider';
 
@@ -23,40 +21,15 @@ export const useSettingsSaver = (
         setTheme(newSettings.theme);
       }
 
-      let success = false;
-
-      // Se o usuário está autenticado, salva no Supabase
-      if (isAuthenticated) {
-        success = await UserSettingsService.saveSettings(userId, newSettings);
-        
-        if (success) {
-          // Sincroniza com a tabela profiles
-          const profileSyncSuccess = await ProfileSyncService.syncWithProfile(userId, newSettings);
-          
-          if (profileSyncSuccess) {
-            toast({
-              title: "Sucesso",
-              description: "Configurações salvas e sincronizadas com sucesso!",
-            });
-          } else {
-            toast({
-              title: "Parcialmente Salvo",
-              description: "Configurações salvas, mas houve um problema na sincronização do perfil.",
-            });
-          }
-        }
-      } else {
-        // Se não está autenticado, salva no localStorage
-        success = LocalUserSettingsService.saveSettings(userId, newSettings);
-        if (success) {
-          toast({
-            title: "Configurações Salvas (Local)",
-            description: "Suas configurações foram salvas localmente. Faça login para sincronizar com o banco.",
-          });
-        }
-      }
+      // Salva sempre no localStorage (sem autenticação)
+      const success = LocalUserSettingsService.saveSettings(userId, newSettings);
       
       if (success) {
+        toast({
+          title: "Configurações Salvas",
+          description: "Suas configurações foram salvas localmente.",
+        });
+        
         // Recarrega as configurações
         await reloadSettings();
         return true;
@@ -77,7 +50,7 @@ export const useSettingsSaver = (
       });
       return false;
     }
-  }, [userId, isAuthenticated, currentTheme, setTheme, toast, reloadSettings]);
+  }, [userId, currentTheme, setTheme, toast, reloadSettings]);
 
   return { saveSettings };
 };

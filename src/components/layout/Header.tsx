@@ -1,60 +1,11 @@
 
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Scale, User, Settings, LogOut, Shield, Menu } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { Scale, Settings, Menu } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const Header = () => {
-  const { user, profile, signOut, isAdmin } = useAuth();
-  const navigate = useNavigate();
-
-  console.log('🏆 Header - Estado de autenticação:', {
-    user: !!user,
-    userEmail: user?.email,
-    profile: !!profile,
-    profileEmail: profile?.email,
-    profileFullName: profile?.full_name,
-    profileIsAdmin: profile?.is_admin,
-    calculatedIsAdmin: isAdmin,
-    profileStatus: profile?.status
-  });
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      navigate('/auth');
-    } catch (error) {
-      navigate('/auth');
-    }
-  };
-
-  // Função para obter o nome de exibição
-  const getDisplayName = () => {
-    // Primeiro, tentar usar o full_name do perfil
-    if (profile?.full_name && profile.full_name.trim()) {
-      console.log('📝 Header: Usando full_name do perfil:', profile.full_name);
-      return profile.full_name;
-    }
-    
-    // Depois, tentar usar o full_name dos metadados do usuário
-    if (user?.user_metadata?.full_name && user.user_metadata.full_name.trim()) {
-      console.log('📝 Header: Usando full_name dos metadados:', user.user_metadata.full_name);
-      return user.user_metadata.full_name;
-    }
-    
-    // Por último, usar a parte antes do @ do email
-    if (user?.email) {
-      const emailName = user.email.split('@')[0];
-      console.log('📧 Header: Usando nome do email:', emailName);
-      return emailName;
-    }
-    
-    return 'Usuário';
-  };
-
   const NavLinks = () => (
     <>
       <Link 
@@ -111,61 +62,14 @@ const Header = () => {
               </Sheet>
             </div>
 
-            {user && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="flex items-center space-x-1 md:space-x-2">
-                    <User className="h-4 w-4" />
-                    <span className="hidden sm:inline text-sm md:text-base">
-                      {getDisplayName()}
-                    </span>
-                    {isAdmin && (
-                      <Shield className="h-3 w-3 text-eco-primary" />
-                    )}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                    {user.email}
-                    {profile ? (
-                      <>
-                        {isAdmin ? (
-                          <div className="text-xs text-eco-primary font-medium flex items-center gap-1">
-                            <Shield className="h-3 w-3" />
-                            Administrador
-                          </div>
-                        ) : (
-                          <div className="text-xs text-gray-600">
-                            👤 Usuário
-                          </div>
-                        )}
-                        {(profile.full_name || user.user_metadata?.full_name) && (
-                          <div className="text-xs text-gray-500">
-                            {profile.full_name || user.user_metadata?.full_name}
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <div className="text-xs text-amber-600 font-medium">
-                        ⏳ Carregando perfil...
-                      </div>
-                    )}
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link to="/settings" className="flex items-center">
-                      <Settings className="mr-2 h-4 w-4" />
-                      Configurações
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sair
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+            <Link to="/settings">
+              <Button variant="ghost" size="sm" className="flex items-center space-x-1 md:space-x-2">
+                <Settings className="h-4 w-4" />
+                <span className="hidden sm:inline text-sm md:text-base">
+                  Configurações
+                </span>
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

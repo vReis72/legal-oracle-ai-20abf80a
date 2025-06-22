@@ -1,7 +1,6 @@
 
 import { useEffect, useCallback, useMemo, useRef } from 'react';
 import { UserSettingsUpdate } from '@/types/userSettings';
-import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useGlobalApiKey } from '@/hooks/globalApiKey/GlobalApiKeyContext';
 import { useSettingsLoader } from './useSettingsLoader';
@@ -9,15 +8,14 @@ import { useSettingsSaver } from './useSettingsSaver';
 import { SettingsValidation } from './settingsValidation';
 
 export const useUserSettings = () => {
-  const { user, profile, loading: authLoading } = useAuth();
   const { theme: currentTheme } = useTheme();
   const { globalApiKey, hasValidGlobalKey, loading: globalLoading } = useGlobalApiKey();
   const loadingRef = useRef(false);
   const hasInitializedRef = useRef(false);
   
-  // Use user ID from auth context when available, fallback to temp ID
-  const userId = useMemo(() => user?.id || 'temp-user-001', [user?.id]);
-  const isAuthenticated = !!user?.id;
+  // Use temp user ID since no authentication
+  const userId = 'temp-user-001';
+  const isAuthenticated = false;
 
   const {
     settings,
@@ -37,11 +35,10 @@ export const useUserSettings = () => {
     }
 
     // Só carrega se não está em loading e ainda não carregou
-    if (!authLoading && !globalLoading && !settingsLoading && !loadingRef.current && userId) {
+    if (!globalLoading && !settingsLoading && !loadingRef.current && userId) {
       console.log('🎯 useUserSettings: Inicializando configurações', { 
         userId, 
         isAuthenticated, 
-        authLoading, 
         globalLoading,
         settingsLoading 
       });
@@ -53,17 +50,7 @@ export const useUserSettings = () => {
         loadingRef.current = false;
       });
     }
-  }, [userId, isAuthenticated, authLoading, globalLoading, settingsLoading, loadSettings]);
-
-  // Reset apenas quando usuário muda de temp para real
-  useEffect(() => {
-    if (user?.id && userId.startsWith('temp-user-') && hasInitializedRef.current) {
-      console.log('🎯 useUserSettings: Resetando para usuário real');
-      hasInitializedRef.current = false;
-      resetLoader();
-      loadingRef.current = false;
-    }
-  }, [user?.id, resetLoader, userId]);
+  }, [userId, isAuthenticated, globalLoading, settingsLoading, loadSettings]);
 
   // Convenience methods
   const updateTheme = useCallback(async (theme: 'light' | 'dark' | 'system'): Promise<boolean> => {
@@ -94,15 +81,15 @@ export const useUserSettings = () => {
   }, [getEffectiveApiKey]);
 
   const getUserName = useCallback((): string => {
-    return SettingsValidation.getUserName(settings, profile);
-  }, [settings, profile]);
+    return SettingsValidation.getUserName(settings, null);
+  }, [settings]);
 
   const getUserEmail = useCallback((): string => {
-    return SettingsValidation.getUserEmail(settings, user);
-  }, [settings, user]);
+    return SettingsValidation.getUserEmail(settings, null);
+  }, [settings]);
 
   const effectiveApiKey = getEffectiveApiKey();
-  const isLoadingAny = authLoading || globalLoading || settingsLoading || loadingRef.current;
+  const isLoadingAny = globalLoading || settingsLoading || loadingRef.current;
 
   console.log('🎯 useUserSettings: Estado final', {
     userId,

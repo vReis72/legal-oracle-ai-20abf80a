@@ -1,7 +1,6 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { UserSettings } from '@/types/userSettings';
-import { UserSettingsService } from '@/services/userSettingsService';
 import { LocalUserSettingsService } from '@/services/localUserSettingsService';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from '@/providers/ThemeProvider';
@@ -40,17 +39,11 @@ export const useSettingsLoader = (userId: string) => {
     setIsLoading(true);
     
     try {
-      console.log('🔄 useSettingsLoader: Carregando configurações para:', userId);
+      console.log('🔄 useSettingsLoader: Carregando configurações do localStorage para:', userId);
       
-      // Tenta carregar do Supabase primeiro
-      let userSettings = await UserSettingsService.getUserSettings(userId);
-      console.log('🔄 useSettingsLoader: Configurações carregadas do Supabase:', userSettings);
-      
-      // Se não conseguir do Supabase, tenta do localStorage como fallback para usuários temporários
-      if (!userSettings && userId.startsWith('temp-user-')) {
-        console.log('🔄 useSettingsLoader: Tentando fallback para localStorage (usuário temporário)');
-        userSettings = LocalUserSettingsService.getUserSettings(userId);
-      }
+      // Carrega sempre do localStorage
+      const userSettings = LocalUserSettingsService.getUserSettings(userId);
+      console.log('🔄 useSettingsLoader: Configurações carregadas:', userSettings);
       
       setSettings(userSettings);
       hasLoadedRef.current = true;
