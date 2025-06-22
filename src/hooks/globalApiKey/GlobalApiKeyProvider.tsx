@@ -1,43 +1,53 @@
 
-import { useState, ReactNode, useEffect } from 'react';
+import { useState, ReactNode, useEffect, useRef } from 'react';
 import { GlobalApiKeyContext } from './GlobalApiKeyContext';
 import { supabase } from '@/integrations/supabase/client';
 
 export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   const [globalApiKey, setGlobalApiKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const isCheckingRef = useRef(false);
+
+  const checkApiKey = async () => {
+    // Prevenir múltiplas chamadas simultâneas
+    if (isCheckingRef.current) {
+      console.log('🔄 CheckApiKey já em execução, ignorando...');
+      return;
+    }
+
+    isCheckingRef.current = true;
+
+    try {
+      console.log('🔍 Verificando chave API na system_settings...');
+      
+      const { data, error } = await supabase
+        .from('system_settings')
+        .select('openai_api_key')
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error('❌ Erro ao verificar chave:', error);
+        setGlobalApiKey(null);
+      } else {
+        const apiKey = data?.openai_api_key || null;
+        setGlobalApiKey(apiKey);
+        console.log('🔑 Resultado da verificação:', {
+          temChave: !!apiKey,
+          tamanho: apiKey?.length || 0,
+          primeiros: apiKey?.substring(0, 10) || 'N/A'
+        });
+      }
+    } catch (error) {
+      console.error('💥 Erro inesperado:', error);
+      setGlobalApiKey(null);
+    } finally {
+      setLoading(false);
+      isCheckingRef.current = false;
+    }
+  };
 
   useEffect(() => {
-    const checkApiKey = async () => {
-      try {
-        console.log('🔍 Verificando chave API na system_settings...');
-        
-        const { data, error } = await supabase
-          .from('system_settings')
-          .select('openai_api_key')
-          .limit(1)
-          .maybeSingle();
-
-        if (error) {
-          console.error('❌ Erro ao verificar chave:', error);
-          setGlobalApiKey(null);
-        } else {
-          const apiKey = data?.openai_api_key || null;
-          setGlobalApiKey(apiKey);
-          console.log('🔑 Resultado da verificação:', {
-            temChave: !!apiKey,
-            tamanho: apiKey?.length || 0,
-            primeiros: apiKey?.substring(0, 10) || 'N/A'
-          });
-        }
-      } catch (error) {
-        console.error('💥 Erro inesperado:', error);
-        setGlobalApiKey(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     checkApiKey();
   }, []);
 
@@ -79,42 +89,29 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const refreshGlobalApiKey = async () => {
-    setLoading(true);
-    try {
-      console.log('🔄 Forçando atualização da chave...');
-      const { data, error } = await supabase
-        .from('system_settings')
-        .select('openai_api_key')
-        .limit(1)
-        .maybeSingle();
-      
-      if (error) {
-        console.error('❌ Erro ao atualizar:', error);
-        setGlobalApiKey(null);
-      } else {
-        const apiKey = data?.openai_api_key || null;
-        setGlobalApiKey(apiKey);
-        console.log('🔄 Chave atualizada:', !!apiKey);
-      }
-    } catch (error) {
-      console.error('❌ Erro ao atualizar:', error);
-      setGlobalApiKey(null);
-    } finally {
-      setLoading(false);
+    if (isCheckingRef.current) {
+      console.log('🔄 Refresh já em execução, ignorando...');
+      return;
     }
+
+    setLoading(true);
+    await checkApiKey();
   };
 
   // Validação mais robusta da chave
   const hasValidGlobalKey = !!(globalApiKey && 
     globalApiKey.trim().length > 0 && 
     globalApiKey.startsWith('sk-') && 
-    globalApiKey.length >= 40);
+    globalApiKey.length >= 40 &&
+    !globalApiKey.includes('placeholder') &&
+    !globalApiKey.includes('example'));
 
   console.log('🔑 Estado atual GlobalApiKeyProvider:', {
     loading,
     hasValidGlobalKey,
     keyLength: globalApiKey?.length || 0,
-    keyStart: globalApiKey?.substring(0, 7) || 'N/A'
+    keyStart: globalApiKey?.substring(0, 7) || 'N/A',
+    isChecking: isCheckingRef.current
   });
 
   return (

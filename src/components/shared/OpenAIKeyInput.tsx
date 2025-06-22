@@ -24,6 +24,7 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
     globalApiKey: globalApiKey ? `${globalApiKey.substring(0, 7)}...` : 'null'
   });
 
+  // Mostra loading enquanto carrega
   if (authLoading || globalLoading) {
     return (
       <Alert className="mb-4">
@@ -35,6 +36,7 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
     );
   }
 
+  // Se tem chave válida e não é forçado, mostra sucesso
   if (hasValidGlobalKey && !forceOpen) {
     return (
       <Alert className="mb-4 border-green-200 bg-green-50">
@@ -47,6 +49,7 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
     );
   }
 
+  // Se não tem chave válida, mostra aviso
   return (
     <Alert variant="destructive" className="mb-4">
       <AlertTriangle className="h-4 w-4" />

@@ -1,5 +1,5 @@
 
-import { useEffect, useCallback, useMemo } from 'react';
+import { useEffect, useCallback, useMemo, useRef } from 'react';
 import { UserSettingsUpdate } from '@/types/userSettings';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/providers/ThemeProvider';
@@ -12,6 +12,7 @@ export const useUserSettings = () => {
   const { user, profile, loading: authLoading } = useAuth();
   const { theme: currentTheme } = useTheme();
   const { globalApiKey, hasValidGlobalKey, loading: globalLoading } = useGlobalApiKey();
+  const loadingRef = useRef(false);
   
   // Use user ID from auth context when available, fallback to temp ID
   const userId = useMemo(() => user?.id || 'temp-user-001', [user?.id]);
@@ -29,8 +30,8 @@ export const useUserSettings = () => {
 
   // Carrega configurações apenas quando necessário e evita loops
   useEffect(() => {
-    // Só carrega se auth não está em loading e temos userId válido
-    if (!authLoading && !globalLoading && userId && !settingsLoading) {
+    // Só carrega se não está em loading e ainda não carregou
+    if (!authLoading && !globalLoading && !settingsLoading && !loadingRef.current && userId) {
       console.log('🎯 useUserSettings: Carregando configurações', { 
         userId, 
         isAuthenticated, 
@@ -38,15 +39,20 @@ export const useUserSettings = () => {
         globalLoading,
         settingsLoading 
       });
-      loadSettings();
+      
+      loadingRef.current = true;
+      loadSettings().finally(() => {
+        loadingRef.current = false;
+      });
     }
-  }, [userId, isAuthenticated, authLoading, globalLoading, loadSettings, settingsLoading]);
+  }, [userId, isAuthenticated, authLoading, globalLoading, settingsLoading, loadSettings]);
 
   // Reset loader when user changes from temp to real
   useEffect(() => {
     if (user?.id && userId.startsWith('temp-user-')) {
       console.log('🎯 useUserSettings: Resetando loader para usuário real');
       resetLoader();
+      loadingRef.current = false;
     }
   }, [user?.id, resetLoader, userId]);
 
@@ -97,7 +103,7 @@ export const useUserSettings = () => {
   }, [settings, user]);
 
   const effectiveApiKey = getEffectiveApiKey();
-  const isLoadingAny = authLoading || globalLoading || settingsLoading;
+  const isLoadingAny = authLoading || globalLoading || settingsLoading || loadingRef.current;
 
   console.log('🎯 useUserSettings: Estado final', {
     userId,
@@ -106,7 +112,8 @@ export const useUserSettings = () => {
     isLoading: isLoadingAny,
     hasValidApiKey: hasValidApiKey(),
     hasGlobalKey: hasValidGlobalKey,
-    effectiveApiKey: effectiveApiKey ? `${effectiveApiKey.substring(0, 7)}...` : 'null'
+    effectiveApiKey: effectiveApiKey ? `${effectiveApiKey.substring(0, 7)}...` : 'null',
+    loadingRef: loadingRef.current
   });
 
   return {
