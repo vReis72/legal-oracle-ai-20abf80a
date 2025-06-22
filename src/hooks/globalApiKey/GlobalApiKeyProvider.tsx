@@ -6,19 +6,16 @@ import { supabase } from '@/integrations/supabase/client';
 export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   const [globalApiKey, setGlobalApiKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const hasCheckedRef = useRef(false);
+  const isInitialized = useRef(false);
 
-  const checkApiKey = async () => {
-    // Prevent multiple calls
-    if (hasCheckedRef.current) {
-      console.log('🔄 CheckApiKey já executado, ignorando...');
+  const loadApiKey = async () => {
+    if (isInitialized.current) {
+      console.log('🔄 GlobalApiKeyProvider: Já inicializado, ignorando...');
       return;
     }
 
-    hasCheckedRef.current = true;
-
     try {
-      console.log('🔍 Verificando chave API na system_settings...');
+      console.log('🔍 GlobalApiKeyProvider: Carregando chave API...');
       
       const { data, error } = await supabase
         .from('system_settings')
@@ -27,31 +24,33 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
         .maybeSingle();
 
       if (error) {
-        console.error('❌ Erro ao verificar chave:', error);
+        console.error('❌ GlobalApiKeyProvider: Erro ao carregar chave:', error);
         setGlobalApiKey(null);
       } else {
         const apiKey = data?.openai_api_key || null;
-        setGlobalApiKey(apiKey);
-        console.log('🔑 Chave API carregada:', {
-          temChave: !!apiKey,
+        console.log('🔑 GlobalApiKeyProvider: Chave carregada:', {
+          encontrada: !!apiKey,
+          primeiros7: apiKey ? apiKey.substring(0, 7) : 'N/A',
           tamanho: apiKey?.length || 0
         });
+        setGlobalApiKey(apiKey);
       }
     } catch (error) {
-      console.error('💥 Erro inesperado:', error);
+      console.error('💥 GlobalApiKeyProvider: Erro inesperado:', error);
       setGlobalApiKey(null);
     } finally {
       setLoading(false);
+      isInitialized.current = true;
     }
   };
 
   useEffect(() => {
-    checkApiKey();
+    loadApiKey();
   }, []);
 
   const saveGlobalApiKey = async (key: string): Promise<boolean> => {
     try {
-      console.log('💾 Salvando chave API...');
+      console.log('💾 GlobalApiKeyProvider: Salvando chave API...');
       
       const { data: existing } = await supabase
         .from('system_settings')
@@ -73,32 +72,40 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (result.error) {
-        console.error('❌ Erro ao salvar:', result.error);
+        console.error('❌ GlobalApiKeyProvider: Erro ao salvar:', result.error);
         return false;
       }
 
       setGlobalApiKey(key);
-      console.log('✅ Chave salva com sucesso');
+      console.log('✅ GlobalApiKeyProvider: Chave salva com sucesso');
       return true;
     } catch (error) {
-      console.error('💥 Erro ao salvar:', error);
+      console.error('💥 GlobalApiKeyProvider: Erro ao salvar:', error);
       return false;
     }
   };
 
   const refreshGlobalApiKey = async () => {
+    console.log('🔄 GlobalApiKeyProvider: Forçando atualização...');
     setLoading(true);
-    hasCheckedRef.current = false;
-    await checkApiKey();
+    isInitialized.current = false;
+    await loadApiKey();
   };
 
-  // Robust key validation
-  const hasValidGlobalKey = !!(globalApiKey && 
+  // Validação simples e robusta
+  const hasValidGlobalKey = !!(
+    globalApiKey && 
     globalApiKey.trim().length > 0 && 
     globalApiKey.startsWith('sk-') && 
-    globalApiKey.length >= 40 &&
-    !globalApiKey.includes('placeholder') &&
-    !globalApiKey.includes('example'));
+    globalApiKey.length >= 40
+  );
+
+  console.log('🔑 GlobalApiKeyProvider: Estado atual:', {
+    loading,
+    hasKey: !!globalApiKey,
+    isValid: hasValidGlobalKey,
+    keyPreview: globalApiKey ? `${globalApiKey.substring(0, 7)}...` : 'null'
+  });
 
   return (
     <GlobalApiKeyContext.Provider value={{

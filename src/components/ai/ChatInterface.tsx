@@ -21,28 +21,37 @@ const ChatInterface = () => {
   console.log('💬 ChatInterface: Estado:', {
     loading,
     hasValidGlobalKey,
-    hasApiKey: !!globalApiKey
+    hasApiKey: !!globalApiKey,
+    keyLength: globalApiKey?.length || 0
   });
 
+  // Loading state
   if (loading) {
     return (
       <Card className="w-full max-w-4xl mx-auto h-[500px] md:h-[600px] flex items-center justify-center">
         <div className="flex items-center gap-2">
           <div className="h-4 w-4 animate-spin rounded-full border-2 border-eco-primary border-r-transparent" />
-          Verificando configurações...
+          Carregando configurações...
         </div>
       </Card>
     );
   }
 
   const onSendMessage = async (e: React.FormEvent) => {
-    if (!hasValidGlobalKey) {
-      console.log('❌ Bloqueado - sem chave API');
+    e.preventDefault();
+    
+    if (!hasValidGlobalKey || !globalApiKey) {
+      console.log('❌ ChatInterface: Sem chave API válida');
       return;
     }
     
-    console.log('💬 Enviando mensagem...');
-    await handleSendMessage(e, globalApiKey || undefined);
+    if (!input.trim()) {
+      console.log('❌ ChatInterface: Input vazio');
+      return;
+    }
+    
+    console.log('💬 ChatInterface: Enviando mensagem...');
+    await handleSendMessage(e, globalApiKey);
   };
 
   return (

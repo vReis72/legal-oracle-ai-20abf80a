@@ -12,65 +12,82 @@ const OpenAIKeyInput: React.FC<OpenAIKeyInputProps> = ({
   buttonVariant = "outline", 
   buttonSize = "sm" 
 }) => {
-  const { hasValidGlobalKey, refreshGlobalApiKey, loading: globalLoading, globalApiKey } = useGlobalApiKey();
+  const { hasValidGlobalKey, refreshGlobalApiKey, loading, globalApiKey } = useGlobalApiKey();
 
-  console.log('🔑 OpenAIKeyInput: Estado atual:', {
-    globalLoading,
+  console.log('🔑 OpenAIKeyInput: Estado:', {
+    loading,
     hasValidGlobalKey,
-    globalApiKey: globalApiKey ? `${globalApiKey.substring(0, 7)}...` : 'null'
+    hasKey: !!globalApiKey,
+    keyLength: globalApiKey?.length || 0
   });
 
-  // Mostra loading enquanto carrega
-  if (globalLoading) {
+  // Loading state
+  if (loading) {
     return (
       <Alert className="mb-4">
         <RefreshCw className="h-4 w-4 animate-spin" />
         <AlertDescription>
-          Verificando configurações...
+          Carregando configurações da chave API...
         </AlertDescription>
       </Alert>
     );
   }
 
-  // Se tem chave válida e não é forçado, mostra sucesso
+  // Success state - chave válida configurada
   if (hasValidGlobalKey && !forceOpen) {
     return (
       <Alert className="mb-4 border-green-200 bg-green-50">
         <CheckCircle className="h-4 w-4 text-green-500" />
         <AlertDescription>
-          <strong>✅ Sistema habilitado!</strong><br />
-          Chave API configurada e válida ({globalApiKey?.substring(0, 7)}...).
+          <div className="flex items-center justify-between">
+            <div>
+              <strong>✅ Sistema habilitado!</strong><br />
+              Chave API OpenAI configurada corretamente ({globalApiKey?.substring(0, 7)}...).
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={refreshGlobalApiKey}
+              className="ml-2"
+            >
+              Verificar novamente
+            </Button>
+          </div>
         </AlertDescription>
       </Alert>
     );
   }
 
-  // Se não tem chave válida, mostra aviso
+  // Error state - sem chave ou chave inválida
   return (
     <Alert variant="destructive" className="mb-4">
       <AlertTriangle className="h-4 w-4" />
-      <AlertDescription className="flex items-center justify-between">
-        <div className="flex-1">
-          <strong>❌ Sistema desabilitado</strong><br />
-          Nenhuma chave API encontrada ou chave inválida. 
-          Configure nas <a href="/settings" className="text-eco-primary hover:underline ml-1">configurações</a>.
-        </div>
-        <div className="flex gap-2 ml-4">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={refreshGlobalApiKey}
-            disabled={globalLoading}
-          >
-            {globalLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : 'Verificar'}
-          </Button>
-          <Button 
-            variant="default" 
-            size="sm" 
-            onClick={() => window.location.href = '/settings'}
-          >
-            Configurar
-          </Button>
+      <AlertDescription>
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <strong>❌ Sistema desabilitado</strong><br />
+            {!globalApiKey ? 
+              'Nenhuma chave API encontrada.' : 
+              'Chave API inválida encontrada.'
+            } Configure nas configurações.
+          </div>
+          <div className="flex gap-2 ml-4">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={refreshGlobalApiKey}
+              disabled={loading}
+            >
+              {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : 'Verificar'}
+            </Button>
+            <Button 
+              variant="default" 
+              size="sm" 
+              onClick={() => window.location.href = '/settings'}
+            >
+              Configurar
+            </Button>
+          </div>
         </div>
       </AlertDescription>
     </Alert>
