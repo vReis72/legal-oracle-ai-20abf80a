@@ -1,5 +1,5 @@
 
-import { useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect, ReactNode, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { AuthContext } from './AuthContext';
@@ -13,12 +13,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const { signIn, signUp, signOut: authSignOut } = useAuthActions();
+  
+  // Ref para controlar carregamento de perfil
+  const isLoadingProfileRef = useRef(false);
+  const hasTriedLoadingRef = useRef(false);
 
   const clearAuthState = () => {
     console.log('🧹 AuthProvider: Limpando estado');
     setSession(null);
     setUser(null);
     setProfile(null);
+    isLoadingProfileRef.current = false;
+    hasTriedLoadingRef.current = false;
   };
 
   const signOut = async () => {
@@ -26,9 +32,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await authSignOut();
   };
 
-  const loadUserProfile = async (userId: string, retryCount = 0): Promise<Profile | null> => {
+  const loadUserProfile = async (userId: string): Promise<void> => {
+    // Evitar múltiplas chamadas simultâneas
+    if (isLoadingProfileRef.current) {
+      console.log('🔄 AuthProvider: Já carregando perfil, ignorando...');
+      return;
+    }
+
+    // Se já tentou carregar para este usuário, não tentar novamente
+    if (hasTriedLoadingRef.current) {
+      console.log('🔄 AuthProvider: Já tentou carregar perfil, ignorando...');
+      return;
+    }
+
+    isLoadingProfileRef.current = true;
+    hasTriedLoadingRef.current = true;
+
     try {
-      console.log(`🔄 AuthProvider: Carregando perfil para: ${userId} (tentativa ${retryCount + 1})`);
+      console.log(`🔄 AuthProvider: Carregando perfil para: ${userId}`);
       const userProfile = await fetchProfile(userId);
       
       console.log('🔄 AuthProvider: Perfil carregado:', {
@@ -38,18 +59,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         hasProfile: !!userProfile
       });
       
-      if (!userProfile && retryCount < 2) {
-        console.log('⚠️ AuthProvider: Perfil não encontrado, tentando novamente em 1s...');
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        return loadUserProfile(userId, retryCount + 1);
-      }
-      
       setProfile(userProfile);
-      return userProfile;
     } catch (error) {
       console.error('❌ AuthProvider: Erro ao carregar perfil:', error);
       setProfile(null);
-      return null;
+    } finally {
+      isLoadingProfileRef.current = false;
     }
   };
 
@@ -71,8 +86,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setSession(currentSession);
           setUser(currentSession.user);
           
-          // Carregar perfil com retry
-          await loadUserProfile(currentSession.user.id);
+          // Carregar perfil apenas se não estiver carregando
+          if (!isLoadingProfileRef.current && !hasTriedLoadingRef.current) {
+            await loadUserProfile(currentSession.user.id);
+          }
         } else {
           console.log('🔍 AuthProvider: Nenhuma sessão encontrada');
         }
@@ -107,7 +124,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setSession(newSession);
           setUser(newSession.user);
           
-          if (newSession.user && mounted) {
+          // Reset flags para novo usuário
+          if (event === 'SIGNED_IN') {
+            isLoadingProfileRef.current = false;
+            hasTriedLoadingRef.current = false;
+          }
+          
+          if (newSession.user && mounted && !isLoadingProfileRef.current && !hasTriedLoadingRef.current) {
             await loadUserProfile(newSession.user.id);
           }
           
@@ -124,9 +147,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  // Calcular isAdmin com verificação mais robusta e logs detalhados
+  // Calcular isAdmin de forma mais defensiva
   const isAdmin = (() => {
-    const result = Boolean(profile && profile.is_admin === true);
+    const result = Boolean(profile?.is_admin === true);
     console.log('🔍 AuthProvider: Calculando isAdmin:', {
       hasProfile: !!profile,
       profileIsAdmin: profile?.is_admin,
@@ -149,7 +172,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } : null,
     profileIsAdmin: profile?.is_admin,
     calculatedIsAdmin: isAdmin,
-    loading
+    loading,
+    isLoadingProfile: isLoadingProfileRef.current,
+    hasTriedLoading: hasTriedLoadingRef.current
   });
 
   return (

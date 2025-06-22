@@ -13,6 +13,7 @@ export const useUserSettings = () => {
   const { theme: currentTheme } = useTheme();
   const { globalApiKey, hasValidGlobalKey, loading: globalLoading } = useGlobalApiKey();
   const loadingRef = useRef(false);
+  const hasInitializedRef = useRef(false);
   
   // Use user ID from auth context when available, fallback to temp ID
   const userId = useMemo(() => user?.id || 'temp-user-001', [user?.id]);
@@ -30,9 +31,14 @@ export const useUserSettings = () => {
 
   // Carrega configurações apenas quando necessário e evita loops
   useEffect(() => {
+    // Evitar múltiplas inicializações
+    if (hasInitializedRef.current) {
+      return;
+    }
+
     // Só carrega se não está em loading e ainda não carregou
     if (!authLoading && !globalLoading && !settingsLoading && !loadingRef.current && userId) {
-      console.log('🎯 useUserSettings: Carregando configurações', { 
+      console.log('🎯 useUserSettings: Inicializando configurações', { 
         userId, 
         isAuthenticated, 
         authLoading, 
@@ -40,17 +46,20 @@ export const useUserSettings = () => {
         settingsLoading 
       });
       
+      hasInitializedRef.current = true;
       loadingRef.current = true;
+      
       loadSettings().finally(() => {
         loadingRef.current = false;
       });
     }
   }, [userId, isAuthenticated, authLoading, globalLoading, settingsLoading, loadSettings]);
 
-  // Reset loader when user changes from temp to real
+  // Reset apenas quando usuário muda de temp para real
   useEffect(() => {
-    if (user?.id && userId.startsWith('temp-user-')) {
-      console.log('🎯 useUserSettings: Resetando loader para usuário real');
+    if (user?.id && userId.startsWith('temp-user-') && hasInitializedRef.current) {
+      console.log('🎯 useUserSettings: Resetando para usuário real');
+      hasInitializedRef.current = false;
       resetLoader();
       loadingRef.current = false;
     }
@@ -71,27 +80,17 @@ export const useUserSettings = () => {
 
   // Determina a chave API a ser usada (apenas a global agora)
   const getEffectiveApiKey = useCallback((): string | null => {
-    console.log('🔑 useUserSettings: Verificando chave efetiva:', {
-      globalApiKey: globalApiKey ? `${globalApiKey.substring(0, 7)}...` : 'null',
-      hasValidGlobalKey,
-      isValid: SettingsValidation.hasValidApiKey(globalApiKey)
-    });
-
     // Usa apenas a chave global se válida
     if (hasValidGlobalKey && globalApiKey && SettingsValidation.hasValidApiKey(globalApiKey)) {
-      console.log('✅ useUserSettings: Chave global válida encontrada');
       return globalApiKey;
     }
     
-    console.log('❌ useUserSettings: Nenhuma chave válida encontrada');
     return null;
   }, [globalApiKey, hasValidGlobalKey]);
 
   const hasValidApiKey = useCallback((): boolean => {
     const effectiveApiKey = getEffectiveApiKey();
-    const isValid = !!effectiveApiKey && SettingsValidation.hasValidApiKey(effectiveApiKey);
-    console.log('🔑 useUserSettings: hasValidApiKey resultado:', isValid);
-    return isValid;
+    return !!effectiveApiKey && SettingsValidation.hasValidApiKey(effectiveApiKey);
   }, [getEffectiveApiKey]);
 
   const getUserName = useCallback((): string => {
@@ -113,7 +112,7 @@ export const useUserSettings = () => {
     hasValidApiKey: hasValidApiKey(),
     hasGlobalKey: hasValidGlobalKey,
     effectiveApiKey: effectiveApiKey ? `${effectiveApiKey.substring(0, 7)}...` : 'null',
-    loadingRef: loadingRef.current
+    hasInitialized: hasInitializedRef.current
   });
 
   return {

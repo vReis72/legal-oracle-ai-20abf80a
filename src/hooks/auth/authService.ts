@@ -6,13 +6,6 @@ export const fetchProfile = async (userId: string): Promise<Profile | null> => {
   try {
     console.log('🔍 fetchProfile: Buscando perfil para userId:', userId);
     
-    // Primeiro, vamos testar a conexão com o Supabase
-    const { error: connectionError } = await supabase.from('profiles').select('count').limit(1);
-    if (connectionError) {
-      console.error('❌ fetchProfile: Erro de conexão com Supabase:', connectionError);
-      return null;
-    }
-    
     // Buscar perfil diretamente
     const { data, error } = await supabase
       .from('profiles')
@@ -40,13 +33,13 @@ export const fetchProfile = async (userId: string): Promise<Profile | null> => {
         console.log('✅ fetchProfile: Usuário existe no auth mas não tem perfil. Criando perfil básico...');
         
         // Criar perfil básico
-        const newProfile = {
+        const newProfile: Profile = {
           id: userId,
           email: user.email || '',
-          full_name: user.user_metadata?.full_name || '',
+          full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || '',
           company_name: null,
           oab_number: null,
-          status: 'active' as const,
+          status: 'active',
           is_admin: user.email === 'vicentereis2.celular@gmail.com',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -66,7 +59,9 @@ export const fetchProfile = async (userId: string): Promise<Profile | null> => {
           
         if (insertError) {
           console.error('❌ fetchProfile: Erro ao criar perfil:', insertError);
-          return newProfile; // Retorna o perfil mesmo sem salvar no banco
+          // Retorna o perfil mesmo sem salvar no banco
+          console.log('✅ fetchProfile: Retornando perfil em memória');
+          return newProfile;
         }
         
         console.log('✅ fetchProfile: Perfil criado com sucesso:', insertedData);
@@ -76,7 +71,7 @@ export const fetchProfile = async (userId: string): Promise<Profile | null> => {
       return null;
     }
 
-    console.log('✅ fetchProfile: Dados do banco:', {
+    console.log('✅ fetchProfile: Perfil encontrado no banco:', {
       id: data.id,
       email: data.email,
       full_name: data.full_name,
