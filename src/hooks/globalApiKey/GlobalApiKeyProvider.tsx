@@ -6,16 +6,16 @@ import { supabase } from '@/integrations/supabase/client';
 export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   const [globalApiKey, setGlobalApiKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const isCheckingRef = useRef(false);
+  const hasCheckedRef = useRef(false);
 
   const checkApiKey = async () => {
-    // Prevenir múltiplas chamadas simultâneas
-    if (isCheckingRef.current) {
-      console.log('🔄 CheckApiKey já em execução, ignorando...');
+    // Prevent multiple calls
+    if (hasCheckedRef.current) {
+      console.log('🔄 CheckApiKey já executado, ignorando...');
       return;
     }
 
-    isCheckingRef.current = true;
+    hasCheckedRef.current = true;
 
     try {
       console.log('🔍 Verificando chave API na system_settings...');
@@ -32,10 +32,9 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
       } else {
         const apiKey = data?.openai_api_key || null;
         setGlobalApiKey(apiKey);
-        console.log('🔑 Resultado da verificação:', {
+        console.log('🔑 Chave API carregada:', {
           temChave: !!apiKey,
-          tamanho: apiKey?.length || 0,
-          primeiros: apiKey?.substring(0, 10) || 'N/A'
+          tamanho: apiKey?.length || 0
         });
       }
     } catch (error) {
@@ -43,7 +42,6 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
       setGlobalApiKey(null);
     } finally {
       setLoading(false);
-      isCheckingRef.current = false;
     }
   };
 
@@ -89,30 +87,18 @@ export const GlobalApiKeyProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const refreshGlobalApiKey = async () => {
-    if (isCheckingRef.current) {
-      console.log('🔄 Refresh já em execução, ignorando...');
-      return;
-    }
-
     setLoading(true);
+    hasCheckedRef.current = false;
     await checkApiKey();
   };
 
-  // Validação mais robusta da chave
+  // Robust key validation
   const hasValidGlobalKey = !!(globalApiKey && 
     globalApiKey.trim().length > 0 && 
     globalApiKey.startsWith('sk-') && 
     globalApiKey.length >= 40 &&
     !globalApiKey.includes('placeholder') &&
     !globalApiKey.includes('example'));
-
-  console.log('🔑 Estado atual GlobalApiKeyProvider:', {
-    loading,
-    hasValidGlobalKey,
-    keyLength: globalApiKey?.length || 0,
-    keyStart: globalApiKey?.substring(0, 7) || 'N/A',
-    isChecking: isCheckingRef.current
-  });
 
   return (
     <GlobalApiKeyContext.Provider value={{

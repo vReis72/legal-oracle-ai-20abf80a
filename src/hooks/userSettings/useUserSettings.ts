@@ -9,8 +9,7 @@ import { SettingsValidation } from './settingsValidation';
 
 export const useUserSettings = () => {
   const { theme: currentTheme } = useTheme();
-  const { globalApiKey, hasValidGlobalKey, loading: globalLoading } = useGlobalApiKey();
-  const loadingRef = useRef(false);
+  const { globalApiKey, hasValidGlobalKey } = useGlobalApiKey();
   const hasInitializedRef = useRef(false);
   
   // Use temp user ID since no authentication
@@ -27,30 +26,14 @@ export const useUserSettings = () => {
 
   const { saveSettings } = useSettingsSaver(userId, isAuthenticated, reloadSettings);
 
-  // Carrega configurações apenas quando necessário e evita loops
+  // Load settings only once
   useEffect(() => {
-    // Evitar múltiplas inicializações
-    if (hasInitializedRef.current) {
-      return;
-    }
-
-    // Só carrega se não está em loading e ainda não carregou
-    if (!globalLoading && !settingsLoading && !loadingRef.current && userId) {
-      console.log('🎯 useUserSettings: Inicializando configurações', { 
-        userId, 
-        isAuthenticated, 
-        globalLoading,
-        settingsLoading 
-      });
-      
+    if (!hasInitializedRef.current && !settingsLoading) {
+      console.log('🎯 useUserSettings: Inicializando uma única vez');
       hasInitializedRef.current = true;
-      loadingRef.current = true;
-      
-      loadSettings().finally(() => {
-        loadingRef.current = false;
-      });
+      loadSettings();
     }
-  }, [userId, isAuthenticated, globalLoading, settingsLoading, loadSettings]);
+  }, [loadSettings, settingsLoading]);
 
   // Convenience methods
   const updateTheme = useCallback(async (theme: 'light' | 'dark' | 'system'): Promise<boolean> => {
@@ -65,13 +48,11 @@ export const useUserSettings = () => {
     return saveSettings({ user_name: userName, user_oab: userOab });
   }, [saveSettings]);
 
-  // Determina a chave API a ser usada (apenas a global agora)
+  // Determine effective API key
   const getEffectiveApiKey = useCallback((): string | null => {
-    // Usa apenas a chave global se válida
     if (hasValidGlobalKey && globalApiKey && SettingsValidation.hasValidApiKey(globalApiKey)) {
       return globalApiKey;
     }
-    
     return null;
   }, [globalApiKey, hasValidGlobalKey]);
 
@@ -89,22 +70,10 @@ export const useUserSettings = () => {
   }, [settings]);
 
   const effectiveApiKey = getEffectiveApiKey();
-  const isLoadingAny = globalLoading || settingsLoading || loadingRef.current;
-
-  console.log('🎯 useUserSettings: Estado final', {
-    userId,
-    isAuthenticated,
-    hasSettings: !!settings,
-    isLoading: isLoadingAny,
-    hasValidApiKey: hasValidApiKey(),
-    hasGlobalKey: hasValidGlobalKey,
-    effectiveApiKey: effectiveApiKey ? `${effectiveApiKey.substring(0, 7)}...` : 'null',
-    hasInitialized: hasInitializedRef.current
-  });
 
   return {
     settings,
-    isLoading: isLoadingAny,
+    isLoading: settingsLoading,
     apiKey: effectiveApiKey,
     theme: settings?.theme || currentTheme,
     companyName: settings?.company_name || '',

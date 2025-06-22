@@ -12,26 +12,12 @@ export const useSettingsLoader = (userId: string) => {
   const { setTheme } = useTheme();
   
   const hasLoadedRef = useRef(false);
-  const lastUserIdRef = useRef<string | null>(null);
   const isLoadingRef = useRef(false);
 
   const loadSettings = useCallback(async () => {
-    console.log('🔄 useSettingsLoader: Tentando carregar configurações', {
-      userId,
-      hasLoaded: hasLoadedRef.current,
-      lastUserId: lastUserIdRef.current,
-      isLoadingNow: isLoadingRef.current
-    });
-
-    // Evitar múltiplas chamadas simultâneas
-    if (isLoadingRef.current) {
-      console.log('🔄 useSettingsLoader: Já está carregando, ignorando...');
-      return;
-    }
-
-    // Se já carregou para este usuário, não recarregar
-    if (hasLoadedRef.current && lastUserIdRef.current === userId) {
-      console.log('🔄 useSettingsLoader: Configurações já carregadas para este usuário');
+    // Prevent multiple simultaneous calls
+    if (isLoadingRef.current || hasLoadedRef.current) {
+      console.log('🔄 useSettingsLoader: Já carregado ou carregando, ignorando...');
       return;
     }
     
@@ -39,17 +25,15 @@ export const useSettingsLoader = (userId: string) => {
     setIsLoading(true);
     
     try {
-      console.log('🔄 useSettingsLoader: Carregando configurações do localStorage para:', userId);
+      console.log('🔄 useSettingsLoader: Carregando configurações para:', userId);
       
-      // Carrega sempre do localStorage
       const userSettings = LocalUserSettingsService.getUserSettings(userId);
       console.log('🔄 useSettingsLoader: Configurações carregadas:', userSettings);
       
       setSettings(userSettings);
       hasLoadedRef.current = true;
-      lastUserIdRef.current = userId;
 
-      // Aplica o tema salvo apenas se existir
+      // Apply saved theme only if it exists
       if (userSettings?.theme) {
         console.log('🎨 useSettingsLoader: Aplicando tema salvo:', userSettings.theme);
         setTheme(userSettings.theme);
@@ -70,7 +54,6 @@ export const useSettingsLoader = (userId: string) => {
   const reloadSettings = useCallback(async () => {
     console.log('🔄 useSettingsLoader: Forçando recarregamento');
     hasLoadedRef.current = false;
-    lastUserIdRef.current = null;
     isLoadingRef.current = false;
     await loadSettings();
   }, [loadSettings]);
@@ -78,7 +61,6 @@ export const useSettingsLoader = (userId: string) => {
   const resetLoader = useCallback(() => {
     console.log('🔄 useSettingsLoader: Resetando loader');
     hasLoadedRef.current = false;
-    lastUserIdRef.current = null;
     isLoadingRef.current = false;
     setSettings(null);
   }, []);
