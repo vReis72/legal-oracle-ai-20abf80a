@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUserSettings } from '@/hooks/userSettings';
 import { useTheme } from '@/providers/ThemeProvider';
-import { useAuth } from '@/hooks/useAuth';
 
 const settingsSchema = z.object({
   companyName: z.string().optional(),
@@ -25,7 +24,6 @@ type SettingsFormData = z.infer<typeof settingsSchema>;
 const SettingsForm: React.FC = () => {
   const { settings, isLoading, updateTheme, updateCompanyInfo, updateUserInfo } = useUserSettings();
   const { theme: currentTheme } = useTheme();
-  const { user, profile } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<SettingsFormData>({
@@ -40,31 +38,25 @@ const SettingsForm: React.FC = () => {
   });
 
   useEffect(() => {
-    if (settings || user || profile) {
+    if (settings) {
       // Usa o tema atual do contexto como fallback
       const effectiveTheme = settings?.theme || currentTheme;
-      
-      // Preenche com dados do perfil/auth como fallback
-      const userName = settings?.user_name || profile?.full_name || '';
-      const contactEmail = settings?.contact_email || user?.email || '';
       
       console.log('Carregando configurações no formulário:', {
         settingsTheme: settings?.theme,
         currentTheme,
-        effectiveTheme,
-        userName,
-        contactEmail
+        effectiveTheme
       });
 
       form.reset({
         companyName: settings?.company_name || '',
-        userName,
+        userName: settings?.user_name || '',
         userOab: settings?.user_oab || '',
-        contactEmail,
+        contactEmail: settings?.contact_email || '',
         theme: effectiveTheme,
       });
     }
-  }, [settings, form, currentTheme, user, profile]);
+  }, [settings, form, currentTheme]);
 
   const onSubmit = async (data: SettingsFormData) => {
     setIsSubmitting(true);
@@ -124,7 +116,7 @@ const SettingsForm: React.FC = () => {
                       <Input placeholder="Seu nome completo" {...field} />
                     </FormControl>
                     <FormDescription>
-                      Nome obtido do seu perfil de usuário
+                      Nome do usuário do sistema
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -141,7 +133,7 @@ const SettingsForm: React.FC = () => {
                       <Input type="email" placeholder="seu@email.com" {...field} />
                     </FormControl>
                     <FormDescription>
-                      Email obtido da sua conta de usuário
+                      Email de contato
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

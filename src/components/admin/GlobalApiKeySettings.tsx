@@ -6,25 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useGlobalApiKey } from '@/hooks/useGlobalApiKey';
-import { useAuth } from '@/hooks/useAuth';
-import { Key, Shield, AlertTriangle, Check } from 'lucide-react';
+import { Key, AlertTriangle, Check } from 'lucide-react';
 
 const GlobalApiKeySettings: React.FC = () => {
   const [newApiKey, setNewApiKey] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const { globalApiKey, hasValidGlobalKey, saveGlobalApiKey, loading } = useGlobalApiKey();
-  const { isAdmin } = useAuth();
-
-  if (!isAdmin) {
-    return (
-      <Alert variant="destructive">
-        <Shield className="h-4 w-4" />
-        <AlertDescription>
-          Acesso restrito. Apenas administradores podem configurar a chave API global.
-        </AlertDescription>
-      </Alert>
-    );
-  }
 
   const handleSaveApiKey = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,7 +64,6 @@ const GlobalApiKeySettings: React.FC = () => {
         </CardTitle>
         <CardDescription>
           Configure a chave API OpenAI que será utilizada por todos os usuários do sistema.
-          Esta chave é compartilhada globalmente e apenas administradores podem modificá-la.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -85,14 +71,14 @@ const GlobalApiKeySettings: React.FC = () => {
           <Alert>
             <Check className="h-4 w-4" />
             <AlertDescription>
-              Chave API configurada e válida. O sistema está operacional para todos os usuários.
+              Chave API configurada e válida. O sistema está operacional.
             </AlertDescription>
           </Alert>
         ) : (
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
-              Nenhuma chave API válida configurada. Os recursos de IA não estarão disponíveis para os usuários.
+              Nenhuma chave API válida configurada. Os recursos de IA não estarão disponíveis.
             </AlertDescription>
           </Alert>
         )}
