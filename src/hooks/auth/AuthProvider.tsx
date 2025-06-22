@@ -26,16 +26,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await authSignOut();
   };
 
-  const loadUserProfile = async (userId: string) => {
+  const loadUserProfile = async (userId: string, retryCount = 0): Promise<Profile | null> => {
     try {
-      console.log('🔄 AuthProvider: Carregando perfil para:', userId);
+      console.log(`🔄 AuthProvider: Carregando perfil para: ${userId} (tentativa ${retryCount + 1})`);
       const userProfile = await fetchProfile(userId);
       
       console.log('🔄 AuthProvider: Perfil carregado:', {
         profile: userProfile,
         isAdmin: userProfile?.is_admin,
-        status: userProfile?.status
+        status: userProfile?.status,
+        hasProfile: !!userProfile
       });
+      
+      if (!userProfile && retryCount < 2) {
+        console.log('⚠️ AuthProvider: Perfil não encontrado, tentando novamente em 1s...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return loadUserProfile(userId, retryCount + 1);
+      }
       
       setProfile(userProfile);
       return userProfile;
@@ -64,7 +71,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setSession(currentSession);
           setUser(currentSession.user);
           
-          // Carregar perfil
+          // Carregar perfil com retry
           await loadUserProfile(currentSession.user.id);
         } else {
           console.log('🔍 AuthProvider: Nenhuma sessão encontrada');
@@ -117,14 +124,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  // Calcular isAdmin com verificação mais robusta
-  const isAdmin = Boolean(profile && profile.is_admin === true);
+  // Calcular isAdmin com verificação mais robusta e logs detalhados
+  const isAdmin = (() => {
+    const result = Boolean(profile && profile.is_admin === true);
+    console.log('🔍 AuthProvider: Calculando isAdmin:', {
+      hasProfile: !!profile,
+      profileIsAdmin: profile?.is_admin,
+      finalResult: result,
+      profileId: profile?.id,
+      profileEmail: profile?.email
+    });
+    return result;
+  })();
 
   console.log('🏠 AuthProvider: Estado FINAL:', {
     hasUser: !!user,
     userEmail: user?.email,
     hasProfile: !!profile,
-    profileData: profile,
+    profileData: profile ? {
+      id: profile.id,
+      email: profile.email,
+      is_admin: profile.is_admin,
+      status: profile.status
+    } : null,
     profileIsAdmin: profile?.is_admin,
     calculatedIsAdmin: isAdmin,
     loading
