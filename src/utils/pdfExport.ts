@@ -1,11 +1,11 @@
 
 import { jsPDF } from "jspdf";
-import { Document } from "@/types/document";
+import { Document as DocumentType } from "@/types/document";
 
 /**
  * Utility to export document analysis as PDF
  */
-export const exportDocumentAsPdf = (document: Document) => {
+export const exportDocumentAsPdf = (document: DocumentType) => {
   if (!document || !document.processed) {
     console.error("Cannot export unprocessed document");
     return false;
