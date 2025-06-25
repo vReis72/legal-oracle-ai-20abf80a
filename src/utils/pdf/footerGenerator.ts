@@ -11,16 +11,15 @@ export const addPdfFooter = (pdf: jsPDF, options: PdfGenerationOptions): void =>
   for (let i = 1; i <= totalPages; i++) {
     pdf.setPage(i);
     
-    // Page number
+    // Page number (right aligned)
     pdf.setFontSize(10);
     pdf.setTextColor(100);
-    pdf.text(`Página ${i} de ${totalPages}`, options.pageWidth - options.margin, options.pageHeight - 20);
+    pdf.text(`Página ${i} de ${totalPages}`, options.pageWidth - options.margin, options.pageHeight - 15, { align: "right" });
     
-    // App footer info (same as in Footer component)
+    // App footer info in a single line (left aligned)
     pdf.setFontSize(9);
     pdf.setTextColor(60);
-    pdf.text("Legal Oracle AI - O seu Assistente Jurídico pessoal", options.margin, options.pageHeight - 15);
-    pdf.text("By: K1nGs Data Mining & Artificial Intelligence", options.margin, options.pageHeight - 10);
-    pdf.text(`© ${new Date().getFullYear()} Legal Oracle AI`, options.margin, options.pageHeight - 5);
+    const footerText = `Legal Oracle AI - O seu Assistente Jurídico pessoal | By: K1nGs Data Mining & Artificial Intelligence | © ${new Date().getFullYear()} Legal Oracle AI`;
+    pdf.text(footerText, options.margin, options.pageHeight - 15);
   }
 };

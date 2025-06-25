@@ -46,6 +46,11 @@ export const generatePdfContent = (
     yPos = addKeyPointsSection(pdf, document.keyPoints, options, yPos);
   }
 
+  // Add conclusion section if available
+  if (document.conclusion) {
+    yPos = addConclusionSection(pdf, document.conclusion, options, yPos);
+  }
+
   return yPos;
 };
 
@@ -146,6 +151,33 @@ const addKeyPointsSection = (
     pdf.text(splitDescription, options.margin, yPos);
     yPos += splitDescription.length * 7 + 5;
   });
+
+  return yPos;
+};
+
+const addConclusionSection = (
+  pdf: jsPDF, 
+  conclusion: string, 
+  options: PdfGenerationOptions, 
+  yPos: number
+): number => {
+  // Check if we need a new page
+  if (yPos > options.pageHeight - 60) {
+    pdf.addPage();
+    yPos = 20;
+  }
+
+  pdf.setFontSize(14);
+  pdf.setFont("helvetica", "bold");
+  pdf.text("Conclusão", options.margin, yPos);
+  yPos += 7;
+
+  pdf.setFontSize(11);
+  pdf.setFont("helvetica", "normal");
+  
+  const splitConclusion = pdf.splitTextToSize(conclusion, options.contentWidth);
+  pdf.text(splitConclusion, options.margin, yPos);
+  yPos += splitConclusion.length * 7 + 10;
 
   return yPos;
 };
