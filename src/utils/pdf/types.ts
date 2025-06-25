@@ -15,4 +15,4 @@ export interface HeaderImageConfig {
   imagePath: string;
 }
 
-export { DocumentType };
+export type { DocumentType };
