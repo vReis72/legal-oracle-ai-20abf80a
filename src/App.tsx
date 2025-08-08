@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { RouterProvider } from 'react-router-dom';
-import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "./providers/ThemeProvider";
@@ -14,7 +13,6 @@ const App = () => {
       <TooltipProvider>
         <GlobalApiKeyProvider>
           <RouterProvider router={router} />
-          <Toaster />
           <Sonner />
         </GlobalApiKeyProvider>
       </TooltipProvider>

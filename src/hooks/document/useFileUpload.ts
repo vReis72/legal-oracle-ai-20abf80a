@@ -36,27 +36,38 @@ export const useFileUpload = ({ onDocumentProcessed }: UseFileUploadProps) => {
       return;
     }
 
+    // Limite de tamanho para evitar travamentos
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (selectedFile.size > maxSize) {
+      toast.error("Arquivo muito grande. Tamanho máximo: 10MB");
+      return;
+    }
+
     setIsUploading(true);
     
     try {
       let extractedText = "";
+      let originalFileData: string | undefined = undefined;
       
       if (skipTextExtraction && fileExtension === 'pdf') {
         toast.info("Carregando PDF para análise com OCR nativo...");
-        // Para PDFs, não extrair texto - deixar para o GPT-4o com OCR
         extractedText = `[PDF_DOCUMENT_FOR_OCR_ANALYSIS: ${selectedFile.name}]`;
-        console.log("PDF carregado sem extração de texto - será analisado via OCR");
+        
+        // Converter para base64 apenas para PDFs pequenos
+        if (selectedFile.size < 5 * 1024 * 1024) { // 5MB limite para base64
+          originalFileData = await fileToBase64(selectedFile);
+        }
+        
+        console.log("PDF carregado para análise OCR");
       } else {
         toast.info("Processando documento...");
         
-        // Extract text from the document using the refactored utility
         extractedText = await extractTextFromFile(selectedFile, {
-          verbose: true,
-          showToasts: true,
-          timeout: 60000 // Increased timeout for large documents
+          verbose: false, // Reduzir logs
+          showToasts: false, // Evitar múltiplos toasts
+          timeout: 30000 // Timeout menor
         });
         
-        // Validate extracted content
         const validation = validateExtractedContent(extractedText, selectedFile.type);
         if (!validation.valid) {
           throw new Error(validation.errorMessage);
@@ -64,10 +75,8 @@ export const useFileUpload = ({ onDocumentProcessed }: UseFileUploadProps) => {
       }
       
       const trimmedText = extractedText.trim();
-      console.log("Texto extraído e limpo, tamanho:", trimmedText.length, "caracteres");
-      console.log("Texto extraído do documento:", trimmedText.substring(0, 300) + "...");
+      console.log("Texto processado, tamanho:", trimmedText.length, "caracteres");
       
-      // Create document object
       const document: Document = {
         id: uuidv4(),
         name: selectedFile.name,
@@ -75,38 +84,24 @@ export const useFileUpload = ({ onDocumentProcessed }: UseFileUploadProps) => {
         uploadDate: new Date(),
         processed: false,
         content: trimmedText,
-        // Store the original file as base64 for OCR analysis if needed
-        ...(skipTextExtraction && fileExtension === 'pdf' && {
-          originalFileData: await fileToBase64(selectedFile)
-        })
+        ...(originalFileData && { originalFileData })
       };
       
-      console.log("Documento criado com sucesso:", document);
-      console.log("ID do documento:", document.id);
-      console.log("Nome do documento:", document.name);
-      console.log("Tamanho do conteúdo:", document.content?.length || 0);
+      console.log("Documento criado:", document.id, document.name);
       
-      // Call the callback with the processed document
       onDocumentProcessed(document);
       toast.success(skipTextExtraction ? "PDF carregado para análise OCR!" : "Documento carregado com sucesso!");
       
-      // Reset the file input
       setSelectedFile(null);
     } catch (error) {
-      console.error("Erro no processamento do documento:", error);
-      let errorMessage = "Erro desconhecido";
-      
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      
+      console.error("Erro no processamento:", error);
+      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
       toast.error(`Erro ao processar o documento: ${errorMessage}`);
     } finally {
       setIsUploading(false);
     }
   };
 
-  // Helper function to convert file to base64
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
