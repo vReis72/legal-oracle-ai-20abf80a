@@ -68,91 +68,24 @@ export const configurePdfWorker = (options: PdfWorkerConfigOptions = {}): PdfWor
       };
     }
     
-    // Define worker source options, starting with most reliable
-    let workerSrc: string;
+    // ESTRATÉGIA SIMPLIFICADA: Usar apenas CDN confiável
+    const cdnWorkerUrl = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
     
-    // ESTRATÉGIA 1: Verificar worker no window
-    if (typeof window === 'object' && 'pdfjsWorker' in window) {
-      // Se a app já registrou o worker no window
-      workerSrc = (window as any).pdfjsWorker;
-      logInfo(`Usando worker registrado no window: ${workerSrc}`);
-    } else {
-      // ESTRATÉGIA 2: Verificar caminhos locais
-      if (typeof window === 'object') {
-        const possiblePaths = [
-          `${window.location.origin}/pdf.worker.min.js`,
-          `${window.location.origin}/assets/pdf.worker.min.js`,
-          `${window.location.origin}/static/pdf.worker.min.js`,
-          // Adicione mais caminhos conforme necessário
-        ];
-        
-        // Testar caminhos locais assincronamente (mas sem bloquear)
-        possiblePaths.forEach(path => {
-          fetch(path, { method: 'HEAD' })
-            .then(response => {
-              if (response.ok && !isPdfWorkerConfigured()) {
-                logInfo(`Worker encontrado em: ${path}`);
-                pdfjsLib.GlobalWorkerOptions.workerSrc = path;
-                // Registra para uso futuro
-                (window as any).pdfjsWorkerSrc = path;
-              }
-            })
-            .catch(() => {
-              // Silenciosamente falha em cada tentativa
-            });
-        });
-      }
-      
-      // ESTRATÉGIA 3: Usar CDNs
-      // List of CDN options in order of preference
-      const cdnOptions = [
-        `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`,
-        `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`,
-        `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
-      ];
-      
-      // Use custom CDN if provided, otherwise use the first CDN option
-      workerSrc = customCdnUrl 
-        ? customCdnUrl.replace('{{version}}', pdfjsLib.version)
-        : cdnOptions[0];
-      
-      logInfo(`Usando CDN para worker: ${workerSrc}`);
-    }
+    logInfo(`Configurando worker via CDN: ${cdnWorkerUrl}`);
     
-    // Configure the worker
-    pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+    // Configure the worker directly
+    pdfjsLib.GlobalWorkerOptions.workerSrc = cdnWorkerUrl;
     
     // Store for future reference
     if (typeof window === 'object') {
-      (window as any).pdfjsWorkerSrc = workerSrc;
+      (window as any).pdfjsWorkerSrc = cdnWorkerUrl;
     }
     
-    logInfo(`Worker do PDF.js configurado com sucesso via ${workerSrc}`);
-    
-    // Testar carregamento do worker (não bloqueia)
-    if (typeof window === 'object') {
-      const testScript = document.createElement('script');
-      testScript.src = workerSrc;
-      testScript.id = 'pdf-worker-test';
-      testScript.onload = () => {
-        logInfo('Worker carregado com sucesso');
-        document.head.removeChild(testScript);
-      };
-      testScript.onerror = () => {
-        logError('Falha ao carregar worker, tentando worker fake');
-        document.head.removeChild(testScript);
-        // Último recurso: worker fake
-        pdfjsLib.GlobalWorkerOptions.workerSrc = '';
-        if (typeof window === 'object') {
-          (window as any).pdfjsWorkerSrc = 'fake-worker';
-        }
-      };
-      document.head.appendChild(testScript);
-    }
+    logInfo(`Worker do PDF.js configurado com sucesso via CDN`);
     
     return { 
       success: true, 
-      workerSrc 
+      workerSrc: cdnWorkerUrl 
     };
   } catch (error) {
     const errorMessage = error instanceof Error 
@@ -161,21 +94,21 @@ export const configurePdfWorker = (options: PdfWorkerConfigOptions = {}): PdfWor
     
     logError(errorMessage, error);
     
-    // As a last resort, try to use a fake worker (will be slow but might work)
+    // Simple fallback to the most common CDN URL
     try {
-      logInfo("Tentando configurar worker fake como última alternativa");
-      // Set to empty string to use the fake worker
-      pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+      logInfo("Tentando configurar fallback CDN");
+      const fallbackUrl = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
+      pdfjsLib.GlobalWorkerOptions.workerSrc = fallbackUrl;
       
       return {
         success: true,
-        workerSrc: 'fake-worker',
-        error: `Aviso: Usando worker fake (processamento mais lento). Erro original: ${errorMessage}`
+        workerSrc: fallbackUrl,
+        error: `Aviso: Usando CDN fallback. Erro original: ${errorMessage}`
       };
-    } catch (fakeWorkerError) {
+    } catch (fallbackError) {
       return {
         success: false,
-        error: `${errorMessage}. Também falhou ao configurar worker fake.`
+        error: `${errorMessage}. Também falhou ao configurar CDN fallback.`
       };
     }
   }
@@ -194,32 +127,19 @@ export const isPdfWorkerConfigured = (): boolean => {
  * quando necessário para processamento de PDFs
  */
 export const preloadPdfWorker = (): void => {
-  // Tentar carregar o worker com múltiplas estratégias
+  // Configuração simplificada do worker
   setTimeout(() => {
     console.log("[PDF.js] Pré-carregando worker...");
     
-    configurePdfWorker({
-      verbose: true,
+    const result = configurePdfWorker({
+      verbose: false,
       showToasts: false, // Não mostrar toasts durante pré-carregamento
-      useLocalWorker: true
     });
     
-    // Verificar configuração após um tempo
-    setTimeout(() => {
-      const isConfigured = isPdfWorkerConfigured();
-      console.log(`[PDF.js] Status do worker após pré-carregamento: ${isConfigured ? 'Configurado' : 'Não configurado'}`);
-      if (isConfigured) {
-        console.log(`[PDF.js] Worker src: ${pdfjsLib.GlobalWorkerOptions.workerSrc}`);
-      }
-      
-      // Se falhar, tentar estratégia alternativa
-      if (!isConfigured) {
-        console.warn("[PDF.js] Tentando estratégia alternativa de carregamento");
-        
-        // Tenta usar worker fake como último recurso
-        pdfjsLib.GlobalWorkerOptions.workerSrc = '';
-        console.log("[PDF.js] Configurado worker fake como fallback");
-      }
-    }, 1000);
-  }, 0);
+    if (result.success) {
+      console.log(`[PDF.js] Worker pré-carregado com sucesso: ${result.workerSrc}`);
+    } else {
+      console.warn(`[PDF.js] Falha no pré-carregamento: ${result.error}`);
+    }
+  }, 100);
 };

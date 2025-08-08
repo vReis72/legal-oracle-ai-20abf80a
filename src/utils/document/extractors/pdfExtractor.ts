@@ -21,49 +21,20 @@ export const extractTextFromPDF = async (
   logger.info(`Iniciando extração de texto do PDF: ${file.name}`);
   
   try {
-    // Garantir que o worker do PDF.js esteja configurado com fontes mais confiáveis
+    // Configuração simplificada e robusta do worker
     if (!isPdfWorkerConfigured()) {
-      logger.info("Worker não configurado, tentando configurar novamente...");
+      logger.info("Worker não configurado, configurando...");
+      const result = configurePdfWorker({ 
+        verbose: false, 
+        showToasts: false 
+      });
       
-      // Tentar várias configurações de worker em sequência até funcionar
-      const workerConfigs = [
-        // Primeiro tenta com worker local
-        { useLocalWorker: true },
-        // Depois tenta com CDNs populares
-        { customCdnUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js` },
-        { customCdnUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js` },
-        // Por último, tenta usar worker fake
-        { useFake: true }
-      ];
-      
-      let workerConfigured = false;
-      
-      // Tenta cada configuração até uma funcionar
-      for (const config of workerConfigs) {
-        if (config.useFake) {
-          // Último recurso - worker fake
-          pdfjsLib.GlobalWorkerOptions.workerSrc = '';
-          logger.warn("Usando worker fake como último recurso (processamento mais lento)");
-          workerConfigured = true;
-          break;
-        }
-        
-        const workerResult = configurePdfWorker({
-          verbose: options.verbose,
-          showToasts: false, // Evita múltiplos toasts durante tentativas
-          ...config
-        });
-        
-        if (workerResult.success) {
-          logger.info(`Worker configurado com sucesso: ${workerResult.workerSrc}`);
-          workerConfigured = true;
-          break;
-        }
+      if (!result.success) {
+        logger.error("Falha ao configurar worker:", result.error);
+        throw new Error("Falha ao configurar processador de PDF. Tente recarregar a página.");
       }
       
-      if (!workerConfigured) {
-        throw new Error("Não foi possível configurar o worker do PDF.js após múltiplas tentativas");
-      }
+      logger.info(`Worker configurado: ${result.workerSrc}`);
     } else {
       logger.info("Worker PDF.js já configurado");
     }
