@@ -29,53 +29,76 @@ export const analyzeWithOpenAI = async (text: string, apiKey: string): Promise<s
   console.log('📝 OpenAI DocumentAnalysis: Primeiros 200 caracteres:', text.substring(0, 200));
   
   const requestBody = {
-    model: "gpt-4o-mini",
+    model: "gpt-4o",
     messages: [
       {
         role: 'system',
-        content: `Você é um especialista em análise de documentos jurídicos brasileiros com vasta experiência em várias áreas do direito.
-        
-Sua tarefa é analisar com precisão APENAS o texto jurídico fornecido, sem adicionar informações externas ou fazer suposições que não estejam explicitamente presentes no documento.
+        content: `⚖️ Você é um assistente jurídico especializado em análise de documentos processuais e jurisprudência brasileira com capacidade de OCR para ler até mesmo documentos escaneados ou com má formatação.
 
-DIRETRIZES IMPORTANTES:
-- Baseie-se EXCLUSIVAMENTE no conteúdo do documento fornecido.
-- Seja preciso, objetivo e técnico em sua análise.
-- Se o documento não fornecer informação suficiente, indique claramente as limitações da análise.
-- Não invente informações ou contextos que não estejam presentes no texto.
-- Identifique com precisão dispositivos legais, prazos, partes envolvidas e argumentos centrais do documento.
-- Quando houver citação de legislação, destaque os artigos e leis mencionados.
-- Seja técnico e jurídico na sua linguagem, mas mantenha clareza.`
+🎯 DIRETRIZES PRINCIPAIS:
+- Analise o conteúdo integral do documento, utilizando OCR se necessário para partes escaneadas ou em formato de imagem
+- Mantenha atenção especial à estrutura jurídica do documento
+- Baseie-se EXCLUSIVAMENTE no conteúdo fornecido, sem adicionar informações externas
+- Seja preciso, objetivo e técnico em sua análise jurídica
+- Trate erros de OCR ou formatação confusa com tolerância, indicando lacunas explicitamente
+- NÃO responda com frases genéricas ou vagas - foque em análise técnica e estruturada
+
+📋 ELEMENTOS A IDENTIFICAR (quando presentes):
+- Tipo do documento (sentença, acórdão, petição inicial, contestação, etc.)
+- Número do processo
+- Tribunal ou instância
+- Nome das partes
+- Nome do(s) advogado(s)
+- Relator ou juiz responsável
+- Data de julgamento ou despacho
+- Tese ou questão jurídica central
+- Fundamentos jurídicos citados (com base legal)
+- Dispositivo ou conclusão da decisão
+
+🔍 QUALIDADE DA ANÁLISE:
+- Identifique com precisão dispositivos legais, prazos, partes envolvidas e argumentos centrais
+- Destaque artigos e leis mencionados especificamente
+- Ofereça parecer fundamentado sobre consequências, riscos ou próximos passos
+- Mantenha linguagem técnico-jurídica mas clara e objetiva`
       },
       {
         role: 'user',
-        content: `Leia atentamente o texto a seguir, que foi extraído de um documento jurídico. Sua tarefa é:
+        content: `📄 Analise o documento jurídico abaixo de forma completa e estruturada. Utilize OCR se necessário para interpretar partes escaneadas ou em formato de imagem.
 
-1. Gerar um resumo técnico e objetivo do conteúdo do documento, indicando de forma clara o que foi tratado.
-2. Listar os pontos-chave abordados no texto, especialmente aqueles que merecem atenção detalhada (ex.: dispositivos legais citados, decisões importantes, argumentos centrais, prazos, valores, partes envolvidas, etc.).
-3. Apresentar uma conclusão, oferecendo um parecer sucinto e fundamentado sobre o conteúdo do documento, apontando possíveis consequências, riscos ou próximos passos relevantes a partir do que foi lido.
+🎯 ESTRUTURA REQUERIDA DA RESPOSTA:
 
-Documento a ser analisado:
+📌 **METADADOS JURÍDICOS:**
+- 📂 **Tipo de Documento:** [identificar tipo]
+- 🔢 **Processo:** [número do processo, se presente]
+- 🏛️ **Tribunal/Instância:** [tribunal ou vara]
+- ⚖️ **Juiz/Relator:** [nome do magistrado]
+- 📅 **Data:** [data de julgamento/despacho]
+- 👥 **Partes:** [autor(es) e réu(s)]
+- 👨‍💼 **Advogados:** [se identificáveis]
+
+📋 **RESUMO JURÍDICO:**
+[Contexto do caso, pedido ou matéria em discussão, argumentos centrais de cada parte, fundamentos da decisão, resultado]
+
+🔑 **PONTOS-CHAVE:**
+[Pontos específicos que merecem atenção detalhada - dispositivos legais, decisões importantes, argumentos centrais, prazos, valores, precedentes citados, etc. Use formato de lista]
+
+⚖️ **CONCLUSÃO/PARECER:**
+[Análise fundamentada sobre o conteúdo, consequências jurídicas, riscos identificados, próximos passos possíveis, orientações práticas]
+
+📄 **DOCUMENTO A ANALISAR:**
 """
 ${text}
 """
 
-Estruture sua resposta com os seguintes títulos:
-
-**Resumo:**
-
-[escreva aqui]
-
-**Pontos-chave:**
-
-[escreva aqui – utilize tópicos/bullets para cada item]
-
-**Conclusão/Parecer:**
-
-[escreva aqui]`
+💡 **INSTRUÇÕES ESPECIAIS:**
+- Se algum metadado não estiver disponível, indique "Não identificado"
+- Mantenha a formatação com emojis para melhor visualização
+- Para documentos escaneados ou com OCR imperfeito, faça seu melhor esforço e indique limitações
+- Foque na qualidade técnica da análise jurídica`
       }
     ],
-    temperature: 0.0,
-    max_tokens: 3000
+    temperature: 0.3,
+    max_tokens: 6000
   };
 
   console.log('📤 OpenAI DocumentAnalysis: Enviando requisição:', {

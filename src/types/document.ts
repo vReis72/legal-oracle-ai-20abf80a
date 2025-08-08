@@ -19,4 +19,14 @@ export interface Document {
     fundamento?: string;
   }>;
   conclusion?: string;
+  // Enhanced legal metadata
+  legalMetadata?: {
+    documentType?: string;
+    processNumber?: string;
+    court?: string;
+    judge?: string;
+    date?: string;
+    parties?: Array<{name: string; role: string}>;
+    lawyers?: string[];
+  };
 }

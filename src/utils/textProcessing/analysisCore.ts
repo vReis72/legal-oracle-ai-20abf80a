@@ -6,12 +6,26 @@ import { extractSection } from './sectionCore';
 import { processKeyPoints } from './keyPointParser';
 
 /**
+ * Legal metadata extracted from documents
+ */
+export interface LegalMetadata {
+  documentType?: string;
+  processNumber?: string;
+  court?: string;
+  judge?: string;
+  date?: string;
+  parties?: Array<{name: string; role: string}>;
+  lawyers?: string[];
+}
+
+/**
  * Type definition for the analysis result structure
  */
 export interface AnalysisResult {
   summary: string;
   keyPoints: Array<{title: string; description: string}>;
   conclusion: string;
+  legalMetadata?: LegalMetadata;
 }
 
 /**
@@ -32,7 +46,8 @@ export const DEFAULT_VALUES = {
 export const createEmptyResult = (): AnalysisResult => ({
   summary: "",
   keyPoints: [],
-  conclusion: ""
+  conclusion: "",
+  legalMetadata: undefined
 });
 
 /**

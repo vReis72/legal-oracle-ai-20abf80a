@@ -6,6 +6,7 @@ import DocumentStatus from './DocumentStatus';
 import DocumentSummary from './DocumentSummary';
 import DocumentKeyPoints from './DocumentKeyPoints';
 import DocumentConclusion from './DocumentConclusion';
+import DocumentLegalMetadata from './DocumentLegalMetadata';
 import { useDocumentAnalysis } from '@/hooks/document/useDocumentAnalysis';
 import { useGlobalApiKey } from '@/hooks/globalApiKey/GlobalApiKeyContext';
 import ErrorMessage from '../ai/ErrorMessage'; 
@@ -96,6 +97,11 @@ const DocumentAnalyzer: React.FC<DocumentAnalyzerProps> = ({
       )}
       
       {isAnalyzing && <DocumentProgressBar progress={progress} />}
+      
+      {/* Display legal metadata if available */}
+      {document.legalMetadata && (
+        <DocumentLegalMetadata metadata={document.legalMetadata} />
+      )}
       
       {renderAnalysisResults()}
     </div>
