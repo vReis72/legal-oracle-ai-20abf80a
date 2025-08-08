@@ -24,10 +24,7 @@ export const extractTextFromPDF = async (
     // Configuração simplificada e robusta do worker
     if (!isPdfWorkerConfigured()) {
       logger.info("Worker não configurado, configurando...");
-      const result = configurePdfWorker({ 
-        verbose: false, 
-        showToasts: false 
-      });
+      const result = configurePdfWorker();
       
       if (!result.success) {
         logger.error("Falha ao configurar worker:", result.error);
