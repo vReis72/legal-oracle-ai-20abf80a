@@ -15,13 +15,24 @@ export const analyzeWithOpenAI = async (text: string, apiKey: string, fileData?:
   
   validateApiKey(apiKey);
   
-  if (!text || text.trim().length === 0) {
+  // Clean text if it contains OCR markers
+  let cleanText = text;
+  if (text.includes('[PDF_DOCUMENT_FOR_OCR_ANALYSIS:')) {
+    console.log('🧹 OpenAI DocumentAnalysis: Limpando marcadores OCR do texto');
+    // Extract filename from OCR marker and treat as no content available
+    const match = text.match(/\[PDF_DOCUMENT_FOR_OCR_ANALYSIS:\s*([^\]]+)\]/);
+    const filename = match ? match[1] : 'documento.pdf';
+    cleanText = `Este é um documento PDF (${filename}) que foi enviado para análise. O texto não pôde ser extraído automaticamente.`;
+  }
+
+  if (!cleanText || cleanText.trim().length === 0) {
     console.error('❌ OpenAI DocumentAnalysis: Texto vazio fornecido');
     throw new Error("Nenhum texto fornecido para análise.");
   }
 
-  // Check if this is an OCR document
-  const isOcrDocument = text.includes('[PDF_DOCUMENT_FOR_OCR_ANALYSIS:') && fileData;
+  // OCR is only for image files, not PDFs
+  // For PDFs, we should use normal text extraction
+  const isOcrDocument = false;
 
   if (isOcrDocument && !text.includes('[PDF_DOCUMENT_FOR_OCR_ANALYSIS:')) {
     console.error('❌ OpenAI DocumentAnalysis: Documento OCR sem dados de arquivo');
@@ -32,7 +43,7 @@ export const analyzeWithOpenAI = async (text: string, apiKey: string, fileData?:
   if (isOcrDocument) {
     console.log('🔍 OpenAI DocumentAnalysis: Modo OCR ativado para análise de PDF');
   } else {
-    console.log('📝 OpenAI DocumentAnalysis: Primeiros 200 caracteres:', text.substring(0, 200));
+    console.log('📝 OpenAI DocumentAnalysis: Primeiros 200 caracteres:', cleanText.substring(0, 200));
   }
   
   const messages: any[] = [
@@ -137,7 +148,7 @@ export const analyzeWithOpenAI = async (text: string, apiKey: string, fileData?:
 
 📄 **DOCUMENTO A ANALISAR:**
 """
-${text}
+${cleanText}
 """
 
 💡 **INSTRUÇÕES ESPECIAIS:**
