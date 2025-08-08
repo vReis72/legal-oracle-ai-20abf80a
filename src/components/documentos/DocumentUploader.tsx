@@ -39,23 +39,10 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onDocumentProcessed
               {isUploading ? "Processando..." : (
                 <>
                   <Upload className="mr-2 h-4 w-4" />
-                  Upload Normal
+                  Upload
                 </>
               )}
             </Button>
-            {selectedFile?.name.endsWith('.pdf') && (
-              <Button 
-                onClick={handleOcrUpload} 
-                disabled={!selectedFile || isUploading}
-              >
-                {isUploading ? "Processando..." : (
-                  <>
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload OCR
-                  </>
-                )}
-              </Button>
-            )}
           </div>
         </div>
         
@@ -68,8 +55,7 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onDocumentProcessed
         <div className="text-sm text-muted-foreground">
           <p>Formatos aceitos: PDF, TXT</p>
           <p>Tamanho máximo: 10MB</p>
-          <p><strong>Upload Normal:</strong> Extrai texto primeiro</p>
-          <p><strong>Upload OCR:</strong> Usa OCR nativo do GPT-4o (recomendado para PDFs)</p>
+          <p><strong>Upload:</strong> Extrai texto automaticamente do documento</p>
         </div>
       </div>
     </div>
