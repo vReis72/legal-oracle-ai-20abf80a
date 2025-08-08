@@ -148,7 +148,7 @@ ${text}
   }
 
   const requestBody = {
-    model: "gpt-4o",
+    model: "gpt-4.1-2025-04-14",
     messages,
     temperature: 0.3,
     max_tokens: 6000
@@ -167,8 +167,7 @@ ${text}
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'OpenAI-Beta': 'assistants=v1'
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(requestBody),
     });
