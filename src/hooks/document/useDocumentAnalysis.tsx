@@ -74,7 +74,7 @@ export const useDocumentAnalysis = (
           documentContent, 
           apiKey, 
           setProgress, 
-          document.originalFileData
+          document.processImages ? document.originalFileData : undefined
         );
       }
       

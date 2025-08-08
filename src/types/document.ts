@@ -29,6 +29,7 @@ export interface Document {
     parties?: Array<{name: string; role: string}>;
     lawyers?: string[];
   };
-  // For OCR analysis
+  // For hybrid processing (text + images)
+  processImages?: boolean;
   originalFileData?: string;
 }

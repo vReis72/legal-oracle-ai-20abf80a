@@ -30,18 +30,18 @@ export const analyzeWithOpenAI = async (text: string, apiKey: string, fileData?:
     throw new Error("Nenhum texto fornecido para análise.");
   }
 
-  // OCR is only for image files, not PDFs
-  // For PDFs, we should use normal text extraction
-  const isOcrDocument = false;
+  // Check if this is a hybrid document (text + image processing)
+  const isHybridDocument = fileData && !text.includes('[PDF_DOCUMENT_FOR_OCR_ANALYSIS:');
 
-  if (isOcrDocument && !text.includes('[PDF_DOCUMENT_FOR_OCR_ANALYSIS:')) {
-    console.error('❌ OpenAI DocumentAnalysis: Documento OCR sem dados de arquivo');
-    throw new Error("Documento para análise OCR deve incluir dados do arquivo.");
+  if (isHybridDocument && !fileData) {
+    console.error('❌ OpenAI DocumentAnalysis: Documento híbrido sem dados de arquivo');
+    throw new Error("Documento para análise híbrida deve incluir dados do arquivo.");
   }
 
   console.log('📤 OpenAI DocumentAnalysis: Preparando requisição para análise');
-  if (isOcrDocument) {
-    console.log('🔍 OpenAI DocumentAnalysis: Modo OCR ativado para análise de PDF');
+  if (isHybridDocument) {
+    console.log('🔍 OpenAI DocumentAnalysis: Modo híbrido ativado (texto + imagens)');
+    console.log('📝 OpenAI DocumentAnalysis: Primeiros 200 caracteres do texto:', cleanText.substring(0, 200));
   } else {
     console.log('📝 OpenAI DocumentAnalysis: Primeiros 200 caracteres:', cleanText.substring(0, 200));
   }
@@ -79,13 +79,24 @@ export const analyzeWithOpenAI = async (text: string, apiKey: string, fileData?:
     }
   ];
 
-  if (isOcrDocument && fileData) {
+  if (isHybridDocument && fileData) {
     messages.push({
       role: 'user',
       content: [
         {
           type: 'text',
-          text: `📄 Analise este documento PDF jurídico usando OCR. Extraia e analise todo o conteúdo de forma completa e estruturada.
+          text: `📄 Analise este documento PDF jurídico de forma HÍBRIDA. Eu forneço o texto extraído E as imagens do documento para análise visual complementar.
+
+🎯 INSTRUÇÕES DE ANÁLISE HÍBRIDA:
+- Use o TEXTO extraído como base principal da análise
+- Complemente com informações visuais importantes das imagens (logos, carimbos, selos, elementos gráficos, formatação especial)
+- Identifique discrepâncias entre texto extraído e conteúdo visual
+- Extraia informações visuais que não aparecem no texto (assinaturas, carimbos, códigos de barras, etc.)
+
+📋 **TEXTO EXTRAÍDO:**
+"""
+${cleanText}
+"""
 
 🎯 ESTRUTURA REQUERIDA DA RESPOSTA:
 
@@ -99,19 +110,21 @@ export const analyzeWithOpenAI = async (text: string, apiKey: string, fileData?:
 - 👨‍💼 **Advogados:** [se identificáveis]
 
 📋 **RESUMO JURÍDICO:**
-[Contexto do caso, pedido ou matéria em discussão, argumentos centrais de cada parte, fundamentos da decisão, resultado]
+[Contexto do caso baseado no texto + informações visuais complementares]
 
 🔑 **PONTOS-CHAVE:**
-[Pontos específicos que merecem atenção detalhada - dispositivos legais, decisões importantes, argumentos centrais, prazos, valores, precedentes citados, etc. Use formato de lista]
+[Combine informações do texto com elementos visuais importantes]
+
+🖼️ **ELEMENTOS VISUAIS IDENTIFICADOS:**
+[Descreva carimbos, selos, assinaturas, logos, elementos gráficos relevantes encontrados nas imagens]
 
 ⚖️ **CONCLUSÃO/PARECER:**
-[Análise fundamentada sobre o conteúdo, consequências jurídicas, riscos identificados, próximos passos possíveis, orientações práticas]
+[Análise fundamentada combinando texto e elementos visuais]
 
 💡 **INSTRUÇÕES ESPECIAIS:**
-- Se algum metadado não estiver disponível, indique "Não identificado"
-- Mantenha a formatação com emojis para melhor visualização
-- Use OCR para ler o documento completamente, incluindo partes escaneadas
-- Foque na qualidade técnica da análise jurídica`
+- Priorize o texto extraído, mas complemente com informações visuais
+- Identifique elementos visuais jurídicos importantes (carimbos oficiais, selos, etc.)
+- Se houver conflito entre texto e imagem, indique explicitamente`
         },
         {
           type: 'image_url',
@@ -170,7 +183,7 @@ ${cleanText}
     messageCount: requestBody.messages.length,
     maxTokens: requestBody.max_tokens,
     temperature: requestBody.temperature,
-    isOcrMode: isOcrDocument
+    isHybridMode: isHybridDocument
   });
   
   try {

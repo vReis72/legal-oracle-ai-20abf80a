@@ -22,7 +22,7 @@ export const useFileUpload = ({ onDocumentProcessed }: UseFileUploadProps) => {
     }
   };
 
-  const handleUpload = async (skipTextExtraction: boolean = false) => {
+  const handleUpload = async (processImages: boolean = false) => {
     if (!selectedFile) {
       toast.error("Por favor, selecione um arquivo para upload.");
       return;
@@ -49,16 +49,22 @@ export const useFileUpload = ({ onDocumentProcessed }: UseFileUploadProps) => {
       let extractedText = "";
       let originalFileData: string | undefined = undefined;
       
-      if (skipTextExtraction && fileExtension === 'pdf') {
-        toast.info("Carregando PDF para análise com OCR nativo...");
-        extractedText = `[PDF_DOCUMENT_FOR_OCR_ANALYSIS: ${selectedFile.name}]`;
+      if (processImages && fileExtension === 'pdf') {
+        toast.info("Carregando PDF para análise híbrida (texto + imagens)...");
         
-        // Converter para base64 apenas para PDFs pequenos
+        // First extract text normally
+        extractedText = await extractTextFromFile(selectedFile, {
+          verbose: false,
+          showToasts: false,
+          timeout: 30000
+        });
+        
+        // Then prepare for image analysis
         if (selectedFile.size < 5 * 1024 * 1024) { // 5MB limite para base64
           originalFileData = await fileToBase64(selectedFile);
         }
         
-        console.log("PDF carregado para análise OCR");
+        console.log("PDF preparado para análise híbrida");
       } else {
         toast.info("Processando documento...");
         
@@ -84,13 +90,14 @@ export const useFileUpload = ({ onDocumentProcessed }: UseFileUploadProps) => {
         uploadDate: new Date(),
         processed: false,
         content: trimmedText,
+        processImages,
         ...(originalFileData && { originalFileData })
       };
       
       console.log("Documento criado:", document.id, document.name);
       
       onDocumentProcessed(document);
-      toast.success(skipTextExtraction ? "PDF carregado para análise OCR!" : "Documento carregado com sucesso!");
+      toast.success(processImages ? "PDF carregado para análise híbrida!" : "Documento carregado com sucesso!");
       
       setSelectedFile(null);
     } catch (error) {
