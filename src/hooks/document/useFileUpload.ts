@@ -22,7 +22,7 @@ export const useFileUpload = ({ onDocumentProcessed }: UseFileUploadProps) => {
     }
   };
 
-  const handleUpload = async () => {
+  const handleUpload = async (skipTextExtraction: boolean = false) => {
     if (!selectedFile) {
       toast.error("Por favor, selecione um arquivo para upload.");
       return;
@@ -39,19 +39,28 @@ export const useFileUpload = ({ onDocumentProcessed }: UseFileUploadProps) => {
     setIsUploading(true);
     
     try {
-      toast.info("Processando documento...");
+      let extractedText = "";
       
-      // Extract text from the document using the refactored utility
-      const extractedText = await extractTextFromFile(selectedFile, {
-        verbose: true,
-        showToasts: true,
-        timeout: 60000 // Increased timeout for large documents
-      });
-      
-      // Validate extracted content
-      const validation = validateExtractedContent(extractedText, selectedFile.type);
-      if (!validation.valid) {
-        throw new Error(validation.errorMessage);
+      if (skipTextExtraction && fileExtension === 'pdf') {
+        toast.info("Carregando PDF para análise com OCR nativo...");
+        // Para PDFs, não extrair texto - deixar para o GPT-4o com OCR
+        extractedText = `[PDF_DOCUMENT_FOR_OCR_ANALYSIS: ${selectedFile.name}]`;
+        console.log("PDF carregado sem extração de texto - será analisado via OCR");
+      } else {
+        toast.info("Processando documento...");
+        
+        // Extract text from the document using the refactored utility
+        extractedText = await extractTextFromFile(selectedFile, {
+          verbose: true,
+          showToasts: true,
+          timeout: 60000 // Increased timeout for large documents
+        });
+        
+        // Validate extracted content
+        const validation = validateExtractedContent(extractedText, selectedFile.type);
+        if (!validation.valid) {
+          throw new Error(validation.errorMessage);
+        }
       }
       
       const trimmedText = extractedText.trim();
@@ -65,7 +74,11 @@ export const useFileUpload = ({ onDocumentProcessed }: UseFileUploadProps) => {
         type: fileExtension,
         uploadDate: new Date(),
         processed: false,
-        content: trimmedText
+        content: trimmedText,
+        // Store the original file as base64 for OCR analysis if needed
+        ...(skipTextExtraction && fileExtension === 'pdf' && {
+          originalFileData: await fileToBase64(selectedFile)
+        })
       };
       
       console.log("Documento criado com sucesso:", document);
@@ -75,7 +88,7 @@ export const useFileUpload = ({ onDocumentProcessed }: UseFileUploadProps) => {
       
       // Call the callback with the processed document
       onDocumentProcessed(document);
-      toast.success("Documento carregado com sucesso!");
+      toast.success(skipTextExtraction ? "PDF carregado para análise OCR!" : "Documento carregado com sucesso!");
       
       // Reset the file input
       setSelectedFile(null);
@@ -91,6 +104,16 @@ export const useFileUpload = ({ onDocumentProcessed }: UseFileUploadProps) => {
     } finally {
       setIsUploading(false);
     }
+  };
+
+  // Helper function to convert file to base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
   };
 
   return {

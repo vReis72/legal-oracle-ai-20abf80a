@@ -70,7 +70,12 @@ export const useDocumentAnalysis = (
         analysisResult = await processLargeDocument(documentContent, apiKey, setProgress);
       } else {
         console.log("Documento pequeno. Processando de uma vez...");
-        analysisResult = await processSmallDocument(documentContent, apiKey, setProgress);
+        analysisResult = await processSmallDocument(
+          documentContent, 
+          apiKey, 
+          setProgress, 
+          document.originalFileData
+        );
       }
       
       setProgress(90);

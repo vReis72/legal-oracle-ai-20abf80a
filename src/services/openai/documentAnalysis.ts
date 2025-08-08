@@ -8,7 +8,7 @@ import { validateApiKey, handleApiError } from './types';
  * @param apiKey OpenAI API key
  * @returns Analyzed content from OpenAI
  */
-export const analyzeWithOpenAI = async (text: string, apiKey: string): Promise<string> => {
+export const analyzeWithOpenAI = async (text: string, apiKey: string, fileData?: string): Promise<string> => {
   console.log('🔬 OpenAI DocumentAnalysis: Iniciando análise');
   console.log('🔑 OpenAI DocumentAnalysis: Chave API:', apiKey ? `${apiKey.substring(0, 10)}...${apiKey.slice(-4)}` : 'NENHUMA');
   console.log('📄 OpenAI DocumentAnalysis: Tamanho do texto:', text.length);
@@ -20,20 +20,25 @@ export const analyzeWithOpenAI = async (text: string, apiKey: string): Promise<s
     throw new Error("Nenhum texto fornecido para análise.");
   }
 
-  if (text.trim().length < 50) {
-    console.error('❌ OpenAI DocumentAnalysis: Texto muito curto');
-    throw new Error("Texto fornecido é muito curto para análise significativa (menos de 50 caracteres).");
+  // Check if this is an OCR document
+  const isOcrDocument = text.includes('[PDF_DOCUMENT_FOR_OCR_ANALYSIS:') && fileData;
+
+  if (isOcrDocument && !text.includes('[PDF_DOCUMENT_FOR_OCR_ANALYSIS:')) {
+    console.error('❌ OpenAI DocumentAnalysis: Documento OCR sem dados de arquivo');
+    throw new Error("Documento para análise OCR deve incluir dados do arquivo.");
   }
 
   console.log('📤 OpenAI DocumentAnalysis: Preparando requisição para análise');
-  console.log('📝 OpenAI DocumentAnalysis: Primeiros 200 caracteres:', text.substring(0, 200));
+  if (isOcrDocument) {
+    console.log('🔍 OpenAI DocumentAnalysis: Modo OCR ativado para análise de PDF');
+  } else {
+    console.log('📝 OpenAI DocumentAnalysis: Primeiros 200 caracteres:', text.substring(0, 200));
+  }
   
-  const requestBody = {
-    model: "gpt-4o",
-    messages: [
-      {
-        role: 'system',
-        content: `⚖️ Você é um assistente jurídico especializado em análise de documentos processuais e jurisprudência brasileira com capacidade de OCR para ler até mesmo documentos escaneados ou com má formatação.
+  const messages: any[] = [
+    {
+      role: 'system',
+      content: `⚖️ Você é um assistente jurídico especializado em análise de documentos processuais e jurisprudência brasileira com capacidade de OCR para ler até mesmo documentos escaneados ou com má formatação.
 
 🎯 DIRETRIZES PRINCIPAIS:
 - Analise o conteúdo integral do documento, utilizando OCR se necessário para partes escaneadas ou em formato de imagem
@@ -60,10 +65,55 @@ export const analyzeWithOpenAI = async (text: string, apiKey: string): Promise<s
 - Destaque artigos e leis mencionados especificamente
 - Ofereça parecer fundamentado sobre consequências, riscos ou próximos passos
 - Mantenha linguagem técnico-jurídica mas clara e objetiva`
-      },
-      {
-        role: 'user',
-        content: `📄 Analise o documento jurídico abaixo de forma completa e estruturada. Utilize OCR se necessário para interpretar partes escaneadas ou em formato de imagem.
+    }
+  ];
+
+  if (isOcrDocument && fileData) {
+    messages.push({
+      role: 'user',
+      content: [
+        {
+          type: 'text',
+          text: `📄 Analise este documento PDF jurídico usando OCR. Extraia e analise todo o conteúdo de forma completa e estruturada.
+
+🎯 ESTRUTURA REQUERIDA DA RESPOSTA:
+
+📌 **METADADOS JURÍDICOS:**
+- 📂 **Tipo de Documento:** [identificar tipo]
+- 🔢 **Processo:** [número do processo, se presente]
+- 🏛️ **Tribunal/Instância:** [tribunal ou vara]
+- ⚖️ **Juiz/Relator:** [nome do magistrado]
+- 📅 **Data:** [data de julgamento/despacho]
+- 👥 **Partes:** [autor(es) e réu(s)]
+- 👨‍💼 **Advogados:** [se identificáveis]
+
+📋 **RESUMO JURÍDICO:**
+[Contexto do caso, pedido ou matéria em discussão, argumentos centrais de cada parte, fundamentos da decisão, resultado]
+
+🔑 **PONTOS-CHAVE:**
+[Pontos específicos que merecem atenção detalhada - dispositivos legais, decisões importantes, argumentos centrais, prazos, valores, precedentes citados, etc. Use formato de lista]
+
+⚖️ **CONCLUSÃO/PARECER:**
+[Análise fundamentada sobre o conteúdo, consequências jurídicas, riscos identificados, próximos passos possíveis, orientações práticas]
+
+💡 **INSTRUÇÕES ESPECIAIS:**
+- Se algum metadado não estiver disponível, indique "Não identificado"
+- Mantenha a formatação com emojis para melhor visualização
+- Use OCR para ler o documento completamente, incluindo partes escaneadas
+- Foque na qualidade técnica da análise jurídica`
+        },
+        {
+          type: 'image_url',
+          image_url: {
+            url: fileData
+          }
+        }
+      ]
+    });
+  } else {
+    messages.push({
+      role: 'user',
+      content: `📄 Analise o documento jurídico abaixo de forma completa e estruturada.
 
 🎯 ESTRUTURA REQUERIDA DA RESPOSTA:
 
@@ -93,20 +143,23 @@ ${text}
 💡 **INSTRUÇÕES ESPECIAIS:**
 - Se algum metadado não estiver disponível, indique "Não identificado"
 - Mantenha a formatação com emojis para melhor visualização
-- Para documentos escaneados ou com OCR imperfeito, faça seu melhor esforço e indique limitações
 - Foque na qualidade técnica da análise jurídica`
-      }
-    ],
+    });
+  }
+
+  const requestBody = {
+    model: "gpt-4o",
+    messages,
     temperature: 0.3,
     max_tokens: 6000
   };
-
+  
   console.log('📤 OpenAI DocumentAnalysis: Enviando requisição:', {
     model: requestBody.model,
     messageCount: requestBody.messages.length,
     maxTokens: requestBody.max_tokens,
     temperature: requestBody.temperature,
-    textLength: text.length
+    isOcrMode: isOcrDocument
   });
   
   try {

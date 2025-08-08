@@ -29,4 +29,6 @@ export interface Document {
     parties?: Array<{name: string; role: string}>;
     lawyers?: string[];
   };
+  // For OCR analysis
+  originalFileData?: string;
 }

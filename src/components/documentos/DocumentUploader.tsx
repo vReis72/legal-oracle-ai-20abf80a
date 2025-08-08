@@ -19,6 +19,9 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onDocumentProcessed
     onDocumentProcessed 
   });
 
+  const handleNormalUpload = () => handleUpload(false);
+  const handleOcrUpload = () => handleUpload(true);
+
   // Pré-carrega o worker do PDF.js para garantir disponibilidade
   useEffect(() => {
     // Executa várias tentativas para configurar o worker com diferentes estratégias
@@ -91,18 +94,33 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onDocumentProcessed
             onChange={handleFileChange}
             disabled={isUploading}
           />
-          <Button 
-            onClick={handleUpload} 
-            disabled={!selectedFile || isUploading}
-            className="shrink-0"
-          >
-            {isUploading ? "Processando..." : (
-              <>
-                <Upload className="mr-2 h-4 w-4" />
-                Upload
-              </>
+          <div className="flex gap-2 shrink-0">
+            <Button 
+              onClick={handleNormalUpload} 
+              disabled={!selectedFile || isUploading}
+              variant="outline"
+            >
+              {isUploading ? "Processando..." : (
+                <>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload Normal
+                </>
+              )}
+            </Button>
+            {selectedFile?.name.endsWith('.pdf') && (
+              <Button 
+                onClick={handleOcrUpload} 
+                disabled={!selectedFile || isUploading}
+              >
+                {isUploading ? "Processando..." : (
+                  <>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload OCR
+                  </>
+                )}
+              </Button>
             )}
-          </Button>
+          </div>
         </div>
         
         {/* File preview component */}
@@ -115,6 +133,8 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onDocumentProcessed
         <div className="text-sm text-muted-foreground">
           <p>Formatos aceitos: PDF, TXT</p>
           <p>Tamanho máximo: 10MB</p>
+          <p><strong>Upload Normal:</strong> Extrai texto primeiro (pode falhar com worker)</p>
+          <p><strong>Upload OCR:</strong> Usa OCR nativo do GPT-4o (recomendado para PDFs)</p>
         </div>
       </div>
     </div>
