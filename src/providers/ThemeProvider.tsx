@@ -1,6 +1,4 @@
-
-import * as React from 'react';
-import { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 type Theme = 'dark' | 'light' | 'system';
 
@@ -10,34 +8,20 @@ interface ThemeContextType {
   actualTheme: 'dark' | 'light';
 }
 
-const ThemeContext = createContext<ThemeContextType>({
-  theme: 'light',
-  setTheme: () => null,
-  actualTheme: 'light',
-});
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 type ThemeProviderProps = {
-  children: React.ReactNode;
+  children: ReactNode;
   defaultTheme?: Theme;
 };
 
-export const ThemeProvider: React.FC<ThemeProviderProps> = ({
+export const ThemeProvider = ({
   children,
   defaultTheme = 'light'
-}) => {
+}: ThemeProviderProps) => {
   const [theme, setThemeState] = useState<Theme>(defaultTheme);
-  const [isInitialized, setIsInitialized] = useState(false);
-
-  // Initialize theme from localStorage after component mounts
-  useEffect(() => {
-    const stored = localStorage.getItem('app-theme');
-    if (stored && ['light', 'dark', 'system'].includes(stored)) {
-      setThemeState(stored as Theme);
-    }
-    setIsInitialized(true);
-  }, []);
-
   const [actualTheme, setActualTheme] = useState<'dark' | 'light'>('light');
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const getSystemTheme = (): 'dark' | 'light' => {
     if (typeof window !== 'undefined') {
@@ -51,47 +35,69 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
     setActualTheme(resolved);
     
     // Aplica a classe no documento
-    const root = document.documentElement;
-    root.classList.remove('light', 'dark');
-    root.classList.add(resolved);
-    
-    console.log('Tema atualizado para:', resolved, 'baseado na escolha:', newTheme);
+    if (typeof document !== 'undefined') {
+      const root = document.documentElement;
+      root.classList.remove('light', 'dark');
+      root.classList.add(resolved);
+    }
   };
 
   const setTheme = (newTheme: Theme) => {
-    console.log('Definindo novo tema:', newTheme);
     setThemeState(newTheme);
-    localStorage.setItem('app-theme', newTheme);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('app-theme', newTheme);
+    }
     updateActualTheme(newTheme);
   };
 
-  // Efeito para aplicar o tema inicial e escutar mudanças do sistema
+  // Initialize theme from localStorage after component mounts
+  useEffect(() => {
+    if (typeof localStorage !== 'undefined') {
+      const stored = localStorage.getItem('app-theme');
+      if (stored && ['light', 'dark', 'system'].includes(stored)) {
+        setThemeState(stored as Theme);
+      }
+    }
+    setIsInitialized(true);
+  }, []);
+
+  // Apply theme when initialized or theme changes
   useEffect(() => {
     if (!isInitialized) return;
     
     updateActualTheme(theme);
 
-    // Escuta mudanças no tema do sistema
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = () => {
-      if (theme === 'system') {
-        updateActualTheme('system');
-      }
-    };
+    // Listen to system theme changes
+    if (typeof window !== 'undefined') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handleChange = () => {
+        if (theme === 'system') {
+          updateActualTheme('system');
+        }
+      };
 
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    }
   }, [theme, isInitialized]);
 
-  // Efeito para garantir que o tema seja aplicado na inicialização
+  // Apply theme class on actualTheme change
   useEffect(() => {
-    const root = document.documentElement;
-    root.classList.remove('light', 'dark');
-    root.classList.add(actualTheme);
+    if (typeof document !== 'undefined') {
+      const root = document.documentElement;
+      root.classList.remove('light', 'dark');
+      root.classList.add(actualTheme);
+    }
   }, [actualTheme]);
 
+  const value = {
+    theme,
+    setTheme,
+    actualTheme
+  };
+
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, actualTheme }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );
