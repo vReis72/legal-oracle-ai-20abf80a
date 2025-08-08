@@ -181,9 +181,15 @@ ${text}
       console.error('❌ OpenAI DocumentAnalysis: Erro na resposta:', {
         status: response.status,
         statusText: response.statusText,
-        body: errorText
+        body: errorText,
+        url: response.url,
+        headers: Object.fromEntries(response.headers.entries())
       });
-      await handleApiError(response);
+      
+      // Log the request body for debugging
+      console.error('❌ OpenAI DocumentAnalysis: Request body que causou o erro:', JSON.stringify(requestBody, null, 2));
+      
+      throw new Error(`Erro na API: ${response.status} - ${errorText || 'Erro desconhecido'}`);
     }
 
     const responseText = await response.text();
