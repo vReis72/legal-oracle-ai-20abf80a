@@ -1,28 +1,84 @@
 
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Upload, Info } from "lucide-react";
+import { Upload } from "lucide-react";
 import { Document } from "@/types/document";
 import { useFileUpload } from "@/hooks/document/useFileUpload";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import * as pdfjsLib from 'pdfjs-dist';
+import { configurePdfWorker, isPdfWorkerConfigured, preloadPdfWorker } from "@/utils/pdf/pdfWorkerConfig";
 import DocumentFilePreview from './DocumentFilePreview';
+import { toast } from "sonner";
 
 interface DocumentUploaderProps {
   onDocumentProcessed: (document: Document) => void;
 }
 
 const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onDocumentProcessed }) => {
-  const [processImages, setProcessImages] = useState(false);
   const { isUploading, selectedFile, handleFileChange, handleUpload } = useFileUpload({ 
     onDocumentProcessed 
   });
 
-  const handleUploadClick = () => handleUpload(processImages);
-  
-  const isPdf = selectedFile?.name.endsWith('.pdf');
-  const shouldSuggestImageProcessing = isPdf && selectedFile && selectedFile.size > 1024 * 1024; // > 1MB
+  // Pré-carrega o worker do PDF.js para garantir disponibilidade
+  useEffect(() => {
+    // Executa várias tentativas para configurar o worker com diferentes estratégias
+    const configWorker = async () => {
+      console.log("Iniciando pré-carregamento do worker PDF.js...");
+      
+      // Primeira tentativa com configuração básica
+      const workerResult = configurePdfWorker({
+        verbose: true,
+        showToasts: false, // Evita mostrar toast na primeira tentativa
+        useLocalWorker: true // Tenta usar worker local primeiro
+      });
+      
+      if (workerResult.success) {
+        console.log("Worker do PDF.js configurado com sucesso:", workerResult.workerSrc);
+        if (workerResult.workerSrc === 'fake-worker') {
+          console.warn("Usando worker fake. O processamento de PDFs pode ser mais lento.");
+          toast.warning("O processador de PDF está operando em modo limitado. Alguns recursos podem ser mais lentos.");
+        }
+      } else {
+        console.error("Primeira tentativa falhou:", workerResult.error);
+        
+        // Segunda tentativa com CDNs alternativos
+        const secondAttempt = configurePdfWorker({
+          verbose: true,
+          showToasts: false,
+          customCdnUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`
+        });
+        
+        if (secondAttempt.success) {
+          console.log("Segunda tentativa bem-sucedida:", secondAttempt.workerSrc);
+        } else {
+          console.error("Segunda tentativa falhou:", secondAttempt.error);
+          
+          // Terceira tentativa com worker fake como último recurso
+          const lastAttempt = configurePdfWorker({
+            verbose: true,
+            showToasts: true
+          });
+          
+          if (!lastAttempt.success) {
+            toast.error("Falha ao configurar o processador de PDF. A visualização pode estar comprometida.");
+          }
+        }
+      }
+    };
+    
+    // Inicia configuração do worker
+    configWorker();
+    
+    // Tenta carregar o worker novamente após 2 segundos se a primeira tentativa falhar
+    const retryTimeout = setTimeout(() => {
+      if (!isPdfWorkerConfigured()) {
+        console.log("Tentando recarregar worker após timeout...");
+        configWorker();
+      }
+    }, 2000);
+    
+    return () => clearTimeout(retryTimeout);
+  }, []);
 
   return (
     <div className="border rounded-lg p-6 bg-white shadow-sm">
@@ -35,56 +91,21 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onDocumentProcessed
             onChange={handleFileChange}
             disabled={isUploading}
           />
-          <div className="flex gap-2 shrink-0">
-            <Button 
-              onClick={handleUploadClick} 
-              disabled={!selectedFile || isUploading}
-              variant="outline"
-            >
-              {isUploading ? "Processando..." : (
-                <>
-                  <Upload className="mr-2 h-4 w-4" />
-                  Upload
-                </>
-              )}
-            </Button>
-          </div>
+          <Button 
+            onClick={handleUpload} 
+            disabled={!selectedFile || isUploading}
+            className="shrink-0"
+          >
+            {isUploading ? "Processando..." : (
+              <>
+                <Upload className="mr-2 h-4 w-4" />
+                Upload
+              </>
+            )}
+          </Button>
         </div>
         
-        {isPdf && (
-          <div className="flex items-center space-x-2 p-3 bg-muted/50 rounded-lg">
-            <Checkbox 
-              id="process-images" 
-              checked={processImages}
-              onCheckedChange={(checked) => setProcessImages(checked as boolean)}
-            />
-            <div className="flex items-center gap-2">
-              <label 
-                htmlFor="process-images" 
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-              >
-                Processar imagens também?
-              </label>
-              <Tooltip>
-                <TooltipTrigger>
-                  <Info className="h-4 w-4 text-muted-foreground" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="max-w-xs text-sm">
-                    Marque esta opção se o documento contém elementos visuais importantes como 
-                    gráficos, tabelas complexas, selos, carimhos ou se o texto não foi extraído corretamente.
-                    {shouldSuggestImageProcessing && (
-                      <span className="block mt-1 font-medium text-orange-600">
-                        💡 Recomendado para este PDF (arquivo grande detectado)
-                      </span>
-                    )}
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
-          </div>
-        )}
-        
+        {/* File preview component */}
         {selectedFile && (
           <div className="mt-4">
             <DocumentFilePreview file={selectedFile} />
@@ -94,10 +115,6 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onDocumentProcessed
         <div className="text-sm text-muted-foreground">
           <p>Formatos aceitos: PDF, TXT</p>
           <p>Tamanho máximo: 10MB</p>
-          <p><strong>Upload:</strong> Extrai texto automaticamente do documento</p>
-          {isPdf && (
-            <p><strong>Processamento de imagens:</strong> Analisa elementos visuais quando marcado (mais lento, mas mais completo)</p>
-          )}
         </div>
       </div>
     </div>

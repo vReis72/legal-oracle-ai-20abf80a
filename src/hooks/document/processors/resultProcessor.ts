@@ -34,6 +34,5 @@ export const createAnalyzedDocument = (
     }],
     conclusion: conclusion || "Não é possível extrair uma conclusão definitiva do documento fornecido.",
     content: document.content, // Garantir que o conteúdo original seja preservado
-    legalMetadata: parseAnalysisResult(analysisResult).legalMetadata, // Adicionar metadados jurídicos
   };
 };

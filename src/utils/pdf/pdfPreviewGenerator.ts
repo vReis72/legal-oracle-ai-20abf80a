@@ -35,14 +35,18 @@ export const generatePdfPreview = async (
   try {
     // Configure PDF.js worker if not already configured
     if (!isPdfWorkerConfigured()) {
-      const workerResult = configurePdfWorker();
+      const workerResult = configurePdfWorker({
+        verbose,
+        showToasts: false, // We'll handle toasts ourselves
+        useLocalWorker: true // Try to use local worker first
+      });
       
       if (!workerResult.success) {
         throw new Error(`PDF worker configuration failed: ${workerResult.error}`);
       }
       
-      if (verbose) {
-        console.log("PDF worker configured:", workerResult.workerSrc);
+      if (workerResult.workerSrc === 'fake-worker' && verbose) {
+        console.warn("Using fake PDF worker. Performance may be degraded.");
       }
     }
     

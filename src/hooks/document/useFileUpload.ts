@@ -22,7 +22,7 @@ export const useFileUpload = ({ onDocumentProcessed }: UseFileUploadProps) => {
     }
   };
 
-  const handleUpload = async (processImages: boolean = false) => {
+  const handleUpload = async () => {
     if (!selectedFile) {
       toast.error("Por favor, selecione um arquivo para upload.");
       return;
@@ -36,86 +36,61 @@ export const useFileUpload = ({ onDocumentProcessed }: UseFileUploadProps) => {
       return;
     }
 
-    // Limite de tamanho para evitar travamentos
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (selectedFile.size > maxSize) {
-      toast.error("Arquivo muito grande. Tamanho máximo: 10MB");
-      return;
-    }
-
     setIsUploading(true);
     
     try {
-      let extractedText = "";
-      let originalFileData: string | undefined = undefined;
+      toast.info("Processando documento...");
       
-      if (processImages && fileExtension === 'pdf') {
-        toast.info("Carregando PDF para análise híbrida (texto + imagens)...");
-        
-        // First extract text normally
-        extractedText = await extractTextFromFile(selectedFile, {
-          verbose: false,
-          showToasts: false,
-          timeout: 30000
-        });
-        
-        // Then prepare for image analysis
-        if (selectedFile.size < 5 * 1024 * 1024) { // 5MB limite para base64
-          originalFileData = await fileToBase64(selectedFile);
-        }
-        
-        console.log("PDF preparado para análise híbrida");
-      } else {
-        toast.info("Processando documento...");
-        
-        extractedText = await extractTextFromFile(selectedFile, {
-          verbose: false, // Reduzir logs
-          showToasts: false, // Evitar múltiplos toasts
-          timeout: 30000 // Timeout menor
-        });
-        
-        const validation = validateExtractedContent(extractedText, selectedFile.type);
-        if (!validation.valid) {
-          throw new Error(validation.errorMessage);
-        }
+      // Extract text from the document using the refactored utility
+      const extractedText = await extractTextFromFile(selectedFile, {
+        verbose: true,
+        showToasts: true,
+        timeout: 60000 // Increased timeout for large documents
+      });
+      
+      // Validate extracted content
+      const validation = validateExtractedContent(extractedText, selectedFile.type);
+      if (!validation.valid) {
+        throw new Error(validation.errorMessage);
       }
       
       const trimmedText = extractedText.trim();
-      console.log("Texto processado, tamanho:", trimmedText.length, "caracteres");
+      console.log("Texto extraído e limpo, tamanho:", trimmedText.length, "caracteres");
+      console.log("Texto extraído do documento:", trimmedText.substring(0, 300) + "...");
       
+      // Create document object
       const document: Document = {
         id: uuidv4(),
         name: selectedFile.name,
         type: fileExtension,
         uploadDate: new Date(),
         processed: false,
-        content: trimmedText,
-        processImages,
-        ...(originalFileData && { originalFileData })
+        content: trimmedText
       };
       
-      console.log("Documento criado:", document.id, document.name);
+      console.log("Documento criado com sucesso:", document);
+      console.log("ID do documento:", document.id);
+      console.log("Nome do documento:", document.name);
+      console.log("Tamanho do conteúdo:", document.content?.length || 0);
       
+      // Call the callback with the processed document
       onDocumentProcessed(document);
-      toast.success(processImages ? "PDF carregado para análise híbrida!" : "Documento carregado com sucesso!");
+      toast.success("Documento carregado com sucesso!");
       
+      // Reset the file input
       setSelectedFile(null);
     } catch (error) {
-      console.error("Erro no processamento:", error);
-      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+      console.error("Erro no processamento do documento:", error);
+      let errorMessage = "Erro desconhecido";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       toast.error(`Erro ao processar o documento: ${errorMessage}`);
     } finally {
       setIsUploading(false);
     }
-  };
-
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = error => reject(error);
-    });
   };
 
   return {

@@ -9,7 +9,6 @@ import {
 } from './analysisCore';
 
 import { 
-  extractLegalMetadata,
   extractSummarySection, 
   extractKeyPointsSection, 
   extractConclusionSection 
@@ -51,7 +50,6 @@ export const parseAnalysisResult = (analysisResult: string): AnalysisResult => {
     console.log("Attempting to extract sections from the formatted response");
     
     // Extract each section using specialized extraction functions
-    extractLegalMetadata(analysisResult, result);
     extractSummarySection(analysisResult, result);
     extractKeyPointsSection(analysisResult, result);
     extractConclusionSection(analysisResult, result);

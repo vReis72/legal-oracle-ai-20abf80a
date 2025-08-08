@@ -21,8 +21,12 @@ const DocumentFilePreview: React.FC<DocumentFilePreviewProps> = ({ file }) => {
 
   // Configure PDF.js worker when component mounts with improved configuration
   useEffect(() => {
-    // Configura o worker de forma simples
-    const workerResult = configurePdfWorker();
+    // Configura o worker com múltiplos fallbacks
+    const workerResult = configurePdfWorker({ 
+      verbose: true,
+      showToasts: true,
+      useLocalWorker: true // Tenta usar worker local primeiro
+    });
     
     if (!workerResult.success) {
       console.error("PDF worker configuration failed:", workerResult.error);
@@ -68,10 +72,17 @@ const DocumentFilePreview: React.FC<DocumentFilePreviewProps> = ({ file }) => {
       const handlePdfPreview = async () => {
         try {
           // Ensure worker is configured before generating preview
-          const workerConfig = configurePdfWorker();
+          // Tente múltiplas estratégias para configurar o worker
+          const workerConfig = configurePdfWorker({ 
+            verbose: true, 
+            showToasts: false,
+            useLocalWorker: true
+          });
           
+          // Se nenhuma estratégia normal funcionar, tenta usar worker fake
           if (!workerConfig.success) {
-            console.warn("Worker configuration failed, continuing anyway...");
+            console.warn("Tentando worker fake como alternativa...");
+            // Último recurso: worker fake (dentro da função getDocument)
           }
           
           // Tenta gerar preview mesmo se worker falhar (pode usar fallback interno)

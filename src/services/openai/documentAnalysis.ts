@@ -8,182 +8,82 @@ import { validateApiKey, handleApiError } from './types';
  * @param apiKey OpenAI API key
  * @returns Analyzed content from OpenAI
  */
-export const analyzeWithOpenAI = async (text: string, apiKey: string, fileData?: string): Promise<string> => {
+export const analyzeWithOpenAI = async (text: string, apiKey: string): Promise<string> => {
   console.log('🔬 OpenAI DocumentAnalysis: Iniciando análise');
   console.log('🔑 OpenAI DocumentAnalysis: Chave API:', apiKey ? `${apiKey.substring(0, 10)}...${apiKey.slice(-4)}` : 'NENHUMA');
   console.log('📄 OpenAI DocumentAnalysis: Tamanho do texto:', text.length);
   
   validateApiKey(apiKey);
   
-  // Clean text if it contains OCR markers
-  let cleanText = text;
-  if (text.includes('[PDF_DOCUMENT_FOR_OCR_ANALYSIS:')) {
-    console.log('🧹 OpenAI DocumentAnalysis: Limpando marcadores OCR do texto');
-    // Extract filename from OCR marker and treat as no content available
-    const match = text.match(/\[PDF_DOCUMENT_FOR_OCR_ANALYSIS:\s*([^\]]+)\]/);
-    const filename = match ? match[1] : 'documento.pdf';
-    cleanText = `Este é um documento PDF (${filename}) que foi enviado para análise. O texto não pôde ser extraído automaticamente.`;
-  }
-
-  if (!cleanText || cleanText.trim().length === 0) {
+  if (!text || text.trim().length === 0) {
     console.error('❌ OpenAI DocumentAnalysis: Texto vazio fornecido');
     throw new Error("Nenhum texto fornecido para análise.");
   }
 
-  // Check if this is a hybrid document (text + image processing)
-  const isHybridDocument = fileData && !text.includes('[PDF_DOCUMENT_FOR_OCR_ANALYSIS:');
-
-  if (isHybridDocument && !fileData) {
-    console.error('❌ OpenAI DocumentAnalysis: Documento híbrido sem dados de arquivo');
-    throw new Error("Documento para análise híbrida deve incluir dados do arquivo.");
+  if (text.trim().length < 50) {
+    console.error('❌ OpenAI DocumentAnalysis: Texto muito curto');
+    throw new Error("Texto fornecido é muito curto para análise significativa (menos de 50 caracteres).");
   }
 
   console.log('📤 OpenAI DocumentAnalysis: Preparando requisição para análise');
-  if (isHybridDocument) {
-    console.log('🔍 OpenAI DocumentAnalysis: Modo híbrido ativado (texto + imagens)');
-    console.log('📝 OpenAI DocumentAnalysis: Primeiros 200 caracteres do texto:', cleanText.substring(0, 200));
-  } else {
-    console.log('📝 OpenAI DocumentAnalysis: Primeiros 200 caracteres:', cleanText.substring(0, 200));
-  }
+  console.log('📝 OpenAI DocumentAnalysis: Primeiros 200 caracteres:', text.substring(0, 200));
   
-  const messages: any[] = [
-    {
-      role: 'system',
-      content: `⚖️ Você é um assistente jurídico especializado em análise de documentos processuais e jurisprudência brasileira com capacidade de OCR para ler até mesmo documentos escaneados ou com má formatação.
-
-🎯 DIRETRIZES PRINCIPAIS:
-- Analise o conteúdo integral do documento, utilizando OCR se necessário para partes escaneadas ou em formato de imagem
-- Mantenha atenção especial à estrutura jurídica do documento
-- Baseie-se EXCLUSIVAMENTE no conteúdo fornecido, sem adicionar informações externas
-- Seja preciso, objetivo e técnico em sua análise jurídica
-- Trate erros de OCR ou formatação confusa com tolerância, indicando lacunas explicitamente
-- NÃO responda com frases genéricas ou vagas - foque em análise técnica e estruturada
-
-📋 ELEMENTOS A IDENTIFICAR (quando presentes):
-- Tipo do documento (sentença, acórdão, petição inicial, contestação, etc.)
-- Número do processo
-- Tribunal ou instância
-- Nome das partes
-- Nome do(s) advogado(s)
-- Relator ou juiz responsável
-- Data de julgamento ou despacho
-- Tese ou questão jurídica central
-- Fundamentos jurídicos citados (com base legal)
-- Dispositivo ou conclusão da decisão
-
-🔍 QUALIDADE DA ANÁLISE:
-- Identifique com precisão dispositivos legais, prazos, partes envolvidas e argumentos centrais
-- Destaque artigos e leis mencionados especificamente
-- Ofereça parecer fundamentado sobre consequências, riscos ou próximos passos
-- Mantenha linguagem técnico-jurídica mas clara e objetiva`
-    }
-  ];
-
-  if (isHybridDocument && fileData) {
-    messages.push({
-      role: 'user',
-      content: [
-        {
-          type: 'text',
-          text: `📄 Analise este documento PDF jurídico de forma HÍBRIDA. Eu forneço o texto extraído E as imagens do documento para análise visual complementar.
-
-🎯 INSTRUÇÕES DE ANÁLISE HÍBRIDA:
-- Use o TEXTO extraído como base principal da análise
-- Complemente com informações visuais importantes das imagens (logos, carimbos, selos, elementos gráficos, formatação especial)
-- Identifique discrepâncias entre texto extraído e conteúdo visual
-- Extraia informações visuais que não aparecem no texto (assinaturas, carimbos, códigos de barras, etc.)
-
-📋 **TEXTO EXTRAÍDO:**
-"""
-${cleanText}
-"""
-
-🎯 ESTRUTURA REQUERIDA DA RESPOSTA:
-
-📌 **METADADOS JURÍDICOS:**
-- 📂 **Tipo de Documento:** [identificar tipo]
-- 🔢 **Processo:** [número do processo, se presente]
-- 🏛️ **Tribunal/Instância:** [tribunal ou vara]
-- ⚖️ **Juiz/Relator:** [nome do magistrado]
-- 📅 **Data:** [data de julgamento/despacho]
-- 👥 **Partes:** [autor(es) e réu(s)]
-- 👨‍💼 **Advogados:** [se identificáveis]
-
-📋 **RESUMO JURÍDICO:**
-[Contexto do caso baseado no texto + informações visuais complementares]
-
-🔑 **PONTOS-CHAVE:**
-[Combine informações do texto com elementos visuais importantes]
-
-🖼️ **ELEMENTOS VISUAIS IDENTIFICADOS:**
-[Descreva carimbos, selos, assinaturas, logos, elementos gráficos relevantes encontrados nas imagens]
-
-⚖️ **CONCLUSÃO/PARECER:**
-[Análise fundamentada combinando texto e elementos visuais]
-
-💡 **INSTRUÇÕES ESPECIAIS:**
-- Priorize o texto extraído, mas complemente com informações visuais
-- Identifique elementos visuais jurídicos importantes (carimbos oficiais, selos, etc.)
-- Se houver conflito entre texto e imagem, indique explicitamente`
-        },
-        {
-          type: 'image_url',
-          image_url: {
-            url: fileData
-          }
-        }
-      ]
-    });
-  } else {
-    messages.push({
-      role: 'user',
-      content: `📄 Analise o documento jurídico abaixo de forma completa e estruturada.
-
-🎯 ESTRUTURA REQUERIDA DA RESPOSTA:
-
-📌 **METADADOS JURÍDICOS:**
-- 📂 **Tipo de Documento:** [identificar tipo]
-- 🔢 **Processo:** [número do processo, se presente]
-- 🏛️ **Tribunal/Instância:** [tribunal ou vara]
-- ⚖️ **Juiz/Relator:** [nome do magistrado]
-- 📅 **Data:** [data de julgamento/despacho]
-- 👥 **Partes:** [autor(es) e réu(s)]
-- 👨‍💼 **Advogados:** [se identificáveis]
-
-📋 **RESUMO JURÍDICO:**
-[Contexto do caso, pedido ou matéria em discussão, argumentos centrais de cada parte, fundamentos da decisão, resultado]
-
-🔑 **PONTOS-CHAVE:**
-[Pontos específicos que merecem atenção detalhada - dispositivos legais, decisões importantes, argumentos centrais, prazos, valores, precedentes citados, etc. Use formato de lista]
-
-⚖️ **CONCLUSÃO/PARECER:**
-[Análise fundamentada sobre o conteúdo, consequências jurídicas, riscos identificados, próximos passos possíveis, orientações práticas]
-
-📄 **DOCUMENTO A ANALISAR:**
-"""
-${cleanText}
-"""
-
-💡 **INSTRUÇÕES ESPECIAIS:**
-- Se algum metadado não estiver disponível, indique "Não identificado"
-- Mantenha a formatação com emojis para melhor visualização
-- Foque na qualidade técnica da análise jurídica`
-    });
-  }
-
   const requestBody = {
-    model: "gpt-4o",
-    messages,
-    temperature: 0.3,
-    max_tokens: 6000
+    model: "gpt-4o-mini",
+    messages: [
+      {
+        role: 'system',
+        content: `Você é um especialista em análise de documentos jurídicos brasileiros com vasta experiência em várias áreas do direito.
+        
+Sua tarefa é analisar com precisão APENAS o texto jurídico fornecido, sem adicionar informações externas ou fazer suposições que não estejam explicitamente presentes no documento.
+
+DIRETRIZES IMPORTANTES:
+- Baseie-se EXCLUSIVAMENTE no conteúdo do documento fornecido.
+- Seja preciso, objetivo e técnico em sua análise.
+- Se o documento não fornecer informação suficiente, indique claramente as limitações da análise.
+- Não invente informações ou contextos que não estejam presentes no texto.
+- Identifique com precisão dispositivos legais, prazos, partes envolvidas e argumentos centrais do documento.
+- Quando houver citação de legislação, destaque os artigos e leis mencionados.
+- Seja técnico e jurídico na sua linguagem, mas mantenha clareza.`
+      },
+      {
+        role: 'user',
+        content: `Leia atentamente o texto a seguir, que foi extraído de um documento jurídico. Sua tarefa é:
+
+1. Gerar um resumo técnico e objetivo do conteúdo do documento, indicando de forma clara o que foi tratado.
+2. Listar os pontos-chave abordados no texto, especialmente aqueles que merecem atenção detalhada (ex.: dispositivos legais citados, decisões importantes, argumentos centrais, prazos, valores, partes envolvidas, etc.).
+3. Apresentar uma conclusão, oferecendo um parecer sucinto e fundamentado sobre o conteúdo do documento, apontando possíveis consequências, riscos ou próximos passos relevantes a partir do que foi lido.
+
+Documento a ser analisado:
+"""
+${text}
+"""
+
+Estruture sua resposta com os seguintes títulos:
+
+**Resumo:**
+
+[escreva aqui]
+
+**Pontos-chave:**
+
+[escreva aqui – utilize tópicos/bullets para cada item]
+
+**Conclusão/Parecer:**
+
+[escreva aqui]`
+      }
+    ],
+    temperature: 0.0,
+    max_tokens: 3000
   };
-  
+
   console.log('📤 OpenAI DocumentAnalysis: Enviando requisição:', {
     model: requestBody.model,
     messageCount: requestBody.messages.length,
     maxTokens: requestBody.max_tokens,
     temperature: requestBody.temperature,
-    isHybridMode: isHybridDocument
+    textLength: text.length
   });
   
   try {
@@ -191,7 +91,8 @@ ${cleanText}
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'OpenAI-Beta': 'assistants=v1'
       },
       body: JSON.stringify(requestBody),
     });
@@ -205,15 +106,9 @@ ${cleanText}
       console.error('❌ OpenAI DocumentAnalysis: Erro na resposta:', {
         status: response.status,
         statusText: response.statusText,
-        body: errorText,
-        url: response.url,
-        headers: Object.fromEntries(response.headers.entries())
+        body: errorText
       });
-      
-      // Log the request body for debugging
-      console.error('❌ OpenAI DocumentAnalysis: Request body que causou o erro:', JSON.stringify(requestBody, null, 2));
-      
-      throw new Error(`Erro na API: ${response.status} - ${errorText || 'Erro desconhecido'}`);
+      await handleApiError(response);
     }
 
     const responseText = await response.text();
