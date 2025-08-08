@@ -1,5 +1,6 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import * as React from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 
 type Theme = 'dark' | 'light' | 'system';
 
@@ -24,14 +25,17 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
   children,
   defaultTheme = 'light'
 }) => {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    // Primeiro tenta pegar do localStorage
+  const [theme, setThemeState] = useState<Theme>(defaultTheme);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Initialize theme from localStorage after component mounts
+  useEffect(() => {
     const stored = localStorage.getItem('app-theme');
     if (stored && ['light', 'dark', 'system'].includes(stored)) {
-      return stored as Theme;
+      setThemeState(stored as Theme);
     }
-    return defaultTheme;
-  });
+    setIsInitialized(true);
+  }, []);
 
   const [actualTheme, setActualTheme] = useState<'dark' | 'light'>('light');
 
@@ -63,6 +67,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
 
   // Efeito para aplicar o tema inicial e escutar mudanças do sistema
   useEffect(() => {
+    if (!isInitialized) return;
+    
     updateActualTheme(theme);
 
     // Escuta mudanças no tema do sistema
@@ -75,7 +81,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
 
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
-  }, [theme]);
+  }, [theme, isInitialized]);
 
   // Efeito para garantir que o tema seja aplicado na inicialização
   useEffect(() => {
